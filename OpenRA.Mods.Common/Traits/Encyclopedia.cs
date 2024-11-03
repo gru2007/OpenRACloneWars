@@ -34,6 +34,9 @@ namespace OpenRA.Mods.Common.Traits
 		[Desc("Ignore the Buildable trait when listing information.")]
 		public readonly bool HideBuildable = false;
 
+		[Desc("Specifies a production queue type if the actor can be built from multiple queues.")]
+		public readonly string BuildableQueue = null;
+
 		public override object Create(ActorInitializer init) { return Encyclopedia.Instance; }
 	}
 
