@@ -273,5 +273,18 @@ namespace OpenRA.Mods.Common.Activities
 			if (targetLineColor != null)
 				yield return new TargetLineNode(useLastVisibleTarget ? lastVisibleTarget : target, targetLineColor.Value);
 		}
+
+		public bool HaveArmamentsFor(Target target)
+		{
+			var canAttack = false;
+
+			foreach (var attack in attackTraits)
+			{
+				var armaments = attack.ChooseArmamentsForTarget(target, forceAttack).ToList();
+				canAttack |= armaments.Count != 0;
+			}
+
+			return canAttack;
+		}
 	}
 }
