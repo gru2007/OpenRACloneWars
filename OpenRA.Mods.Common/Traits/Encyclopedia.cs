@@ -25,6 +25,15 @@ namespace OpenRA.Mods.Common.Traits
 		[Desc("Group under this heading.")]
 		public readonly string Category;
 
+		[Desc("Scale the actor preview.")]
+		public readonly float Scale = 1f;
+
+		[Desc("Sets the player color of the actor preview to a player defined in the shellmap.")]
+		public readonly string PreviewOwner = null;
+
+		[Desc("Ignore the Buildable trait when listing information.")]
+		public readonly bool HideBuildable = false;
+
 		public override object Create(ActorInitializer init) { return Encyclopedia.Instance; }
 	}
 
