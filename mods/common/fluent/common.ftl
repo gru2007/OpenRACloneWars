@@ -408,6 +408,22 @@ label-original-notice = The default is "{ $key }"
 label-duplicate-notice = This is already used for "{ $key }" in the { $context } context
 hotkey-context-any = Any
 
+## GameplaySettingsLogic
+auto-save-interval =
+    .disabled = Disabled
+    .options =
+        { $seconds ->
+            [one] 1 second
+           *[other] { $seconds } seconds
+        }
+    .minute-options =
+        { $minutes ->
+            [one] 1 minute
+           *[other] { $minutes } minutes
+        }
+
+auto-save-max-file-number = { $saves } saves
+
 ## InputSettingsLogic
 options-mouse-scroll-type =
     .disabled = Disabled
@@ -804,6 +820,7 @@ notification-copied-tiles =
 
 ## EditorDefaultBrush
 notification-selected-area = Selected area { $x },{ $y } ({ $width },{ $height })
+notification-removed-area = Removed area { $x },{ $y } ({ $width },{ $height })
 notification-selected-actor = Selected actor { $id }
 notification-cleared-selection = Cleared selection
 notification-removed-actor = Removed { $name } ({ $id })
@@ -1119,3 +1136,9 @@ keycode =
     .sleep = Sleep
     .mouse4 = Mouse 4
     .mouse5 = Mouse 5
+
+## MapGeneratorToolLogic
+label-map-generator-failed-cancel = Dismiss
+notification-map-generator-generated = Generated using { $name }
+notification-map-generator-bad-option = Option "{ $option }" is invalid
+notification-map-generator-failed = Map generation failed

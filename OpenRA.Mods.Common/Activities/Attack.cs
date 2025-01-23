@@ -51,6 +51,7 @@ namespace OpenRA.Mods.Common.Activities
 			this.target = target;
 			this.targetLineColor = targetLineColor;
 			this.forceAttack = forceAttack;
+			ChildHasPriority = false;
 
 			attackTraits = self.TraitsImplementing<AttackFrontal>().ToArray().Where(t => !t.IsTraitDisabled);
 			revealsShroud = self.TraitsImplementing<RevealsShroud>().ToArray();
@@ -94,14 +95,14 @@ namespace OpenRA.Mods.Common.Activities
 
 		public override bool Tick(Actor self)
 		{
+			if (!IsCanceling && !HasArmamentsFor(target))
+				Cancel(self, true);
+
+			if (!TickChild(self))
+				return false;
+
 			if (IsCanceling)
 				return true;
-
-			if (!attackTraits.Any())
-			{
-				Cancel(self);
-				return false;
-			}
 
 			target = RecalculateTarget(self, out var targetIsHiddenActor);
 
@@ -274,17 +275,9 @@ namespace OpenRA.Mods.Common.Activities
 				yield return new TargetLineNode(useLastVisibleTarget ? lastVisibleTarget : target, targetLineColor.Value);
 		}
 
-		public bool HaveArmamentsFor(Target target)
+		bool HasArmamentsFor(Target target)
 		{
-			var canAttack = false;
-
-			foreach (var attack in attackTraits)
-			{
-				var armaments = attack.ChooseArmamentsForTarget(target, forceAttack).ToList();
-				canAttack |= armaments.Count != 0;
-			}
-
-			return canAttack;
+			return attackTraits.Any(attack => attack.ChooseArmamentsForTarget(target, forceAttack).Any());
 		}
 	}
 }
