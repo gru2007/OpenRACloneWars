@@ -94,10 +94,6 @@ namespace OpenRA.Mods.Common.Activities
 				Cancel(self, true);
 			else if (!IsCanceling && targetIsValid && ShouldRepath(self, oldTargetLocation))
 			{
-				// To avoid unit continuing to follow the unattackable target around until it comes into range
-				if (self.CurrentActivity is Attack a && !a.HaveArmamentsFor(target))
-					return false;
-
 				// Target has moved, but is still valid.
 				ChildActivity?.Cancel(self);
 				QueueChild(Mobile.MoveTo(check => CalculatePathToTarget(self, check)));
