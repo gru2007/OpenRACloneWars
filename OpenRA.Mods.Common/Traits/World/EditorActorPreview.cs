@@ -45,7 +45,7 @@ namespace OpenRA.Mods.Common.Traits
 		readonly WorldRenderer worldRenderer;
 		readonly TooltipInfoBase tooltip;
 		readonly ActorReference reference;
-		readonly Dictionary<INotifyEditorPlacementInfo, object> editorData = [];
+		readonly Dictionary<INotifyEditorPlacementInfo, object> editorData = new();
 		readonly Action<CPos> onCellEntryChanged;
 
 		SelectionBoxAnnotationRenderable selectionBox;
@@ -137,33 +137,20 @@ namespace OpenRA.Mods.Common.Traits
 
 		public IEnumerable<IRenderable> Render()
 		{
-			return RenderAt(CenterPosition);
-		}
-
-		public IEnumerable<IRenderable> RenderWithOffset(WVec offset)
-		{
-			return RenderAt(CenterPosition + offset);
-		}
-
-		public IEnumerable<IRenderable> RenderAt(WPos centerPosition)
-		{
+			var items = previews.SelectMany(p => p.Render(worldRenderer, CenterPosition));
 			if (Selected)
 			{
-				foreach (var p in previews)
-				{
-					foreach (var r in p.Render(worldRenderer, centerPosition))
+				var overlay = items.Where(r => !r.IsDecoration && r is IModifyableRenderable)
+					.Select(r =>
 					{
-						yield return r;
-						if (!r.IsDecoration && r is IModifyableRenderable mr)
-							yield return mr.WithTint(float3.Ones, mr.TintModifiers | TintModifiers.ReplaceColor)
-								.WithAlpha(0.5f);
-					}
-				}
+						var mr = (IModifyableRenderable)r;
+						return mr.WithTint(float3.Ones, mr.TintModifiers | TintModifiers.ReplaceColor).WithAlpha(0.5f);
+					});
+
+				return items.Concat(overlay);
 			}
-			else
-				foreach (var p in previews)
-					foreach (var r in p.Render(worldRenderer, centerPosition))
-						yield return r;
+
+			return items;
 		}
 
 		public IEnumerable<IRenderable> RenderAnnotations()
@@ -245,7 +232,11 @@ namespace OpenRA.Mods.Common.Traits
 
 		public void ReplaceInit<T>(T init) where T : ActorInit, ISingleInstanceInit
 		{
-			reference.Replace(init);
+			var original = reference.GetOrDefault<T>();
+			if (original != null)
+				reference.Remove(original);
+
+			reference.Add(init);
 			GeneratePreviews();
 			UpdateRadarColor();
 		}

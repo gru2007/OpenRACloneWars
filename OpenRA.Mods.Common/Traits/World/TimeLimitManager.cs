@@ -9,9 +9,7 @@
  */
 #endregion
 
-using System.Collections.Frozen;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 using OpenRA.Mods.Common.Widgets;
 using OpenRA.Primitives;
@@ -21,7 +19,6 @@ using OpenRA.Widgets;
 namespace OpenRA.Mods.Common.Traits
 {
 	[TraitLocation(SystemActors.World)]
-	[IncludeStaticFluentReferences(typeof(TimeLimitManager))]
 	[Desc("This trait allows setting a time limit on matches. Attach this to the World actor.")]
 	public class TimeLimitManagerInfo : TraitInfo, ILobbyOptions, IRulesetLoaded
 	{
@@ -34,10 +31,10 @@ namespace OpenRA.Mods.Common.Traits
 		public readonly string TimeLimitDescription = "dropdown-time-limit.description";
 
 		[Desc("Time Limit options that will be shown in the lobby dropdown. Values are in minutes.")]
-		public readonly ImmutableArray<int> TimeLimitOptions = [0, 10, 20, 30, 40, 60, 90];
+		public readonly int[] TimeLimitOptions = { 0, 10, 20, 30, 40, 60, 90 };
 
 		[Desc("List of remaining minutes of game time when a text and optional speech notification should be made to players.")]
-		public readonly FrozenDictionary<int, string> TimeLimitWarnings = new Dictionary<int, string>
+		public readonly Dictionary<int, string> TimeLimitWarnings = new()
 		{
 			{ 1, null },
 			{ 2, null },
@@ -45,7 +42,7 @@ namespace OpenRA.Mods.Common.Traits
 			{ 4, null },
 			{ 5, null },
 			{ 10, null },
-		}.ToFrozenDictionary();
+		};
 
 		[Desc("Default selection for the time limit option in the lobby. Needs to use one of the TimeLimitOptions.")]
 		public readonly int TimeLimitDefault = 0;

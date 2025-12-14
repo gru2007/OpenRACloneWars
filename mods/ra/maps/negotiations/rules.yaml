@@ -33,6 +33,7 @@ ai.hard:
 	ProvidesPrerequisite:
 		Prerequisite: ai.hard
 	Interactable:
+	AlwaysVisible:
 
 paradrop.allies:
 	Inherits: powerproxy.paratroopers
@@ -42,6 +43,7 @@ paradrop.allies:
 		DisplayBeacon: false
 
 powerproxy.chronoshift:
+	AlwaysVisible:
 	ChronoshiftPower:
 		Dimensions: 1, 1
 		Footprint: x

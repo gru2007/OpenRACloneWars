@@ -11,7 +11,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.IO;
 using OpenRA.FileSystem;
 using OpenRA.GameRules;
@@ -44,8 +43,8 @@ namespace OpenRA
 		ISoundSource videoSource;
 		ISound music;
 		ISound video;
-		readonly Dictionary<uint, ISound> currentSounds = [];
-		readonly Dictionary<string, ISound> currentNotifications = [];
+		readonly Dictionary<uint, ISound> currentSounds = new();
+		readonly Dictionary<string, ISound> currentNotifications = new();
 		public bool DummyEngine { get; }
 
 		public Sound(IPlatform platform, SoundSettings soundSettings)
@@ -166,12 +165,12 @@ namespace OpenRA
 		public ISound PlayLooped(SoundType type, string name) { return Play(type, null, name, true, WPos.Zero, 1f, true); }
 		public ISound PlayLooped(SoundType type, string name, WPos pos) { return Play(type, null, name, false, pos, 1f, true); }
 
-		public ISound Play(SoundType type, ImmutableArray<string> names, World world, Player player = null, float volumeModifier = 1f)
+		public ISound Play(SoundType type, string[] names, World world, Player player = null, float volumeModifier = 1f)
 		{
 			return Play(type, player, names.Random(world.LocalRandom), true, WPos.Zero, volumeModifier);
 		}
 
-		public ISound Play(SoundType type, ImmutableArray<string> names, World world, WPos pos, Player player = null, float volumeModifier = 1f)
+		public ISound Play(SoundType type, string[] names, World world, WPos pos, Player player = null, float volumeModifier = 1f)
 		{
 			return Play(type, player, names.Random(world.LocalRandom), false, pos, volumeModifier);
 		}
@@ -360,7 +359,8 @@ namespace OpenRA
 		public bool PlayPredefined(SoundType soundType, Ruleset ruleset, Player player, Actor voicedActor, string type, string definition, string variant,
 			bool relative, WPos pos, float volumeModifier, bool attenuateVolume)
 		{
-			ArgumentNullException.ThrowIfNull(ruleset);
+			if (ruleset == null)
+				throw new ArgumentNullException(nameof(ruleset));
 
 			if (definition == null || DisableAllSounds || (DisableWorldSounds && soundType == SoundType.World))
 				return false;
@@ -400,9 +400,9 @@ namespace OpenRA
 			if (variant != null)
 			{
 				if (rules.Variants.TryGetValue(variant, out var v) && !rules.DisableVariants.Contains(definition))
-					suffix = v[(int)(id % v.Length)];
+					suffix = v[id % v.Length];
 				if (rules.Prefixes.TryGetValue(variant, out var p) && !rules.DisablePrefixes.Contains(definition))
-					prefix = p[(int)(id % p.Length)];
+					prefix = p[id % p.Length];
 			}
 
 			var name = prefix + clip + suffix;
@@ -460,7 +460,8 @@ namespace OpenRA
 
 		public bool PlayNotification(Ruleset rules, Player player, string type, string notification, string variant)
 		{
-			ArgumentNullException.ThrowIfNull(rules);
+			if (rules == null)
+				throw new ArgumentNullException(nameof(rules));
 
 			if (type == null || notification == null)
 				return false;

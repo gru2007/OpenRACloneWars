@@ -9,8 +9,8 @@
  */
 #endregion
 
+using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using OpenRA.Traits;
 
 namespace OpenRA.Mods.Common.Traits
@@ -54,7 +54,7 @@ namespace OpenRA.Mods.Common.Traits
 			"Normal rules apply for subsequent charges.")]
 		public readonly bool StartFullyCharged = false;
 
-		public readonly ImmutableArray<string> Prerequisites = [];
+		public readonly string[] Prerequisites = Array.Empty<string>();
 
 		public readonly string DetectedSound = null;
 
@@ -159,13 +159,13 @@ namespace OpenRA.Mods.Common.Traits
 		protected SupportPowerInfo() { OrderName = GetType().Name + "Order"; }
 	}
 
-	public abstract class SupportPower : PausableConditionalTrait<SupportPowerInfo>
+	public class SupportPower : PausableConditionalTrait<SupportPowerInfo>
 	{
 		public readonly Actor Self;
 		readonly SupportPowerInfo info;
 		protected RadarPing ping;
 
-		protected SupportPower(Actor self, SupportPowerInfo info)
+		public SupportPower(Actor self, SupportPowerInfo info)
 			: base(info)
 		{
 			Self = self;

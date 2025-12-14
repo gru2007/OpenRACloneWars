@@ -31,7 +31,7 @@ namespace OpenRA.Mods.Cnc.Widgets.Logic
 		{
 			promptAccepted = true;
 			Ui.ResetAll();
-			Game.LoadWidget(world, "MAINMENU", Ui.Root, []);
+			Game.LoadWidget(world, "MAINMENU", Ui.Root, new WidgetArgs());
 		}
 	}
 }

@@ -9,17 +9,16 @@
  */
 #endregion
 
-using System.Collections.Frozen;
-using System.Collections.Immutable;
+using System.Collections.Generic;
 using OpenRA.Traits;
 
 namespace OpenRA.Mods.Common.Traits
 {
 	public class MapEditorDataInfo : TraitInfo<MapEditorData>
 	{
-		public readonly FrozenSet<string> RequireTilesets = null;
-		public readonly FrozenSet<string> ExcludeTilesets = null;
-		public readonly ImmutableArray<string> Categories;
+		public readonly HashSet<string> RequireTilesets = null;
+		public readonly HashSet<string> ExcludeTilesets = null;
+		public readonly string[] Categories;
 	}
 
 	public class MapEditorData { }

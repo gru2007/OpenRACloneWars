@@ -1,4 +1,5 @@
 ^BasePlayer:
+	AlwaysVisible:
 	Shroud:
 	PlayerResources:
 		ResourceValues:
@@ -112,15 +113,10 @@ Player:
 		DisplayOrder: 7
 		Prerequisites: global-factundeploy
 	FrozenActorLayer:
-	DamageNotifier:
-		ValidTargets: Building
-		Notification: BaseAttack
+	BaseAttackNotifier:
 		TextNotification: notification-base-under-attack
 		AllyTextNotification: notification-ally-under-attack
 		AllyNotification: OurAllyIsUnderAttack
-	DamageNotifier@Unit:
-		InvalidTargets: Building
-		NotifyInterval: 10000
 	HarvesterAttackNotifier:
 		TextNotification: notification-harvester-under-attack
 	PlayerStatistics:

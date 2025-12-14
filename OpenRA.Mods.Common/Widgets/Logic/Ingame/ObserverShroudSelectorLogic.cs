@@ -51,7 +51,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 		readonly World world;
 
 		CameraOption selected;
-		readonly LabelWithTooltipWidget shroudLabel;
+		readonly LabelWidget shroudLabel;
 
 		sealed class CameraOption
 		{
@@ -107,7 +107,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 			combined = new CameraOption(this, world, FluentProvider.GetMessage(CameraOptionAllPlayers), world.Players.First(p => p.InternalName == "Everyone"));
 			disableShroud = new CameraOption(this, world, FluentProvider.GetMessage(CameraOptionDisableShroud), null);
 			if (!limitViews)
-				groups.Add(FluentProvider.GetMessage(CameraOptionOther), [combined, disableShroud]);
+				groups.Add(FluentProvider.GetMessage(CameraOptionOther), new List<CameraOption>() { combined, disableShroud });
 
 			teams = world.Players.Where(p => !p.NonCombatant && p.Playable)
 				.Select(p => new CameraOption(this, p))
@@ -137,7 +137,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 					var item = ScrollItemWidget.Setup(template, option.IsSelected, option.OnClick);
 					var showFlag = option.Faction != null;
 
-					var label = item.Get<LabelWithTooltipWidget>("LABEL");
+					var label = item.Get<LabelWidget>("LABEL");
 					label.IsVisible = () => showFlag;
 					label.GetColor = () => option.Color;
 
@@ -162,7 +162,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 				shroudSelector.ShowDropDown("SPECTATOR_DROPDOWN_TEMPLATE", 400, groups, SetupItem);
 			};
 
-			shroudLabel = shroudSelector.Get<LabelWithTooltipWidget>("LABEL");
+			shroudLabel = shroudSelector.Get<LabelWidget>("LABEL");
 			shroudLabel.IsVisible = () => selected.Faction != null;
 			shroudLabel.GetText = () => selected.Label;
 			shroudLabel.GetColor = () => selected.Color;

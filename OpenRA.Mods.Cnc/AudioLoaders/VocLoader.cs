@@ -12,6 +12,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using OpenRA.Primitives;
 
 namespace OpenRA.Mods.Cnc.AudioLoaders
@@ -185,7 +186,7 @@ namespace OpenRA.Mods.Cnc.AudioLoaders
 						// See if last block contained additional information
 						if (blockList.Count > 0)
 						{
-							var b = blockList[^1];
+							var b = blockList.Last();
 							if (b.Code == 8)
 							{
 								block.SampleBlock.Rate = b.SampleBlock.Rate;

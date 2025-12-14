@@ -564,7 +564,6 @@ OILB:
 
 BR1:
 	Inherits: ^Bridge
-	Inherits@EXPLOSIVE: ^ExplosiveBridge
 	Bridge:
 		Template: 235
 		DamagedTemplate: 236
@@ -573,18 +572,9 @@ BR1:
 	FreeActor:
 		Actor: bridgehut
 		SpawnOffset: 2,0
-		RequiresCondition: !desert-bridge
-	FreeActor@DESERT:
-		Actor: bridgehut
-		SpawnOffset: 2,-1
-		RequiresCondition: desert-bridge
-	GrantConditionOnTileSet@DESERT:
-		Condition: desert-bridge
-		TileSets: DESERT
 
 BR2:
 	Inherits: ^Bridge
-	Inherits@EXPLOSIVE: ^ExplosiveBridge
 	Bridge:
 		Template: 238
 		DamagedTemplate: 239
@@ -593,18 +583,9 @@ BR2:
 	FreeActor:
 		Actor: bridgehut
 		SpawnOffset: 1,1
-		RequiresCondition: !desert-bridge
-	FreeActor@DESERT:
-		Actor: bridgehut
-		SpawnOffset: 0,1
-		RequiresCondition: desert-bridge
-	GrantConditionOnTileSet@DESERT:
-		Condition: desert-bridge
-		TileSets: DESERT
 
 BR3:
 	Inherits: ^Bridge
-	Inherits@EXPLOSIVE: ^ExplosiveBridge
 	Bridge:
 		Long: true
 		ShorePieces: br1,br2
@@ -619,7 +600,6 @@ BR3:
 
 BRIDGE1:
 	Inherits: ^Bridge
-	Inherits@EXPLOSIVE: ^ExplosiveBridge
 	Bridge:
 		Template: 131
 		DamagedTemplate: 378
@@ -638,7 +618,6 @@ BRIDGE1:
 
 BRIDGE2:
 	Inherits: ^Bridge
-	Inherits@EXPLOSIVE: ^ExplosiveBridge
 	Bridge:
 		Template: 133
 		DamagedTemplate: 379
@@ -657,7 +636,6 @@ BRIDGE2:
 
 BRIDGE3:
 	Inherits: ^Bridge
-	Inherits@EXPLOSIVE: ^ExplosiveBridge
 	Bridge:
 		Template: 620
 		DamagedTemplate: 621
@@ -676,7 +654,6 @@ BRIDGE3:
 
 BRIDGE4:
 	Inherits: ^Bridge
-	Inherits@EXPLOSIVE: ^ExplosiveBridge
 	Bridge:
 		Template: 624
 		DamagedTemplate: 625
@@ -695,7 +672,6 @@ BRIDGE4:
 
 SBRIDGE1:
 	Inherits: ^Bridge
-	Inherits@EXPLOSIVE: ^ExplosiveBridge
 	Bridge:
 		Template: 520
 		DamagedTemplate: 521
@@ -714,7 +690,6 @@ SBRIDGE1:
 
 SBRIDGE2:
 	Inherits: ^Bridge
-	Inherits@EXPLOSIVE: ^ExplosiveBridge
 	Bridge:
 		Template: 531
 		DamagedTemplate: 532
@@ -733,7 +708,6 @@ SBRIDGE2:
 
 SBRIDGE3:
 	Inherits: ^Bridge
-	Inherits@EXPLOSIVE: ^ExplosiveBridge
 	Bridge:
 		Template: 523
 		DamagedTemplate: 524
@@ -747,7 +721,6 @@ SBRIDGE3:
 
 SBRIDGE4:
 	Inherits: ^Bridge
-	Inherits@EXPLOSIVE: ^ExplosiveBridge
 	Bridge:
 		Template: 527
 		DamagedTemplate: 528
@@ -760,6 +733,7 @@ SBRIDGE4:
 		SpawnOffset: 2,1
 
 BRIDGEHUT:
+	AlwaysVisible:
 	Building:
 		Footprint: __ __
 		Dimensions: 2,2
@@ -771,6 +745,7 @@ BRIDGEHUT:
 		TargetTypes: BridgeHut, C4
 
 BRIDGEHUT.small:
+	AlwaysVisible:
 	Building:
 		Footprint: _
 		Dimensions: 1,1

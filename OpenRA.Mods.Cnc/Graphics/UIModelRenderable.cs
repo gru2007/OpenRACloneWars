@@ -11,7 +11,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 using OpenRA.Graphics;
 using OpenRA.Mods.Cnc.Traits;
@@ -26,15 +25,15 @@ namespace OpenRA.Mods.Cnc.Graphics
 		readonly int2 screenPos;
 		readonly WRot camera;
 		readonly WRot lightSource;
-		readonly ImmutableArray<float> lightAmbientColor;
-		readonly ImmutableArray<float> lightDiffuseColor;
+		readonly float[] lightAmbientColor;
+		readonly float[] lightDiffuseColor;
 		readonly PaletteReference normalsPalette;
 		readonly PaletteReference shadowPalette;
 		readonly float scale;
 
 		public UIModelRenderable(
 			ModelRenderer renderer, IEnumerable<ModelAnimation> models, WPos effectiveWorldPos, int2 screenPos, int zOffset,
-			in WRot camera, float scale, in WRot lightSource, ImmutableArray<float> lightAmbientColor, ImmutableArray<float> lightDiffuseColor,
+			in WRot camera, float scale, in WRot lightSource, float[] lightAmbientColor, float[] lightDiffuseColor,
 			PaletteReference color, PaletteReference normals, PaletteReference shadow)
 		{
 			this.renderer = renderer;
@@ -109,9 +108,9 @@ namespace OpenRA.Mods.Cnc.Graphics
 				return Screen3DBounds(wr).Bounds;
 			}
 
-			static readonly uint[] CornerXIndex = [0, 0, 0, 0, 3, 3, 3, 3];
-			static readonly uint[] CornerYIndex = [1, 1, 4, 4, 1, 1, 4, 4];
-			static readonly uint[] CornerZIndex = [2, 5, 2, 5, 2, 5, 2, 5];
+			static readonly uint[] CornerXIndex = { 0, 0, 0, 0, 3, 3, 3, 3 };
+			static readonly uint[] CornerYIndex = { 1, 1, 4, 4, 1, 1, 4, 4 };
+			static readonly uint[] CornerZIndex = { 2, 5, 2, 5, 2, 5, 2, 5 };
 			(Rectangle Bounds, float2 Z) Screen3DBounds(WorldRenderer wr)
 			{
 				var pxOrigin = model.screenPos;

@@ -10,7 +10,6 @@
 #endregion
 
 using System;
-using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -29,7 +28,7 @@ namespace OpenRA.Mods.Cnc.UtilityCommands
 		string IUtilityCommand.Name => "--import-ra-map";
 		bool IUtilityCommand.ValidateArguments(string[] args) { return ValidateArguments(args); }
 
-		[Desc("FILENAME [AUTHOR]", "Convert a legacy Red Alert INI/MPR map to the OpenRA format.")]
+		[Desc("FILENAME", "Convert a legacy Red Alert INI/MPR map to the OpenRA format.")]
 		void IUtilityCommand.Run(Utility utility, string[] args) { Run(utility, args); }
 
 		public override void ValidateMapFormat(int format)
@@ -40,15 +39,15 @@ namespace OpenRA.Mods.Cnc.UtilityCommands
 
 		// Mapping from RA95 overlay index to type string
 		static readonly string[] RedAlertOverlayNames =
-		[
+		{
 			"sbag", "cycl", "brik", "barb", "wood",
 			"gold01", "gold02", "gold03", "gold04",
 			"gem01", "gem02", "gem03", "gem04",
 			"v12", "v13", "v14", "v15", "v16", "v17", "v18",
 			"fpls", "wcrate", "scrate", "fenc", "sbag",
-		];
+		};
 
-		static readonly FrozenDictionary<string, (byte Type, byte Index)> OverlayResourceMapping = new Dictionary<string, (byte Type, byte Index)>
+		static readonly Dictionary<string, (byte Type, byte Index)> OverlayResourceMapping = new()
 		{
 			// RA ore & crystals
 			{ "gold01", (1, 0) },
@@ -59,7 +58,7 @@ namespace OpenRA.Mods.Cnc.UtilityCommands
 			{ "gem02", (2, 1) },
 			{ "gem03", (2, 2) },
 			{ "gem04", (2, 3) },
-		}.ToFrozenDictionary();
+		};
 
 		void UnpackTileData(MemoryStream ms)
 		{
@@ -78,9 +77,8 @@ namespace OpenRA.Mods.Cnc.UtilityCommands
 					Map.Tiles[new CPos(i, j)] = new TerrainTile(types[i, j], ms.ReadUInt8());
 		}
 
-		static readonly string[] OverlayActors =
-		[
-
+		static readonly string[] OverlayActors = new string[]
+		{
 			// Fences
 			"sbag", "cycl", "brik", "barb", "wood", "fenc",
 
@@ -89,7 +87,7 @@ namespace OpenRA.Mods.Cnc.UtilityCommands
 
 			// Crates
 			"wcrate", "scrate"
-		];
+		};
 
 		void UnpackOverlayData(MemoryStream ms)
 		{

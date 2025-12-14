@@ -17,7 +17,6 @@ using OpenRA.Traits;
 namespace OpenRA.Mods.Common.Commands
 {
 	[TraitLocation(SystemActors.World)]
-	[IncludeStaticFluentReferences(typeof(HelpCommand))]
 	[Desc("Shows a list of available commands in the chatbox. Attach this to the world actor.")]
 	public class HelpCommandInfo : TraitInfo<HelpCommand> { }
 
@@ -39,7 +38,7 @@ namespace OpenRA.Mods.Common.Commands
 
 		public HelpCommand()
 		{
-			helpDescriptions = [];
+			helpDescriptions = new Dictionary<string, string>();
 		}
 
 		public void WorldLoaded(World w, WorldRenderer wr)
@@ -55,7 +54,7 @@ namespace OpenRA.Mods.Common.Commands
 		{
 			TextNotificationsManager.Debug(FluentProvider.GetMessage(AvailableCommands));
 
-			foreach (var key in console.Commands.Keys.Order())
+			foreach (var key in console.Commands.Keys.OrderBy(k => k))
 			{
 				if (!helpDescriptions.TryGetValue(key, out var description))
 					description = FluentProvider.GetMessage(NoDescription);

@@ -45,10 +45,10 @@ namespace OpenRA.Mods.Common.LoadScreens
 
 		public override void StartGame(Arguments args)
 		{
-			Ui.LoadWidget("MODCONTENT_BACKGROUND", Ui.Root, []);
+			Ui.LoadWidget("MODCONTENT_BACKGROUND", Ui.Root, new WidgetArgs());
 		}
 
-		public override bool BeforeLoad(ModData modData)
+		public override bool BeforeLoad()
 		{
 			return true;
 		}

@@ -10,7 +10,6 @@
 #endregion
 
 using System.Collections.Generic;
-using OpenRA.Traits;
 
 namespace OpenRA
 {
@@ -32,7 +31,6 @@ namespace OpenRA
 		[FieldLoader.Require]
 		public readonly string DefaultSpeed;
 
-		[IncludeFluentReferences(LintDictionaryReference.Values)]
 		[FieldLoader.LoadUsing(nameof(LoadSpeeds))]
 		public readonly Dictionary<string, GameSpeed> Speeds;
 

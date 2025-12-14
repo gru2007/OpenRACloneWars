@@ -12,7 +12,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json;
+using Newtonsoft.Json;
 using OpenRA.Mods.Common.UtilityCommands.Documentation.Objects;
 using OpenRA.Primitives;
 using OpenRA.Traits;
@@ -76,7 +76,7 @@ namespace OpenRA.Mods.Common.UtilityCommands.Documentation
 				RelatedEnums = DocumentationHelpers.GetRelatedEnumInfos(relatedEnumTypes)
 			};
 
-			return JsonSerializer.Serialize(result);
+			return JsonConvert.SerializeObject(result);
 		}
 
 		static IEnumerable<Type> RequiredTraitTypes(Type t)

@@ -15,9 +15,9 @@ namespace OpenRA.Mods.Common.FileFormats
 {
 	public static class ImaAdpcmReader
 	{
-		static readonly int[] IndexAdjust = [-1, -1, -1, -1, 2, 4, 6, 8];
+		static readonly int[] IndexAdjust = { -1, -1, -1, -1, 2, 4, 6, 8 };
 		static readonly int[] StepTable =
-		[
+		{
 			7, 8, 9, 10, 11, 12, 13, 14, 16,
 			17, 19, 21, 23, 25, 28, 31, 34, 37,
 			41, 45, 50, 55, 60, 66, 73, 80, 88,
@@ -28,7 +28,7 @@ namespace OpenRA.Mods.Common.FileFormats
 			3024, 3327, 3660, 4026, 4428, 4871, 5358, 5894, 6484,
 			7132, 7845, 8630, 9493, 10442, 11487, 12635, 13899, 15289,
 			16818, 18500, 20350, 22385, 24623, 27086, 29794, 32767
-		];
+		};
 
 		public static short DecodeImaAdpcmSample(byte b, ref int index, ref int current)
 		{
@@ -56,18 +56,18 @@ namespace OpenRA.Mods.Common.FileFormats
 			return (short)current;
 		}
 
-		public static void LoadImaAdpcmSound(ReadOnlySpan<byte> raw, ref int index, Span<byte> output)
+		public static byte[] LoadImaAdpcmSound(ReadOnlySpan<byte> raw, ref int index)
 		{
 			var currentSample = 0;
-			LoadImaAdpcmSound(raw, ref index, ref currentSample, output);
+			return LoadImaAdpcmSound(raw, ref index, ref currentSample);
 		}
 
-		public static void LoadImaAdpcmSound(ReadOnlySpan<byte> raw, ref int index, ref int currentSample, Span<byte> output)
+		public static byte[] LoadImaAdpcmSound(ReadOnlySpan<byte> raw, ref int index, ref int currentSample)
 		{
 			var dataSize = raw.Length;
-			if (output.Length != raw.Length * 4)
-				throw new ArgumentException($"{nameof(output)} must be 4 times the length of {nameof(raw)}.", nameof(output));
+			var outputSize = raw.Length * 4;
 
+			var output = new byte[outputSize];
 			var offset = 0;
 
 			while (dataSize-- > 0)
@@ -82,6 +82,8 @@ namespace OpenRA.Mods.Common.FileFormats
 				output[offset++] = (byte)t;
 				output[offset++] = (byte)(t >> 8);
 			}
+
+			return output;
 		}
 	}
 }

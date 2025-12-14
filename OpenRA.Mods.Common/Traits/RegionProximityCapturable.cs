@@ -9,7 +9,8 @@
  */
 #endregion
 
-using System.Collections.Immutable;
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using OpenRA.Graphics;
 using OpenRA.Mods.Common.Graphics;
@@ -23,20 +24,20 @@ namespace OpenRA.Mods.Common.Traits
 		[Desc("Set of cell offsets (relative to the actor's Location) the " + nameof(ProximityCaptor) + " needs to be in to initiate the capture. ",
 			"A 'Region' ActorInit can be used to override this value per actor. If either is empty or non-existent, ",
 			"the immediately neighboring cells of the actor will be used.")]
-		public readonly ImmutableArray<CVec> Region = [];
+		public readonly CVec[] Region = Array.Empty<CVec>();
 
 		public override object Create(ActorInitializer init) { return new RegionProximityCapturable(init, this); }
 	}
 
 	public class RegionProximityCapturable : ProximityCapturableBase
 	{
-		readonly ImmutableArray<CVec> offsets;
+		readonly CVec[] offsets;
 		CPos[] region;
 
 		public RegionProximityCapturable(ActorInitializer init, RegionProximityCapturableInfo info)
 			: base(init, info)
 		{
-			offsets = init.GetValue<RegionInit, ImmutableArray<CVec>>(info, info.Region);
+			offsets = init.GetValue<RegionInit, CVec[]>(info, info.Region);
 		}
 
 		protected override int CreateTrigger(Actor self)
@@ -44,7 +45,7 @@ namespace OpenRA.Mods.Common.Traits
 			region = offsets.Select(o => o + self.Location).ToArray();
 
 			if (region.Length == 0)
-				region = Util.ExpandFootprint([self.Location], true).ToArray();
+				region = Util.ExpandFootprint(new List<CPos> { self.Location }, true).ToArray();
 
 			return self.World.ActorMap.AddCellTrigger(region, ActorEntered, ActorLeft);
 		}
@@ -62,9 +63,9 @@ namespace OpenRA.Mods.Common.Traits
 		}
 	}
 
-	public class RegionInit : ValueActorInit<ImmutableArray<CVec>>
+	public class RegionInit : ValueActorInit<CVec[]>
 	{
-		public RegionInit(ImmutableArray<CVec> value)
+		public RegionInit(CVec[] value)
 			: base(value) { }
 	}
 }

@@ -10,7 +10,6 @@
 #endregion
 
 using System;
-using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Linq;
 using OpenRA.Graphics;
@@ -32,7 +31,7 @@ namespace OpenRA.Mods.Common.Traits.Render
 		public readonly string Image = null;
 
 		[Desc("A dictionary of faction-specific image overrides.")]
-		public readonly FrozenDictionary<string, string> FactionImages = null;
+		public readonly Dictionary<string, string> FactionImages = null;
 
 		[PaletteReference]
 		[Desc("Custom palette name")]
@@ -82,12 +81,12 @@ namespace OpenRA.Mods.Common.Traits.Render
 	public class RenderSprites : IRender, ITick, INotifyOwnerChanged, INotifyEffectiveOwnerChanged, IActorPreviewInitModifier
 	{
 		static readonly (DamageState DamageState, string Prefix)[] DamagePrefixes =
-		[
+		{
 			(DamageState.Critical, "critical-"),
 			(DamageState.Heavy, "damaged-"),
 			(DamageState.Medium, "scratched-"),
 			(DamageState.Light, "scuffed-")
-		];
+		};
 
 		sealed class AnimationWrapper
 		{
@@ -142,7 +141,7 @@ namespace OpenRA.Mods.Common.Traits.Render
 
 		public readonly RenderSpritesInfo Info;
 		readonly string faction;
-		readonly List<AnimationWrapper> anims = [];
+		readonly List<AnimationWrapper> anims = new();
 		string cachedImage;
 
 		public static Func<WAngle> MakeFacingFunc(Actor self)

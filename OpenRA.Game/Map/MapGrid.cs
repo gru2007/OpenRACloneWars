@@ -10,9 +10,9 @@
 #endregion
 
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
+using OpenRA.Primitives;
 using OpenRA.Traits;
 
 namespace OpenRA
@@ -25,8 +25,8 @@ namespace OpenRA
 	public readonly struct CellRamp
 	{
 		public readonly int CenterHeightOffset;
-		public readonly ImmutableArray<WVec> Corners;
-		public readonly ImmutableArray<ImmutableArray<WVec>> Polygons;
+		public readonly WVec[] Corners;
+		public readonly WVec[][] Polygons;
 		public readonly WRot Orientation;
 
 		public CellRamp(MapGridType type, WRot orientation,
@@ -37,43 +37,43 @@ namespace OpenRA
 			Orientation = orientation;
 			if (type == MapGridType.RectangularIsometric)
 			{
-				Corners =
-				[
+				Corners = new[]
+				{
 					new WVec(0, -724, 724 * (int)tl),
 					new WVec(724, 0, 724 * (int)tr),
 					new WVec(0, 724, 724 * (int)br),
 					new WVec(-724, 0, 724 * (int)bl),
-				];
+				};
 			}
 			else
 			{
-				Corners =
-				[
+				Corners = new[]
+				{
 					new WVec(-512, -512, 512 * (int)tl),
 					new WVec(512, -512, 512 * (int)tr),
 					new WVec(512, 512, 512 * (int)br),
 					new WVec(-512, 512, 512 * (int)bl)
-				];
+				};
 			}
 
 			if (split == RampSplit.X)
 			{
-				Polygons =
-				[
-					[Corners[0], Corners[1], Corners[3]],
-					[Corners[1], Corners[2], Corners[3]]
-				];
+				Polygons = new[]
+				{
+					new[] { Corners[0], Corners[1], Corners[3] },
+					new[] { Corners[1], Corners[2], Corners[3] }
+				};
 			}
 			else if (split == RampSplit.Y)
 			{
-				Polygons =
-				[
-					[Corners[0], Corners[1], Corners[2]],
-					[Corners[0], Corners[2], Corners[3]]
-				];
+				Polygons = new[]
+				{
+					new[] { Corners[0], Corners[1], Corners[2] },
+					new[] { Corners[0], Corners[2], Corners[3] }
+				};
 			}
 			else
-				Polygons = [Corners];
+				Polygons = new[] { Corners };
 
 			// Initial value must be assigned before HeightOffset can be called
 			CenterHeightOffset = 0;
@@ -84,11 +84,10 @@ namespace OpenRA
 		{
 			// Enumerate over the polygons, assuming that they are triangles
 			// If the ramp is not split we will take the first three vertices of the corners as a valid triangle
-			int u;
-			int v;
-			ImmutableArray<WVec> p;
-			var i = 0;
-			do
+			WVec[] p = null;
+			var u = 0;
+			var v = 0;
+			for (var i = 0; i < Polygons.Length; i++)
 			{
 				p = Polygons[i];
 				u = ((p[1].Y - p[2].Y) * (dX - p[2].X) - (p[1].X - p[2].X) * (dY - p[2].Y)) / 1024;
@@ -97,10 +96,7 @@ namespace OpenRA
 				// Point is within the triangle if 0 <= u,v <= 1024
 				if (u >= 0 && u <= 1024 && v >= 0 && v <= 1024)
 					break;
-
-				i++;
 			}
-			while (i < Polygons.Length);
 
 			// Calculate w from u,v and interpolate height
 			return (u * p[0].Z + v * p[1].Z + (1024 - u - v) * p[2].Z) / 1024;
@@ -110,6 +106,7 @@ namespace OpenRA
 	public class MapGrid : IGlobalModData
 	{
 		public readonly MapGridType Type = MapGridType.Rectangular;
+		public readonly Size TileSize = new(24, 24);
 		public readonly byte MaximumTerrainHeight = 0;
 		public readonly SubCell DefaultSubCell = (SubCell)byte.MaxValue;
 
@@ -117,19 +114,19 @@ namespace OpenRA
 
 		public readonly bool EnableDepthBuffer = false;
 
-		public readonly ImmutableArray<WVec> SubCellOffsets =
-		[
+		public readonly WVec[] SubCellOffsets =
+		{
 			new(0, 0, 0),       // full cell - index 0
 			new(-299, -256, 0), // top left - index 1
 			new(256, -256, 0),  // top right - index 2
 			new(0, 0, 0),       // center - index 3
 			new(-299, 256, 0),  // bottom left - index 4
 			new(256, 256, 0),   // bottom right - index 5
-		];
+		};
 
-		public ImmutableArray<CellRamp> Ramps { get; }
+		public CellRamp[] Ramps { get; }
 
-		internal readonly ImmutableArray<ImmutableArray<CVec>> TilesByDistance;
+		internal readonly CVec[][] TilesByDistance;
 
 		public int TileScale { get; }
 
@@ -162,9 +159,8 @@ namespace OpenRA
 			var halfBackward = -halfForward;
 
 			// Slope types are hardcoded following the convention from the TS and RA2 map format
-			Ramps =
-			[
-
+			Ramps = new[]
+			{
 				// Flat
 				new CellRamp(Type, WRot.None),
 
@@ -197,16 +193,16 @@ namespace OpenRA
 				new CellRamp(Type, WRot.None, tl: RampCornerHeight.Half, br: RampCornerHeight.Half, split: RampSplit.Y),
 				new CellRamp(Type, WRot.None, tr: RampCornerHeight.Half, bl: RampCornerHeight.Half, split: RampSplit.X),
 				new CellRamp(Type, WRot.None, tl: RampCornerHeight.Half, br: RampCornerHeight.Half, split: RampSplit.X),
-			];
+			};
 
 			TilesByDistance = CreateTilesByDistance();
 		}
 
-		ImmutableArray<ImmutableArray<CVec>> CreateTilesByDistance()
+		CVec[][] CreateTilesByDistance()
 		{
 			var ts = new List<CVec>[MaximumTileSearchRange + 1];
 			for (var i = 0; i < MaximumTileSearchRange + 1; i++)
-				ts[i] = [];
+				ts[i] = new List<CVec>();
 
 			for (var j = -MaximumTileSearchRange; j <= MaximumTileSearchRange; j++)
 				for (var i = -MaximumTileSearchRange; i <= MaximumTileSearchRange; i++)
@@ -238,7 +234,7 @@ namespace OpenRA
 				});
 			}
 
-			return ts.Select(list => list.ToImmutableArray()).ToImmutableArray();
+			return ts.Select(list => list.ToArray()).ToArray();
 		}
 
 		public WVec OffsetOfSubCell(SubCell subCell)

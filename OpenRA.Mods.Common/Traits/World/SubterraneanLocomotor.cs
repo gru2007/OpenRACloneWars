@@ -9,7 +9,7 @@
  */
 #endregion
 
-using System.Collections.Frozen;
+using System.Collections.Generic;
 using OpenRA.Traits;
 
 namespace OpenRA.Mods.Common.Traits
@@ -22,7 +22,7 @@ namespace OpenRA.Mods.Common.Traits
 		public readonly short SubterraneanTransitionCost = 0;
 
 		[Desc("The terrain types that this actor can transition on. Leave empty to allow any.")]
-		public readonly FrozenSet<string> SubterraneanTransitionTerrainTypes = FrozenSet<string>.Empty;
+		public readonly HashSet<string> SubterraneanTransitionTerrainTypes = new();
 
 		[Desc("Can this actor transition on slopes?")]
 		public readonly bool SubterraneanTransitionOnRamps = false;

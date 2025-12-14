@@ -9,8 +9,8 @@
  */
 #endregion
 
-using System.Collections.Frozen;
-using System.Collections.Immutable;
+using System;
+using System.Collections.Generic;
 using OpenRA.Traits;
 
 namespace OpenRA.Mods.Common.Traits
@@ -22,10 +22,10 @@ namespace OpenRA.Mods.Common.Traits
 		public readonly int Multiplier = 100;
 
 		[Desc("Only apply this time change if owner has these prerequisites.")]
-		public readonly ImmutableArray<string> Prerequisites = [];
+		public readonly string[] Prerequisites = Array.Empty<string>();
 
 		[Desc("Queues that this time will apply.")]
-		public readonly FrozenSet<string> Queue = FrozenSet<string>.Empty;
+		public readonly HashSet<string> Queue = new();
 
 		int IProductionTimeModifierInfo.GetProductionTimeModifier(TechTree techTree, string queue)
 		{

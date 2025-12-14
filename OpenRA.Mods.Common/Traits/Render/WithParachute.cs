@@ -11,6 +11,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using OpenRA.Graphics;
 using OpenRA.Mods.Common.Graphics;
 using OpenRA.Primitives;
@@ -168,39 +169,39 @@ namespace OpenRA.Mods.Common.Traits.Render
 		IEnumerable<IRenderable> IRender.Render(Actor self, WorldRenderer wr)
 		{
 			if (info.ShadowImage == null)
-				return [];
+				return Enumerable.Empty<IRenderable>();
 
 			if (IsTraitDisabled || self.IsDead || !self.IsInWorld)
-				return [];
+				return Enumerable.Empty<IRenderable>();
 
 			if (self.World.FogObscures(self))
-				return [];
+				return Enumerable.Empty<IRenderable>();
 
 			var dat = self.World.Map.DistanceAboveTerrain(self.CenterPosition);
 			var pos = self.CenterPosition - new WVec(0, 0, dat.Length);
 			var palette = wr.Palette(info.Palette);
 			var alpha = shadow.CurrentSequence.GetAlpha(shadow.CurrentFrame);
 			var tintModifiers = shadow.CurrentSequence.IgnoreWorldTint ? TintModifiers.ReplaceColor | TintModifiers.IgnoreWorldTint : TintModifiers.ReplaceColor;
-			return
-			[
+			return new IRenderable[]
+			{
 				new SpriteRenderable(shadow.Image, pos, info.ShadowOffset, info.ShadowZOffset, palette, 1, shadowAlpha * alpha, shadowColor, tintModifiers, true)
-			];
+			};
 		}
 
 		IEnumerable<Rectangle> IRender.ScreenBounds(Actor self, WorldRenderer wr)
 		{
 			if (info.ShadowImage == null)
-				return [];
+				return Enumerable.Empty<Rectangle>();
 
 			if (IsTraitDisabled || self.IsDead || !self.IsInWorld)
-				return [];
+				return Enumerable.Empty<Rectangle>();
 
 			if (self.World.FogObscures(self))
-				return [];
+				return Enumerable.Empty<Rectangle>();
 
 			var dat = self.World.Map.DistanceAboveTerrain(self.CenterPosition);
 			var pos = self.CenterPosition - new WVec(0, 0, dat.Length);
-			return [shadow.ScreenBounds(wr, pos, info.ShadowOffset)];
+			return new Rectangle[] { shadow.ScreenBounds(wr, pos, info.ShadowOffset) };
 		}
 	}
 }

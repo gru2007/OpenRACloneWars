@@ -9,8 +9,6 @@
 
 Difficulty = Map.LobbyOptionOrDefault("difficulty", "normal")
 
---- Prepare basic messages for a player's win, loss, or objective updates.
----@param player player
 InitObjectives = function(player)
 	Trigger.OnObjectiveCompleted(player, function(p, id)
 		Media.DisplayMessage(p.GetObjectiveDescription(id), UserInterface.GetFluentMessage("objective-completed"))
@@ -33,10 +31,6 @@ InitObjectives = function(player)
 end
 
 AttackAircraftTargets = { }
---- Order an aircraft to seek and attack an enemy player's units whenever idle.
---- Each target is focused until it can no longer be attacked.
----@param aircraft actor
----@param enemyPlayer player
 InitializeAttackAircraft = function(aircraft, enemyPlayer)
 	Trigger.OnIdle(aircraft, function()
 		local actorId = tostring(aircraft)
@@ -56,10 +50,6 @@ InitializeAttackAircraft = function(aircraft, enemyPlayer)
 	end)
 end
 
---- Return a random enemy target for an actor.
----@param unit actor Actor to be given a target.
----@param enemyPlayer player Player to be targeted.
----@return actor|nil
 ChooseRandomTarget = function(unit, enemyPlayer)
 	local target = nil
 	local enemies = Utils.Where(enemyPlayer.GetActors(), function(self)
@@ -71,9 +61,6 @@ ChooseRandomTarget = function(unit, enemyPlayer)
 	return target
 end
 
---- Call a function when one of the actors in a group is damaged. The callback function will be called as func(self: actor, attacker: actor, damage: integer).
----@param actors actor[]
----@param func fun(self: actor, attacker: actor, damage: integer)
 OnAnyDamaged = function(actors, func)
 	Utils.Do(actors, function(actor)
 		Trigger.OnDamaged(actor, func)

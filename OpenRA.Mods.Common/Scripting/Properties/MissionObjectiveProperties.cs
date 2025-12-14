@@ -68,8 +68,7 @@ namespace OpenRA.Mods.Common.Scripting
 		[ScriptActorPropertyActivity]
 		[Desc("Mark an objective as failed.  This needs the objective ID returned " +
 			"by AddObjective as argument.  Secondary objectives do not have any " +
-			"influence whatsoever on the outcome of the game. " +
-			"It is possible to mark a completed objective as a failure.")]
+			"influence whatsoever on the outcome of the game.")]
 		public void MarkFailedObjective(int id)
 		{
 			if (id < 0 || id >= mo.Objectives.Count)

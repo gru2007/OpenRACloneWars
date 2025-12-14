@@ -87,20 +87,7 @@ namespace OpenRA.Mods.Common.Widgets
 		}
 
 		void IEditorBrush.TickRender(WorldRenderer wr, Actor self) { }
-		IEnumerable<IRenderable> IEditorBrush.RenderAboveShroud(Actor self, WorldRenderer wr)
-		{
-			if (PastePreviewPosition != null)
-			{
-				var preview = EditorBlit.PreviewBlitSource(
-					clipboard,
-					getCopyFilters(),
-					PastePreviewPosition.Value - Region.TopLeft,
-					wr);
-				foreach (var renderable in preview)
-					yield return renderable;
-			}
-		}
-
+		IEnumerable<IRenderable> IEditorBrush.RenderAboveShroud(Actor self, WorldRenderer wr) { yield break; }
 		IEnumerable<IRenderable> IEditorBrush.RenderAnnotations(Actor self, WorldRenderer wr)
 		{
 			if (PastePreviewPosition != null)
@@ -120,14 +107,8 @@ namespace OpenRA.Mods.Common.Widgets
 
 	sealed class CopyPasteEditorAction : IEditorAction
 	{
-		[FluentReference("tiles")]
+		[FluentReference("amount")]
 		const string CopiedTiles = "notification-copied-tiles";
-
-		[FluentReference("actors")]
-		const string CopiedActors = "notification-copied-actors";
-
-		[FluentReference("tiles", "actors")]
-		const string CopiedTilesAndActors = "notification-copied-tiles-actors";
 
 		public string Text { get; }
 
@@ -137,15 +118,7 @@ namespace OpenRA.Mods.Common.Widgets
 		{
 			this.editorBlit = editorBlit;
 
-			var actors = editorBlit.ActorCount();
-			var tiles = editorBlit.TileCount();
-
-			if (tiles > 0 && actors == 0)
-				Text = FluentProvider.GetMessage(CopiedTiles, "tiles", tiles);
-			else if (tiles == 0 && actors > 0)
-				Text = FluentProvider.GetMessage(CopiedActors, "actors", actors);
-			else
-				Text = FluentProvider.GetMessage(CopiedTilesAndActors, "tiles", tiles, "actors", actors);
+			Text = FluentProvider.GetMessage(CopiedTiles, "amount", editorBlit.TileCount());
 		}
 
 		public void Execute()

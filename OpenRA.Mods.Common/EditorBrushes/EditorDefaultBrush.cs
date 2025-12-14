@@ -11,12 +11,11 @@
 
 using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
+using System.Linq;
 using OpenRA.Graphics;
 using OpenRA.Mods.Common.EditorBrushes;
 using OpenRA.Mods.Common.Graphics;
 using OpenRA.Mods.Common.Traits;
-using OpenRA.Support;
 using OpenRA.Widgets;
 
 namespace OpenRA.Mods.Common.Widgets
@@ -385,8 +384,8 @@ namespace OpenRA.Mods.Common.Widgets
 			if (blitFilters.HasFlag(MapBlitFilters.Actors))
 			{
 				// Clear any existing actors in the paste cells.
-				using (new PerfTimer("RemoveActors", 1))
-					editorActorLayer.RemoveRegion(area.CellCoords);
+				foreach (var regionActor in editorActorLayer.PreviewsInCellRegion(area.CellCoords).ToList())
+					editorActorLayer.Remove(regionActor);
 			}
 
 			foreach (var tileKeyValuePair in editorBlitSource.Tiles)
@@ -433,7 +432,6 @@ namespace OpenRA.Mods.Common.Widgets
 			if (blitFilters.HasFlag(MapBlitFilters.Actors))
 			{
 				// Create copies of the original actors, update their locations, and place.
-				var copies = new List<ActorReference>(editorBlitSource.Actors.Count);
 				foreach (var actorKeyValuePair in editorBlitSource.Actors)
 				{
 					var copy = actorKeyValuePair.Value.Export();
@@ -447,10 +445,8 @@ namespace OpenRA.Mods.Common.Widgets
 						copy.Add(new LocationInit(locationInit.Value));
 					}
 
-					copies.Add(copy);
+					editorActorLayer.Add(copy);
 				}
-
-				editorActorLayer.AddRange(CollectionsMarshal.AsSpan(copies));
 			}
 		}
 	}

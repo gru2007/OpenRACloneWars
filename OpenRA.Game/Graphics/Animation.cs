@@ -10,7 +10,6 @@
 #endregion
 
 using System;
-using System.Collections.Immutable;
 using System.Linq;
 using OpenRA.Primitives;
 using OpenRA.Support;
@@ -74,10 +73,10 @@ namespace OpenRA.Graphics
 					shadow, pos, offset - new WVec(0, 0, height), CurrentSequence.ShadowZOffset + zOffset + height, palette,
 					CurrentSequence.Scale, 1f, float3.Ones, tintModifiers,
 					true, rotation);
-				return [shadowRenderable, imageRenderable];
+				return new IRenderable[] { shadowRenderable, imageRenderable };
 			}
 
-			return [imageRenderable];
+			return new IRenderable[] { imageRenderable };
 		}
 
 		public IRenderable[] RenderUI(WorldRenderer wr, int2 pos, in WVec offset, int zOffset, PaletteReference palette, float scale = 1f, float rotation = 0f)
@@ -93,10 +92,10 @@ namespace OpenRA.Graphics
 			{
 				var shadowPos = pos - new int2((int)(scale * shadow.Size.X / 2), (int)(scale * shadow.Size.Y / 2));
 				var shadowRenderable = new UISpriteRenderable(shadow, WPos.Zero + offset, shadowPos, CurrentSequence.ShadowZOffset + zOffset, palette, scale, 1f, rotation);
-				return [shadowRenderable, imageRenderable];
+				return new IRenderable[] { shadowRenderable, imageRenderable };
 			}
 
-			return [imageRenderable];
+			return new IRenderable[] { imageRenderable };
 		}
 
 		public Rectangle ScreenBounds(WorldRenderer wr, WPos pos, in WVec offset)
@@ -251,9 +250,9 @@ namespace OpenRA.Graphics
 			return sequences.GetSequence(Name, sequenceName);
 		}
 
-		public string GetRandomExistingSequence(ImmutableArray<string> sequences, MersenneTwister random)
+		public string GetRandomExistingSequence(string[] sequences, MersenneTwister random)
 		{
-			return sequences.Where(HasSequence).RandomOrDefault(random);
+			return sequences.Where(s => HasSequence(s)).RandomOrDefault(random);
 		}
 	}
 }

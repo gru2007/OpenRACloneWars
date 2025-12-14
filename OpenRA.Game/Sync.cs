@@ -10,7 +10,6 @@
 #endregion
 
 using System;
-using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -41,7 +40,7 @@ namespace OpenRA
 			return GetHashFunction(sync)(sync);
 		}
 
-		static readonly FrozenDictionary<Type, MethodInfo> CustomHashFunctions = new Dictionary<Type, MethodInfo>
+		static readonly Dictionary<Type, MethodInfo> CustomHashFunctions = new()
 		{
 			{ typeof(int2), ((Func<int2, int>)HashInt2).Method },
 			{ typeof(CPos), ((Func<CPos, int>)HashCPos).Method },
@@ -54,7 +53,7 @@ namespace OpenRA
 			{ typeof(Actor), ((Func<Actor, int>)HashActor).Method },
 			{ typeof(Player), ((Func<Player, int>)HashPlayer).Method },
 			{ typeof(Target), ((Func<Target, int>)HashTarget).Method },
-		}.ToFrozenDictionary();
+		};
 
 		static void EmitSyncOpcodes(Type type, ILGenerator il)
 		{
@@ -77,7 +76,7 @@ namespace OpenRA
 
 		static Func<object, int> GenerateHashFunc(Type t)
 		{
-			var d = new DynamicMethod($"hash_{t.Name}", typeof(int), [typeof(object)], t);
+			var d = new DynamicMethod($"hash_{t.Name}", typeof(int), new Type[] { typeof(object) }, t);
 			var il = d.GetILGenerator();
 			var this_ = il.DeclareLocal(t).LocalIndex;
 			il.Emit(OpCodes.Ldarg_0);

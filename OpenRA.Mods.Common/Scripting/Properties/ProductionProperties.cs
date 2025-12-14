@@ -84,7 +84,7 @@ namespace OpenRA.Mods.Common.Scripting
 			get
 			{
 				if (rp.Path.Count > 0)
-					return rp.Path[^1];
+					return rp.Path.Last();
 
 				var exit = Self.NearestExitOrDefault(Self.CenterPosition);
 				if (exit != null)
@@ -92,7 +92,7 @@ namespace OpenRA.Mods.Common.Scripting
 
 				return Self.Location;
 			}
-			set => rp.Path = [value];
+			set => rp.Path = new List<CPos> { value };
 		}
 	}
 
@@ -211,9 +211,9 @@ namespace OpenRA.Mods.Common.Scripting
 		public ClassicProductionQueueProperties(ScriptContext context, Player player)
 			: base(context, player)
 		{
-			productionHandlers = [];
+			productionHandlers = new Dictionary<string, Action<Actor, Actor>>();
 
-			queues = [];
+			queues = new Dictionary<string, ClassicProductionQueue>();
 			foreach (var q in player.PlayerActor.TraitsImplementing<ClassicProductionQueue>().Where(q => q.Enabled))
 				queues.Add(q.Info.Type, q);
 

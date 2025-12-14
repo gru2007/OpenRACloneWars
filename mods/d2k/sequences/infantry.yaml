@@ -79,7 +79,6 @@ light_inf:
 		Length: 12
 		Tick: 800
 		ZOffset: -511
-		Remap: 00000000
 	icon:
 		Filename: DATA.R16
 		Start: 4272
@@ -166,7 +165,6 @@ trooper:
 		Length: 8
 		Tick: 800
 		ZOffset: -511
-		Remap: 00000000
 	icon:
 		Filename: DATA.R16
 		Start: 4273
@@ -242,7 +240,6 @@ engineer:
 		Length: 8
 		Tick: 800
 		ZOffset: -511
-		Remap: 00000000
 	icon:
 		Filename: DATA.R16
 		Start: 4274
@@ -334,7 +331,6 @@ thumper:
 		Length: 8
 		Tick: 800
 		ZOffset: -511
-		Remap: 00000000
 	icon:
 		Filename: DATA.R16
 		Start: 4275
@@ -422,7 +418,6 @@ fremen:
 		Length: 8
 		Tick: 800
 		ZOffset: -511
-		Remap: 00000000
 	icon:
 		Filename: DATA.R16
 		Start: 4293
@@ -472,12 +467,6 @@ saboteur:
 		Facings: -8
 		Transpose: true
 		Tick: 120
-	active:
-		Filename: DATA.R16
-		Start: 3839
-		Length: 14
-		Tick: 80
-		BlendMode: Additive
 	die1:
 		Filename: DATA.R16
 		Frames: 2325, 2332, 2339, 2346, 2353, 2360, 2367, 2374, 2381, 2383, 2385, 2387
@@ -504,7 +493,6 @@ saboteur:
 		Length: 8
 		Tick: 800
 		ZOffset: -511
-		Remap: 00000000
 	icon:
 		Filename: DATA.R16
 		Start: 4295
@@ -594,7 +582,6 @@ sardaukar:
 		Length: 8
 		Tick: 800
 		ZOffset: -511
-		Remap: 00000000
 	icon:
 		Filename: DATA.R16
 		Start: 4276
@@ -652,7 +639,6 @@ grenadier:
 		Frames: 2698, 2705, 2712, 2719, 2726, 2733, 2740, 2747
 		Tick: 800
 		ZOffset: -511
-		Remap: 00000000
 	prone-stand:
 		Filename: DATA.R16
 		Start: 2622

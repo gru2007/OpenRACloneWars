@@ -13,6 +13,7 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -148,7 +149,7 @@ namespace OpenRA
 
 		public static string ReadASCII(this Stream s, int length)
 		{
-			var buffer = length < 128 ? stackalloc byte[length] : new byte[length];
+			Span<byte> buffer = length < 128 ? stackalloc byte[length] : new byte[length];
 			s.ReadBytes(buffer);
 			return Encoding.ASCII.GetString(buffer);
 		}
@@ -177,9 +178,13 @@ namespace OpenRA
 				if (s.CanSeek)
 					return s.ReadBytes((int)(s.Length - s.Position));
 
-				using var ms = new MemoryStream();
-				s.CopyTo(ms);
-				return ms.Capacity == ms.Length ? ms.GetBuffer() : ms.ToArray();
+				var bytes = new List<byte>();
+				var buffer = new byte[1024];
+				int count;
+				while ((count = s.Read(buffer, 0, buffer.Length)) > 0)
+					bytes.AddRange(buffer.Take(count));
+
+				return bytes.ToArray();
 			}
 		}
 
@@ -206,7 +211,7 @@ namespace OpenRA
 				{
 					var offset = 0;
 					int read;
-					while ((read = sr.Read(buffer, offset, buffer.Length - offset)) != 0)
+					while ((read = sr.ReadBlock(buffer, offset, buffer.Length - offset)) != 0)
 					{
 						offset += read;
 
@@ -258,7 +263,7 @@ namespace OpenRA
 			if (length > maxLength)
 				throw new InvalidOperationException($"The length of the string ({length}) is longer than the maximum allowed ({maxLength}).");
 
-			var buffer = length < 128 ? stackalloc byte[length] : new byte[length];
+			Span<byte> buffer = length < 128 ? stackalloc byte[length] : new byte[length];
 			s.ReadBytes(buffer);
 			return encoding.GetString(buffer);
 		}
@@ -273,7 +278,7 @@ namespace OpenRA
 			if (!string.IsNullOrEmpty(text))
 				bytes = encoding.GetBytes(text);
 			else
-				bytes = [];
+				bytes = Array.Empty<byte>();
 
 			s.Write(bytes.Length);
 			s.Write(bytes);

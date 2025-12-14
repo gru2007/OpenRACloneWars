@@ -10,7 +10,6 @@
 #endregion
 
 using System;
-using System.Collections.Frozen;
 using System.Collections.Generic;
 using OpenRA.Mods.Common.Traits;
 using OpenRA.Traits;
@@ -43,7 +42,7 @@ namespace OpenRA.Mods.D2k.Traits
 			All = Left | Top | Right | Bottom | TopLeft | TopRight | BottomLeft | BottomRight
 		}
 
-		public static readonly FrozenDictionary<ClearSides, int> SpriteMap = new Dictionary<ClearSides, int>
+		public static readonly Dictionary<ClearSides, int> SpriteMap = new()
 		{
 			{ ClearSides.Left | ClearSides.Top | ClearSides.TopLeft | ClearSides.TopRight | ClearSides.BottomLeft | ClearSides.BottomRight, 2 },
 			{ ClearSides.Top | ClearSides.Right | ClearSides.TopLeft | ClearSides.TopRight | ClearSides.BottomLeft | ClearSides.BottomRight, 3 },
@@ -91,7 +90,7 @@ namespace OpenRA.Mods.D2k.Traits
 			{ ClearSides.Right | ClearSides.TopLeft | ClearSides.TopRight | ClearSides.BottomRight, 47 },
 			{ ClearSides.Bottom | ClearSides.TopRight | ClearSides.BottomLeft | ClearSides.BottomRight, 48 },
 			{ ClearSides.Bottom | ClearSides.TopLeft | ClearSides.BottomLeft | ClearSides.BottomRight, 49 },
-		}.ToFrozenDictionary();
+		};
 
 		public D2kResourceRenderer(Actor self, D2kResourceRendererInfo info)
 			: base(self, info) { }

@@ -21,13 +21,23 @@ namespace OpenRA.Mods.D2k.PackageLoaders
 	{
 		sealed class D2kSoundResources : IReadOnlyPackage
 		{
-			readonly record struct Entry(uint Offset, uint Length);
+			readonly struct Entry
+			{
+				public readonly uint Offset;
+				public readonly uint Length;
+
+				public Entry(uint offset, uint length)
+				{
+					Offset = offset;
+					Length = length;
+				}
+			}
 
 			public string Name { get; }
 			public IEnumerable<string> Contents => index.Keys;
 
 			readonly Stream s;
-			readonly Dictionary<string, Entry> index = [];
+			readonly Dictionary<string, Entry> index = new();
 
 			public D2kSoundResources(Stream s, string filename)
 			{

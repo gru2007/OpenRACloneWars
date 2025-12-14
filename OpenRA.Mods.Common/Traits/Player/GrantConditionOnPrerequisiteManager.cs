@@ -10,7 +10,6 @@
 #endregion
 
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 using OpenRA.Traits;
 
@@ -26,7 +25,7 @@ namespace OpenRA.Mods.Common.Traits
 	public class GrantConditionOnPrerequisiteManager : ITechTreeElement
 	{
 		readonly Actor self;
-		readonly Dictionary<string, List<(Actor Actor, GrantConditionOnPrerequisite GrantConditionOnPrerequisite)>> upgradables = [];
+		readonly Dictionary<string, List<(Actor Actor, GrantConditionOnPrerequisite GrantConditionOnPrerequisite)>> upgradables = new();
 		readonly TechTree techTree;
 
 		public GrantConditionOnPrerequisiteManager(ActorInitializer init)
@@ -35,17 +34,17 @@ namespace OpenRA.Mods.Common.Traits
 			techTree = self.Trait<TechTree>();
 		}
 
-		static string MakeKey(ImmutableArray<string> prerequisites)
+		static string MakeKey(string[] prerequisites)
 		{
-			return "condition_" + string.Join("_", prerequisites.Order());
+			return "condition_" + string.Join("_", prerequisites.OrderBy(a => a));
 		}
 
-		public void Register(Actor actor, GrantConditionOnPrerequisite u, ImmutableArray<string> prerequisites)
+		public void Register(Actor actor, GrantConditionOnPrerequisite u, string[] prerequisites)
 		{
 			var key = MakeKey(prerequisites);
 			if (!upgradables.TryGetValue(key, out var list))
 			{
-				upgradables.Add(key, list = []);
+				upgradables.Add(key, list = new List<(Actor, GrantConditionOnPrerequisite)>());
 				techTree.Add(key, prerequisites, 0, this);
 			}
 
@@ -55,7 +54,7 @@ namespace OpenRA.Mods.Common.Traits
 			u.PrerequisitesUpdated(actor, techTree.HasPrerequisites(prerequisites));
 		}
 
-		public void Unregister(Actor actor, GrantConditionOnPrerequisite u, ImmutableArray<string> prerequisites)
+		public void Unregister(Actor actor, GrantConditionOnPrerequisite u, string[] prerequisites)
 		{
 			var key = MakeKey(prerequisites);
 			var list = upgradables[key];

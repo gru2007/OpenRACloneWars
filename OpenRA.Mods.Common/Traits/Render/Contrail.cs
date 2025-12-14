@@ -10,6 +10,7 @@
 #endregion
 
 using System.Collections.Generic;
+using System.Linq;
 using OpenRA.Graphics;
 using OpenRA.Mods.Common.Graphics;
 using OpenRA.Primitives;
@@ -97,9 +98,9 @@ namespace OpenRA.Mods.Common.Traits
 		IEnumerable<IRenderable> IRender.Render(Actor self, WorldRenderer wr)
 		{
 			if (IsTraitDisabled)
-				return [];
+				return Enumerable.Empty<IRenderable>();
 
-			return [trail];
+			return new IRenderable[] { trail };
 		}
 
 		IEnumerable<Rectangle> IRender.ScreenBounds(Actor self, WorldRenderer wr)

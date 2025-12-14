@@ -33,7 +33,7 @@ namespace OpenRA.Primitives
 
 		public ObservableList()
 		{
-			innerList = [];
+			innerList = new List<T>();
 		}
 
 		public virtual void Add(T item)

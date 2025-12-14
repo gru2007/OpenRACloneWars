@@ -10,7 +10,7 @@
 #endregion
 
 using System;
-using System.Collections.Frozen;
+using System.Collections.Generic;
 using OpenRA.Traits;
 
 namespace OpenRA.Mods.Common.Traits
@@ -31,7 +31,7 @@ namespace OpenRA.Mods.Common.Traits
 		public readonly int AttackPanicChance = 20;
 
 		[Desc("The terrain types that this actor should avoid running on to while panicking.")]
-		public readonly FrozenSet<string> AvoidTerrainTypes = FrozenSet<string>.Empty;
+		public readonly HashSet<string> AvoidTerrainTypes = new();
 
 		[SequenceReference(prefix: true)]
 		public readonly string PanicSequencePrefix = "panic-";

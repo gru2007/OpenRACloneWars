@@ -71,10 +71,10 @@ namespace OpenRA.Mods.Cnc.Traits
 
 			infiltrator.Owner.PlayerActor.TraitOrDefault<PlayerExperience>()?.GiveExperience(info.PlayerExperience);
 
-			infiltrator.World.AddFrameEndTask(w => w.CreateActor(info.Proxy,
-			[
+			infiltrator.World.AddFrameEndTask(w => w.CreateActor(info.Proxy, new TypeDictionary
+			{
 				new OwnerInit(infiltrator.Owner)
-			]));
+			}));
 		}
 	}
 }

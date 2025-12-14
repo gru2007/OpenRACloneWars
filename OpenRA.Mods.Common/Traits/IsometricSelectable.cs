@@ -10,7 +10,6 @@
 #endregion
 
 using System;
-using System.Collections.Immutable;
 using OpenRA.Graphics;
 using OpenRA.Primitives;
 using OpenRA.Traits;
@@ -24,14 +23,14 @@ namespace OpenRA.Mods.Common.Traits
 			"If null, the engine will guess an appropriate size based on the building's footprint.",
 			"The first two numbers define the width and depth of the footprint rectangle.",
 			"The (optional) second two numbers define an x and y offset from the actor center.")]
-		public readonly ImmutableArray<int> Bounds = default;
+		public readonly int[] Bounds = null;
 
 		[Desc("Height above the footprint for the top of the interaction rectangle.")]
 		public readonly int Height = 24;
 
 		[Desc("Defines a custom rectangle for Decorations (e.g. the selection box).",
 			"If null, Bounds will be used instead.")]
-		public readonly ImmutableArray<int> DecorationBounds = default;
+		public readonly int[] DecorationBounds = null;
 
 		[Desc("Defines a custom height for Decorations (e.g. the selection box).",
 			"If < 0, Height will be used instead.",
@@ -61,12 +60,12 @@ namespace OpenRA.Mods.Common.Traits
 
 		public virtual void RulesetLoaded(Ruleset rules, ActorInfo ai)
 		{
-			var grid = Game.ModData.GetOrCreate<MapGrid>();
+			var grid = Game.ModData.Manifest.Get<MapGrid>();
 			if (grid.Type != MapGridType.RectangularIsometric)
-				throw new YamlException($"{nameof(IsometricSelectable)} can only be used in mods that use the {nameof(MapGridType.RectangularIsometric)} MapGrid type.");
+				throw new YamlException("IsometricSelectable can only be used in mods that use the RectangularIsometric MapGrid type.");
 
 			if (Height == 0 && DecorationHeight <= 0)
-				throw new YamlException($"{nameof(DecorationHeight)} must be defined and greater than 0 if Height is 0.");
+				throw new YamlException("DecorationHeight must be defined and greater than 0 if Height is 0.");
 		}
 	}
 
@@ -83,7 +82,7 @@ namespace OpenRA.Mods.Common.Traits
 			buildingInfo = self.Info.TraitInfo<BuildingInfo>();
 		}
 
-		Polygon Bounds(Actor self, WorldRenderer wr, ImmutableArray<int> bounds, int height)
+		Polygon Bounds(Actor self, WorldRenderer wr, int[] bounds, int height)
 		{
 			int2 left, right, top, bottom;
 			if (bounds != null)
@@ -117,10 +116,10 @@ namespace OpenRA.Mods.Common.Traits
 			}
 
 			if (height == 0)
-				return new Polygon([top, left, bottom, right]);
+				return new Polygon(new[] { top, left, bottom, right });
 
 			var h = new int2(0, height);
-			return new Polygon([top - h, left - h, left, bottom, right, right - h]);
+			return new Polygon(new[] { top - h, left - h, left, bottom, right, right - h });
 		}
 
 		public Polygon Bounds(Actor self, WorldRenderer wr)
@@ -130,11 +129,7 @@ namespace OpenRA.Mods.Common.Traits
 
 		public Polygon DecorationBounds(Actor self, WorldRenderer wr)
 		{
-			return Bounds(
-				self,
-				wr,
-				info.DecorationBounds != null ? info.DecorationBounds : info.Bounds,
-				info.DecorationHeight >= 0 ? info.DecorationHeight : info.Height);
+			return Bounds(self, wr, info.DecorationBounds ?? info.Bounds, info.DecorationHeight >= 0 ? info.DecorationHeight : info.Height);
 		}
 
 		Polygon IMouseBounds.MouseoverBounds(Actor self, WorldRenderer wr)

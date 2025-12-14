@@ -33,9 +33,10 @@ namespace OpenRA.Scripting
 
 	// For traitinfos that provide actor / player commands
 	[AttributeUsage(AttributeTargets.Class)]
-	public sealed class ScriptPropertyGroupAttribute(string category) : Attribute
+	public sealed class ScriptPropertyGroupAttribute : Attribute
 	{
-		public readonly string Category = category;
+		public readonly string Category;
+		public ScriptPropertyGroupAttribute(string category) { Category = category; }
 	}
 
 	// For property groups that are safe to initialize invoke on destroyed actors
@@ -45,16 +46,28 @@ namespace OpenRA.Scripting
 	[AttributeUsage(AttributeTargets.Property | AttributeTargets.Method)]
 	public sealed class ScriptActorPropertyActivityAttribute : Attribute { }
 
-	public abstract class ScriptActorProperties(ScriptContext context, Actor self)
+	public abstract class ScriptActorProperties
 	{
-		protected readonly Actor Self = self;
-		protected readonly ScriptContext Context = context;
+		protected readonly Actor Self;
+		protected readonly ScriptContext Context;
+
+		protected ScriptActorProperties(ScriptContext context, Actor self)
+		{
+			Self = self;
+			Context = context;
+		}
 	}
 
-	public abstract class ScriptPlayerProperties(ScriptContext context, Player player)
+	public abstract class ScriptPlayerProperties
 	{
-		protected readonly Player Player = player;
-		protected readonly ScriptContext Context = context;
+		protected readonly Player Player;
+		protected readonly ScriptContext Context;
+
+		protected ScriptPlayerProperties(ScriptContext context, Player player)
+		{
+			Player = player;
+			Context = context;
+		}
 	}
 
 	/// <summary>
@@ -90,7 +103,7 @@ namespace OpenRA.Scripting
 				throw new InvalidOperationException($"[ScriptGlobal] attribute not found for global table '{type}'");
 
 			Name = names[0].Name;
-			Bind([this]);
+			Bind(new[] { this });
 		}
 
 		protected IEnumerable<T> FilteredObjects<T>(IEnumerable<T> objects, LuaFunction filter)
@@ -111,9 +124,10 @@ namespace OpenRA.Scripting
 	}
 
 	[AttributeUsage(AttributeTargets.Class)]
-	public sealed class ScriptGlobalAttribute(string name) : Attribute
+	public sealed class ScriptGlobalAttribute : Attribute
 	{
-		public readonly string Name = name;
+		public readonly string Name;
+		public ScriptGlobalAttribute(string name) { Name = name; }
 	}
 
 	public sealed class ScriptContext : IDisposable
@@ -190,7 +204,7 @@ namespace OpenRA.Scripting
 
 			runtime.Globals["MaxUserScriptInstructions"] = MaxUserScriptInstructions;
 
-			using (var fn = runtime.CreateFunctionFromDelegate(LogDebugMessage))
+			using (var fn = runtime.CreateFunctionFromDelegate((Action<string>)LogDebugMessage))
 				runtime.Globals["print"] = fn;
 
 			// Register global tables
@@ -206,7 +220,7 @@ namespace OpenRA.Scripting
 				if (ctor == null)
 					throw new InvalidOperationException($"{b.Name} must define a constructor that takes a {nameof(ScriptContext)} context parameter");
 
-				var binding = (ScriptGlobal)ctor.Invoke([this]);
+				var binding = (ScriptGlobal)ctor.Invoke(new[] { this });
 				using (var obj = binding.ToLuaValue(this))
 					runtime.Globals.Add(binding.Name, obj);
 			}
@@ -327,7 +341,7 @@ namespace OpenRA.Scripting
 			return outer.SelectMany(i => i.GetGenericArguments());
 		}
 
-		static readonly object[] NoArguments = [];
+		static readonly object[] NoArguments = Array.Empty<object>();
 		Type[] FilterActorCommands(ActorInfo ai)
 		{
 			return FilterCommands(ai, knownActorCommands);

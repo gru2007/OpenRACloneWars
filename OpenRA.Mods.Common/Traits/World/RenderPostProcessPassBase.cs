@@ -14,7 +14,7 @@ using OpenRA.Traits;
 
 namespace OpenRA.Mods.Common.Traits
 {
-	public abstract class RenderPostProcessPassBase : IRenderPostProcessPass, INotifyActorDisposing
+	public abstract class RenderPostProcessPassBase : IRenderPostProcessPass
 	{
 		readonly Renderer renderer;
 		readonly IShader shader;
@@ -36,7 +36,8 @@ namespace OpenRA.Mods.Common.Traits
 				new(-1, -1)
 			};
 
-			buffer = renderer.CreateVertexBuffer(vertices, false);
+			buffer = renderer.CreateVertexBuffer<RenderPostProcessPassVertex>(6);
+			buffer.SetData(ref vertices, 6);
 		}
 
 		PostProcessPassType IRenderPostProcessPass.Type => type;
@@ -51,10 +52,5 @@ namespace OpenRA.Mods.Common.Traits
 
 		protected abstract bool Enabled { get; }
 		protected abstract void PrepareRender(WorldRenderer wr, IShader shader);
-
-		void INotifyActorDisposing.Disposing(Actor self)
-		{
-			buffer.Dispose();
-		}
 	}
 }

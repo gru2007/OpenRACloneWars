@@ -178,8 +178,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 					{
 						Log.Write("install", $"Using installer `{kv.Key}: {kv.Value.Title}` of type `{kv.Value.Type.Value}`:");
 
-						availablePackages = content.Packages
-							.Select(kvp => kvp.Value)
+						availablePackages = content.Packages.Values
 							.Where(p => p.Sources.Contains(kv.Key) && !p.IsInstalled())
 							.ToArray();
 
@@ -199,8 +198,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 					}
 				}
 
-				var missingSources = content.Packages
-					.Select(kvp => kvp.Value)
+				var missingSources = content.Packages.Values
 					.Where(p => !p.IsInstalled())
 					.SelectMany(p => p.Sources)
 					.Select(d => sources[d]);

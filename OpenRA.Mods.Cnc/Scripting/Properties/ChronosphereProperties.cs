@@ -23,8 +23,7 @@ namespace OpenRA.Mods.Cnc.Scripting
 		public ChronosphereProperties(ScriptContext context, Actor self)
 			: base(context, self) { }
 
-		[Desc("Chronoshift a group of actors. A duration of 0 will teleport the actors permanently. " +
-			"If a given cell is unexplored for this power's owner, the closest valid cell will be used instead.")]
+		[Desc("Chronoshift a group of actors. A duration of 0 will teleport the actors permanently.")]
 		public void Chronoshift([ScriptEmmyTypeOverride("{ [actor]: cpos }")] LuaTable unitLocationPairs, int duration = 0, bool killCargo = false)
 		{
 			foreach (var kv in unitLocationPairs)

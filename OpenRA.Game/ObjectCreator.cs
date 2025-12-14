@@ -22,7 +22,7 @@ namespace OpenRA
 	{
 		// .NET does not support unloading assemblies, so mod libraries will leak across mod changes.
 		// This tracks the assemblies that have been loaded since game start so that we don't load multiple copies
-		static readonly Dictionary<string, Assembly> ResolvedAssemblies = [];
+		static readonly Dictionary<string, Assembly> ResolvedAssemblies = new();
 
 		readonly Cache<string, Type> typeCache;
 		readonly Cache<Type, ConstructorInfo> ctorCache;
@@ -77,7 +77,7 @@ namespace OpenRA
 
 		public T CreateObject<T>(string className)
 		{
-			return CreateObject<T>(className, []);
+			return CreateObject<T>(className, new Dictionary<string, object>());
 		}
 
 		public T CreateObject<T>(string className, Dictionary<string, object> args)
@@ -119,7 +119,7 @@ namespace OpenRA
 
 		public object CreateBasic(Type type)
 		{
-			return type.GetConstructor([]).Invoke([]);
+			return type.GetConstructor(Array.Empty<Type>()).Invoke(Array.Empty<object>());
 		}
 
 		public object CreateUsingArgs(ConstructorInfo ctor, Dictionary<string, object> args)

@@ -22,7 +22,17 @@ namespace OpenRA.Mods.Common.FileSystem
 	{
 		public sealed class InstallShieldPackage : IReadOnlyPackage
 		{
-			public readonly record struct Entry(uint Offset, uint Length);
+			public readonly struct Entry
+			{
+				public readonly uint Offset;
+				public readonly uint Length;
+
+				public Entry(uint offset, uint length)
+				{
+					Offset = offset;
+					Length = length;
+				}
+			}
 
 			public string Name { get; }
 			public IEnumerable<string> Contents => index.Keys;
@@ -119,14 +129,7 @@ namespace OpenRA.Mods.Common.FileSystem
 
 			public IReadOnlyPackage OpenPackage(string filename, FS context)
 			{
-				var childStream = GetStream(filename);
-				if (childStream == null)
-					return null;
-
-				if (context.TryParsePackage(childStream, filename, out var package))
-					return package;
-
-				childStream.Dispose();
+				// Not implemented
 				return null;
 			}
 

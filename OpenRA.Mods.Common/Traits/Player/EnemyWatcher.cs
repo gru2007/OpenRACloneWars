@@ -43,8 +43,8 @@ namespace OpenRA.Mods.Common.Traits
 
 		public EnemyWatcher(EnemyWatcherInfo info)
 		{
-			lastKnownActorIds = [];
-			discoveredPlayers = [];
+			lastKnownActorIds = new HashSet<uint>();
+			discoveredPlayers = new HashSet<Player>();
 			this.info = info;
 			rescanInterval = 0;
 			ticksBeforeNextNotification = 0;
@@ -67,8 +67,8 @@ namespace OpenRA.Mods.Common.Traits
 			rescanInterval = info.ScanInterval;
 
 			announcedAny = false;
-			visibleActorIds = [];
-			playedNotifications = [];
+			visibleActorIds = new HashSet<uint>();
+			playedNotifications = new HashSet<string>();
 
 			foreach (var actor in self.World.ActorsWithTrait<AnnounceOnSeen>())
 			{

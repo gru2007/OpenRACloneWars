@@ -241,7 +241,7 @@ namespace OpenRA.Mods.Cnc.FileSystem
 				using (var db = new XccGlobalDatabase(mixDatabase))
 					globalFilenames = db.Entries.ToHashSet().ToArray();
 
-			package = new MixFile(s, filename, globalFilenames ?? []);
+			package = new MixFile(s, filename, globalFilenames ?? Array.Empty<string>());
 			return true;
 		}
 	}

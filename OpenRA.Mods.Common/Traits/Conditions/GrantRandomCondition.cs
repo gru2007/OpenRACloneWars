@@ -9,7 +9,6 @@
  */
 #endregion
 
-using System.Collections.Immutable;
 using OpenRA.Traits;
 
 namespace OpenRA.Mods.Common.Traits.Conditions
@@ -20,7 +19,7 @@ namespace OpenRA.Mods.Common.Traits.Conditions
 		[FieldLoader.Require]
 		[GrantedConditionReference]
 		[Desc("List of conditions to grant from.")]
-		public readonly ImmutableArray<string> Conditions = default;
+		public readonly string[] Conditions = null;
 
 		public override object Create(ActorInitializer init) { return new GrantRandomCondition(this); }
 	}

@@ -23,13 +23,13 @@ namespace OpenRA.Mods.Cnc.Traits
 		public override object Create(ActorInitializer init) { return new ChronoVortexRenderer(init.Self); }
 	}
 
-	public sealed class ChronoVortexRenderer : IRenderPostProcessPass, INotifyActorDisposing
+	public sealed class ChronoVortexRenderer : IRenderPostProcessPass
 	{
 		readonly Renderer renderer;
 		readonly IShader shader;
 		readonly IVertexBuffer<RenderPostProcessPassTexturedVertex> vortexBuffer;
 		readonly Sheet vortexSheet;
-		readonly List<(float3, int)> vortices = [];
+		readonly List<(float3, int)> vortices = new();
 
 		public ChronoVortexRenderer(Actor self)
 		{
@@ -37,6 +37,7 @@ namespace OpenRA.Mods.Cnc.Traits
 			shader = renderer.CreateShader(new RenderPostProcessPassTexturedShaderBindings("vortex"));
 
 			vortexSheet = new Sheet(SheetType.BGRA, new Size(512, 512));
+			vortexBuffer = renderer.CreateVertexBuffer<RenderPostProcessPassTexturedVertex>(288);
 			var vertices = new RenderPostProcessPassTexturedVertex[288];
 
 			var data = vortexSheet.GetData();
@@ -71,7 +72,7 @@ namespace OpenRA.Mods.Cnc.Traits
 				vertices[j++] = new RenderPostProcessPassTexturedVertex(-32, -32, tl.X, tl.Y);
 			}
 
-			vortexBuffer = renderer.CreateVertexBuffer(vertices, false);
+			vortexBuffer.SetData(ref vertices, 288);
 			vortexSheet.CommitBufferedData();
 		}
 
@@ -103,12 +104,6 @@ namespace OpenRA.Mods.Cnc.Traits
 			}
 
 			vortices.Clear();
-		}
-
-		void INotifyActorDisposing.Disposing(Actor self)
-		{
-			vortexSheet.Dispose();
-			vortexBuffer.Dispose();
 		}
 	}
 }

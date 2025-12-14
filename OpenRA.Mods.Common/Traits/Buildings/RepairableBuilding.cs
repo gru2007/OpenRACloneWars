@@ -11,7 +11,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 using OpenRA.Primitives;
 using OpenRA.Traits;
@@ -34,7 +33,7 @@ namespace OpenRA.Mods.Common.Traits
 		public readonly BitSet<DamageType> RepairDamageTypes = default;
 
 		[Desc("The percentage repair bonus applied with increasing numbers of repairers.")]
-		public readonly ImmutableArray<int> RepairBonuses = [100, 150, 175, 200, 220, 240, 260, 280, 300];
+		public readonly int[] RepairBonuses = { 100, 150, 175, 200, 220, 240, 260, 280, 300 };
 
 		// TODO: This should be replaced with a pause condition
 		[Desc("Cancel the repair state when the trait is disabled.")]
@@ -69,10 +68,10 @@ namespace OpenRA.Mods.Common.Traits
 	{
 		readonly IHealth health;
 		readonly Predicate<Player> isNotActiveAlly;
-		readonly Stack<int> repairTokens = [];
+		readonly Stack<int> repairTokens = new();
 		int remainingTicks;
 
-		public readonly List<Player> Repairers = [];
+		public readonly List<Player> Repairers = new();
 		public bool RepairActive { get; private set; }
 
 		public RepairableBuilding(Actor self, RepairableBuildingInfo info)

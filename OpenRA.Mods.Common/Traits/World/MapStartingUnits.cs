@@ -9,8 +9,8 @@
  */
 #endregion
 
-using System.Collections.Frozen;
-using System.Collections.Immutable;
+using System;
+using System.Collections.Generic;
 using OpenRA.Traits;
 
 namespace OpenRA.Mods.Common.Traits
@@ -27,7 +27,7 @@ namespace OpenRA.Mods.Common.Traits
 		public readonly string ClassName = "Unlabeled";
 
 		[Desc("Only available when selecting one of these factions.", "Leave empty for no restrictions.")]
-		public readonly FrozenSet<string> Factions = FrozenSet<string>.Empty;
+		public readonly HashSet<string> Factions = new();
 
 		[Desc("The actor at the center, usually the mobile construction vehicle.")]
 		[ActorReference]
@@ -38,7 +38,7 @@ namespace OpenRA.Mods.Common.Traits
 
 		[Desc("A group of units ready to defend or scout.")]
 		[ActorReference]
-		public readonly ImmutableArray<string> SupportActors = [];
+		public readonly string[] SupportActors = Array.Empty<string>();
 
 		[Desc("Inner radius for spawning support actors")]
 		public readonly int InnerSupportRadius = 2;

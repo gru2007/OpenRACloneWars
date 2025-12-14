@@ -74,6 +74,9 @@ namespace OpenRA.Primitives
 			return Width ^ Height;
 		}
 
-		public override string ToString() { return Width + "," + Height; }
+		public override string ToString()
+		{
+			return $"{{Width={Width}, Height={Height}}}";
+		}
 	}
 }

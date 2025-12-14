@@ -9,9 +9,7 @@
  */
 #endregion
 
-using System.Collections.Frozen;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 using OpenRA.Activities;
 using OpenRA.Mods.Common.Activities;
@@ -34,13 +32,10 @@ namespace OpenRA.Mods.Common.Traits
 		public readonly string DeployedCondition = null;
 
 		[Desc("The terrain types that this actor can deploy on. Leave empty to allow any.")]
-		public readonly FrozenSet<string> AllowedTerrainTypes = FrozenSet<string>.Empty;
+		public readonly HashSet<string> AllowedTerrainTypes = new();
 
 		[Desc("Can this actor deploy on slopes?")]
 		public readonly bool CanDeployOnRamps = false;
-
-		[Desc("Does this actor need to synchronize its deployment with other actors?")]
-		public readonly bool SmartDeploy = false;
 
 		[CursorReference]
 		[Desc("Cursor to display when able to (un)deploy the actor.")]
@@ -54,10 +49,10 @@ namespace OpenRA.Mods.Common.Traits
 		public readonly WAngle? Facing = null;
 
 		[Desc("Play a randomly selected sound from this list when deploying.")]
-		public readonly ImmutableArray<string> DeploySounds = default;
+		public readonly string[] DeploySounds = null;
 
 		[Desc("Play a randomly selected sound from this list when undeploying.")]
-		public readonly ImmutableArray<string> UndeploySounds = default;
+		public readonly string[] UndeploySounds = null;
 
 		[Desc("Skip make/deploy animation?")]
 		public readonly bool SkipMakeAnimation = false;
@@ -188,26 +183,7 @@ namespace OpenRA.Mods.Common.Traits
 			return new Order("GrantConditionOnDeploy", self, queued);
 		}
 
-		bool IIssueDeployOrder.CanIssueDeployOrder(Actor self, bool queued)
-		{
-			if (IsTraitPaused || IsTraitDisabled || self.IsDead || self.Disposed)
-				return false;
-
-			if (queued || !Info.SmartDeploy || DeployState == DeployState.Undeployed || DeployState == DeployState.Undeploying)
-				return true;
-
-			foreach (var actor in self.World.Selection.Actors)
-			{
-				if (actor == self || actor.IsDead || !actor.IsInWorld)
-					continue;
-
-				if (actor.TraitsImplementing<GrantConditionOnDeploy>()
-					.Any(d => !d.IsTraitPaused && !d.IsTraitDisabled && (d.DeployState == DeployState.Undeployed || d.DeployState == DeployState.Undeploying)))
-					return false;
-			}
-
-			return true;
-		}
+		bool IIssueDeployOrder.CanIssueDeployOrder(Actor self, bool queued) { return !IsTraitPaused && !IsTraitDisabled; }
 
 		public void ResolveOrder(Actor self, Order order)
 		{

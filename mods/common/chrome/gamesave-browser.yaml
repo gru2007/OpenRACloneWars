@@ -67,15 +67,23 @@ Background@GAMESAVE_BROWSER_PANEL:
 					Width: PARENT_WIDTH
 					Height: 25
 					Type: Filename
-		Button@DELETE_ALL_BUTTON:
+		Button@CANCEL_BUTTON:
+			Key: escape
 			X: 20
+			Y: PARENT_HEIGHT - 45
+			Width: 100
+			Height: 25
+			Text: button-back
+			Font: Bold
+		Button@DELETE_ALL_BUTTON:
+			X: PARENT_WIDTH - 350 - WIDTH
 			Y: PARENT_HEIGHT - 45
 			Width: 100
 			Height: 25
 			Text: button-gamesave-browser-panel-delete-all
 			Font: Bold
 		Button@DELETE_BUTTON:
-			X: 130
+			X: PARENT_WIDTH - 240 - WIDTH
 			Y: PARENT_HEIGHT - 45
 			Width: 100
 			Height: 25
@@ -83,7 +91,7 @@ Background@GAMESAVE_BROWSER_PANEL:
 			Font: Bold
 			Key: Delete
 		Button@RENAME_BUTTON:
-			X: 240
+			X: PARENT_WIDTH - 130 - WIDTH
 			Y: PARENT_HEIGHT - 45
 			Width: 100
 			Height: 25
@@ -92,7 +100,7 @@ Background@GAMESAVE_BROWSER_PANEL:
 			Key: F2
 		Button@LOAD_BUTTON:
 			Key: return
-			X: PARENT_WIDTH - WIDTH - 130
+			X: PARENT_WIDTH - WIDTH - 20
 			Y: PARENT_HEIGHT - 45
 			Width: 100
 			Height: 25
@@ -101,19 +109,11 @@ Background@GAMESAVE_BROWSER_PANEL:
 			Visible: False
 		Button@SAVE_BUTTON:
 			Key: return
-			X: PARENT_WIDTH - WIDTH - 130
+			X: PARENT_WIDTH - WIDTH - 20
 			Y: PARENT_HEIGHT - 45
 			Width: 100
 			Height: 25
 			Text: button-gamesave-browser-panel-save
 			Font: Bold
 			Visible: False
-		Button@CANCEL_BUTTON:
-			Key: escape
-			X: PARENT_WIDTH - WIDTH - 20
-			Y: PARENT_HEIGHT - 45
-			Width: 100
-			Height: 25
-			Text: button-back
-			Font: Bold
 		TooltipContainer@GAMESAVE_TOOLTIP_CONTAINER:

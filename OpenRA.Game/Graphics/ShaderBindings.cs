@@ -23,7 +23,21 @@ namespace OpenRA.Graphics
 		UInt = 0x1405 // GL_UNSIGNED_INT
 	}
 
-	public readonly record struct ShaderVertexAttribute(string Name, ShaderVertexAttributeType Type, int Components, int Offset);
+	public readonly struct ShaderVertexAttribute
+	{
+		public readonly string Name;
+		public readonly ShaderVertexAttributeType Type;
+		public readonly int Components;
+		public readonly int Offset;
+
+		public ShaderVertexAttribute(string name, ShaderVertexAttributeType type, int components, int offset)
+		{
+			Name = name;
+			Type = type;
+			Components = components;
+			Offset = offset;
+		}
+	}
 
 	public abstract class ShaderBindings : IShaderBindings
 	{

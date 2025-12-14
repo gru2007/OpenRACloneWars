@@ -11,7 +11,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Globalization;
 using System.IO;
 using System.Net;
@@ -28,10 +27,8 @@ namespace OpenRA.Server
 			{
 				Run(args);
 			}
-			catch (Exception e)
+			catch
 			{
-				ExceptionHandler.HandleFatalError(e);
-
 				// Flush logs before rethrowing, i.e. allowing the exception to go unhandled.
 				// try-finally won't work - an unhandled exception kills our process without running the finally block!
 				Log.Dispose();
@@ -67,7 +64,7 @@ namespace OpenRA.Server
 			var explicitModPaths = Array.Empty<string>();
 			if (modID != null && (File.Exists(modID) || Directory.Exists(modID)))
 			{
-				explicitModPaths = [modID];
+				explicitModPaths = new[] { modID };
 				modID = Path.GetFileNameWithoutExtension(modID);
 			}
 
@@ -83,8 +80,8 @@ namespace OpenRA.Server
 
 			var envModSearchPaths = Environment.GetEnvironmentVariable("MOD_SEARCH_PATHS");
 			var modSearchPaths = !string.IsNullOrWhiteSpace(envModSearchPaths) ?
-				FieldLoader.GetValue<ImmutableArray<string>>("MOD_SEARCH_PATHS", envModSearchPaths) :
-				[Path.Combine(Platform.EngineDir, "mods")];
+				FieldLoader.GetValue<string[]>("MOD_SEARCH_PATHS", envModSearchPaths) :
+				new[] { Path.Combine(Platform.EngineDir, "mods") };
 
 			var mods = new InstalledMods(modSearchPaths, explicitModPaths);
 
@@ -94,7 +91,7 @@ namespace OpenRA.Server
 				// HACK: The engine code *still* assumes that Game.ModData is set
 				var modData = Game.ModData = new ModData(mods[modID], mods);
 				modData.MapCache.LoadPreviewImages = false; // PERF: Server doesn't need previews, save memory by not loading them.
-				modData.MapCache.LoadMaps(modData);
+				modData.MapCache.LoadMaps();
 
 				var endpoints = new List<IPEndPoint> { new(IPAddress.IPv6Any, settings.ListenPort), new(IPAddress.Any, settings.ListenPort) };
 				var server = new Server(endpoints, settings, modData, ServerType.Dedicated);

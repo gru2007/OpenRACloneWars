@@ -9,7 +9,6 @@
  */
 #endregion
 
-using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Linq;
 using OpenRA.Primitives;
@@ -70,7 +69,7 @@ namespace OpenRA.Mods.Common.Traits
 		public readonly string AttackAnythingCondition = null;
 
 		[FieldLoader.Ignore]
-		public FrozenDictionary<UnitStance, string> ConditionByStance = FrozenDictionary<UnitStance, string>.Empty;
+		public readonly Dictionary<UnitStance, string> ConditionByStance = new();
 
 		[Desc("Allow the player to change the unit stance.")]
 		public readonly bool EnableStances = true;
@@ -90,20 +89,17 @@ namespace OpenRA.Mods.Common.Traits
 		{
 			base.RulesetLoaded(rules, info);
 
-			var conditionByStance = new Dictionary<UnitStance, string>();
 			if (HoldFireCondition != null)
-				conditionByStance[UnitStance.HoldFire] = HoldFireCondition;
+				ConditionByStance[UnitStance.HoldFire] = HoldFireCondition;
 
 			if (ReturnFireCondition != null)
-				conditionByStance[UnitStance.ReturnFire] = ReturnFireCondition;
+				ConditionByStance[UnitStance.ReturnFire] = ReturnFireCondition;
 
 			if (DefendCondition != null)
-				conditionByStance[UnitStance.Defend] = DefendCondition;
+				ConditionByStance[UnitStance.Defend] = DefendCondition;
 
 			if (AttackAnythingCondition != null)
-				conditionByStance[UnitStance.AttackAnything] = AttackAnythingCondition;
-
-			ConditionByStance = conditionByStance.ToFrozenDictionary();
+				ConditionByStance[UnitStance.AttackAnything] = AttackAnythingCondition;
 		}
 
 		IEnumerable<EditorActorOption> IEditorActorOptions.ActorOptions(ActorInfo ai, World world)
@@ -367,9 +363,6 @@ namespace OpenRA.Mods.Common.Traits
 					.Concat(self.Owner.FrozenActorLayer.FrozenActorsInCircle(self.World, self.CenterPosition, scanRange)
 					.Select(Target.FromFrozenActor));
 
-			// PERF: Avoid allocating a new list for each target.
-			List<AutoTargetPriorityInfo> validPriorities = [];
-
 			foreach (var target in targetsInRange)
 			{
 				BitSet<TargetableType> targetTypes;
@@ -408,22 +401,22 @@ namespace OpenRA.Mods.Common.Traits
 				else
 					continue;
 
-				foreach (var ati in activePriorities)
+				var validPriorities = activePriorities.Where(ati =>
 				{
 					// Already have a higher priority target
 					if (ati.Priority < chosenTargetPriority)
-						continue;
+						return false;
 
 					// Incompatible relationship
 					if (!ati.ValidRelationships.HasRelationship(self.Owner.RelationshipWith(owner)))
-						continue;
+						return false;
 
 					// Incompatible target types
 					if (!ati.ValidTargets.Overlaps(targetTypes) || ati.InvalidTargets.Overlaps(targetTypes))
-						continue;
+						return false;
 
-					validPriorities.Add(ati);
-				}
+					return true;
+				}).ToList();
 
 				if (validPriorities.Count == 0)
 					continue;
@@ -453,8 +446,6 @@ namespace OpenRA.Mods.Common.Traits
 						chosenTargetRange = targetRange;
 					}
 				}
-
-				validPriorities.Clear();
 			}
 
 			return chosenTarget;

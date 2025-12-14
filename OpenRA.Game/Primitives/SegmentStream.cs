@@ -32,7 +32,8 @@ namespace OpenRA.Primitives
 		/// <param name="count">The length of the segment.</param>
 		public SegmentStream(Stream stream, long offset, long count)
 		{
-			ArgumentNullException.ThrowIfNull(stream);
+			if (stream == null)
+				throw new ArgumentNullException(nameof(stream));
 			if (!stream.CanSeek)
 				throw new ArgumentException("stream must be seekable.", nameof(stream));
 			if (offset < 0)

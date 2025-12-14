@@ -58,7 +58,7 @@ ToggleMute: M
 	Types: World
 	Contexts: menu, player, spectator
 
-TogglePlayerStanceColor:
+TogglePlayerStanceColor: COMMA Ctrl
 	Description: hotkey-description-toggleplayerstancecolor
 	Types: World
 	Contexts: player, spectator

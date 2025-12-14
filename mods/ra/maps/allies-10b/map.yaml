@@ -26,7 +26,6 @@ Players:
 		Faction: england
 	PlayerReference@USSR:
 		Name: USSR
-		Bot: campaign
 		Faction: soviet
 		Color: FF1400
 		Allies: BadGuy
@@ -45,7 +44,6 @@ Players:
 		Enemies: USSR, BadGuy
 	PlayerReference@BadGuy:
 		Name: BadGuy
-		Bot: campaign
 		Faction: soviet
 		Color: FF1400
 		Allies: USSR

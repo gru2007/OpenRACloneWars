@@ -45,7 +45,7 @@ namespace OpenRA.Mods.Cnc.Traits
 		public ResourcePurifier(ResourcePurifierInfo info)
 			: base(info)
 		{
-			modifier = [Info.Modifier];
+			modifier = new int[] { Info.Modifier };
 			currentDisplayTick = Info.TickRate;
 		}
 

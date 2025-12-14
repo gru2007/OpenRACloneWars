@@ -25,7 +25,7 @@ namespace OpenRA
 		protected readonly Rectangle Bounds;
 
 		protected CellLayerBase(Map map)
-			: this(map.Grid.Type, map.MapSize) { }
+			: this(map.Grid.Type, new Size(map.MapSize.X, map.MapSize.Y)) { }
 
 		protected CellLayerBase(MapGridType gridType, Size size)
 		{

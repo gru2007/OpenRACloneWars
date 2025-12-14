@@ -11,7 +11,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using OpenRA.FileSystem;
 using OpenRA.Graphics;
 using OpenRA.Primitives;
 
@@ -27,10 +26,10 @@ namespace OpenRA.Mods.Common.LoadScreens
 		Sheet sheet;
 		int density;
 
-		public override void Init(Manifest manifest, IReadOnlyFileSystem fileSystem)
+		public override void Init(ModData modData, Dictionary<string, string> info)
 		{
-			base.Init(manifest, fileSystem);
-			Info = manifest.LoadScreen.ToDictionary(my => my.Value);
+			base.Init(modData, info);
+			Info = info;
 		}
 
 		public abstract void DisplayInner(Renderer r, Sheet s, int density);
@@ -71,7 +70,7 @@ namespace OpenRA.Mods.Common.LoadScreens
 					density = 2;
 				}
 
-				using (var stream = fileSystem.Open(Platform.ResolvePath(image)))
+				using (var stream = ModData.DefaultFileSystem.Open(Platform.ResolvePath(image)))
 				{
 					sheet = new Sheet(SheetType.BGRA, stream);
 					sheet.GetTexture().ScaleFilter = TextureScaleFilter.Linear;

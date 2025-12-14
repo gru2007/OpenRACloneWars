@@ -14,7 +14,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
+using System.Runtime.Serialization;
 using OpenRA.Primitives;
 using OpenRA.Traits;
 
@@ -70,15 +70,15 @@ namespace OpenRA
 			if (type == null)
 				throw new InvalidDataException($"Unknown initializer type '{initInstance[0]}Init'");
 
-			var init = (ActorInit)RuntimeHelpers.GetUninitializedObject(type);
+			var init = (ActorInit)FormatterServices.GetUninitializedObject(type);
 			if (initInstance.Length > 1)
 				type.GetField(nameof(ActorInit.InstanceName)).SetValue(init, initInstance[1]);
 
-			var loader = type.GetMethod("Initialize", [typeof(MiniYaml)]);
+			var loader = type.GetMethod("Initialize", new[] { typeof(MiniYaml) });
 			if (loader == null)
 				throw new InvalidDataException($"{initInstance[0]}Init does not define a yaml-assignable type.");
 
-			loader.Invoke(init, [initYaml]);
+			loader.Invoke(init, new[] { initYaml });
 			return init;
 		}
 
@@ -123,15 +123,6 @@ namespace OpenRA
 				throw new InvalidDataException($"Duplicate initializer '{init.GetType().Name}'");
 
 			InitDict.Add(init);
-		}
-
-		public void Replace<T>(T init) where T : ActorInit, ISingleInstanceInit
-		{
-			var original = GetOrDefault<T>();
-			if (original != null)
-				Remove(original);
-
-			Add(init);
 		}
 
 		public void Remove(ActorInit o) { initDict.Value.Remove(o); }

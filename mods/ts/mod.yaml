@@ -103,6 +103,7 @@ TileSets:
 	ts|tilesets/snow.yaml
 
 MapGrid:
+	TileSize: 48,24
 	EnableDepthBuffer: True
 	Type: RectangularIsometric
 	MaximumTerrainHeight: 16

@@ -11,7 +11,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -28,7 +27,6 @@ using OpenRA.Widgets;
 
 namespace OpenRA
 {
-	[IncludeStaticFluentReferences(typeof(Server.Server), typeof(Player), typeof(UnitOrders), typeof(OrderManager))]
 	public static class Game
 	{
 		[FluentReference("filename")]
@@ -168,7 +166,6 @@ namespace OpenRA
 		{
 			return ModData.WidgetLoader.LoadWidget(new WidgetArgs(args)
 			{
-				{ "modData", ModData },
 				{ "world", world },
 				{ "orderManager", OrderManager },
 				{ "worldRenderer", worldRenderer },
@@ -184,16 +181,7 @@ namespace OpenRA
 
 		public static event Action BeforeGameStart = () => { };
 		public static event Action AfterGameStart = () => { };
-		internal static void StartGame(string uid, WorldType type)
-		{
-			var preview = ModData.MapCache[uid];
-			if (preview.Status != MapStatus.Available)
-				throw new InvalidDataException($"Invalid map uid: {uid}");
-
-			StartGame(preview.ToMap(), type);
-		}
-
-		internal static void StartGame(Map map, WorldType type)
+		internal static void StartGame(string mapUID, WorldType type)
 		{
 			// Dispose of the old world before creating a new one.
 			worldRenderer?.Dispose();
@@ -202,23 +190,7 @@ namespace OpenRA
 			BeforeGameStart();
 
 			using (new PerfTimer("NewWorld"))
-			{
-				ModData.PrepareMap(map);
-
-				// The depth buffer needs to be initialized with enough range to cover:
-				//  - the height of the screen
-				//  - the z-offset of tiles from MaxTerrainHeight below the bottom of the screen (pushed into view)
-				//  - additional z-offset from actors on top of MaxTerrainHeight terrain
-				//  - a small margin so that tiles rendered partially above the top edge of the screen aren't pushed behind the clip plane
-				// We need an offset of mapGrid.MaximumTerrainHeight * mapGrid.TileSize.Height / 2 to cover the terrain height
-				// and choose to use mapGrid.MaximumTerrainHeight * mapGrid.TileSize.Height / 4 for each of the actor and top-edge cases
-				var margin = 0;
-				if (map.Grid.EnableDepthBuffer)
-					margin = map.Rules.TerrainInfo.TileSize.Height * map.Grid.MaximumTerrainHeight;
-
-				Renderer.SetDepthMargin(margin);
-				OrderManager.World = new World(map, ModData, OrderManager, type);
-			}
+				OrderManager.World = new World(mapUID, ModData, OrderManager, type);
 
 			OrderManager.World.GameOver += FinishBenchmark;
 
@@ -372,7 +344,7 @@ namespace OpenRA
 			var explicitModPaths = Array.Empty<string>();
 			if (modID != null && (File.Exists(modID) || Directory.Exists(modID)))
 			{
-				explicitModPaths = [modID];
+				explicitModPaths = new[] { modID };
 				modID = Path.GetFileNameWithoutExtension(modID);
 			}
 
@@ -387,48 +359,6 @@ namespace OpenRA
 			Log.AddChannel("nat", "nat.log");
 			Log.AddChannel("client", "client.log");
 
-			Nat.Initialize();
-
-			var modSearchArg = args.GetValue("Engine.ModSearchPaths", null);
-			var modSearchPaths = modSearchArg != null ?
-				FieldLoader.GetValue<ImmutableArray<string>>("Engine.ModsPath", modSearchArg) :
-				[Path.Combine(Platform.EngineDir, "mods")];
-
-			Mods = new InstalledMods(modSearchPaths, explicitModPaths);
-			Console.WriteLine("Internal mods:");
-			foreach (var mod in Mods)
-				Console.WriteLine($"\t{mod.Key} ({mod.Value.Metadata.Version})");
-
-			modLaunchWrapper = args.GetValue("Engine.LaunchWrapper", null);
-
-			ExternalMods = new ExternalMods();
-
-			if (modID == null)
-				throw new InvalidOperationException("Game.Mod argument missing.");
-
-			if (Mods.TryGetValue(modID, out var manifest))
-			{
-				var launchPath = args.GetValue("Engine.LaunchPath", null);
-				var launchArgs = new List<string>();
-
-				// Sanitize input from platform-specific launchers
-				// Process.Start requires paths to not be quoted, even if they contain spaces
-				if (launchPath != null && launchPath[0] == '"' && launchPath[^1] == '"')
-					launchPath = launchPath[1..^1];
-
-				// Metadata registration requires an explicit launch path
-				if (launchPath != null)
-					ExternalMods.Register(Mods[modID], launchPath, launchArgs, ModRegistration.User);
-
-				ExternalMods.ClearInvalidRegistrations(ModRegistration.User);
-			}
-			else
-				throw new InvalidOperationException($"Unknown or invalid mod '{modID}'.");
-
-			Console.WriteLine("External mods:");
-			foreach (var mod in ExternalMods)
-				Console.WriteLine($"\t{mod.Key} ({mod.Value.Version})");
-
 			var platforms = new[] { Settings.Game.Platform, "Default", null };
 			foreach (var p in platforms)
 			{
@@ -439,7 +369,7 @@ namespace OpenRA
 				try
 				{
 					var platform = CreatePlatform(p);
-					Renderer = new Renderer(platform, Settings.Graphics, manifest.RendererConstants.VertexBatchSize);
+					Renderer = new Renderer(platform, Settings.Graphics);
 					Sound = new Sound(platform, Settings.Sound);
 
 					break;
@@ -455,7 +385,44 @@ namespace OpenRA
 				}
 			}
 
-			InitializeMod(manifest, args);
+			Nat.Initialize();
+
+			var modSearchArg = args.GetValue("Engine.ModSearchPaths", null);
+			var modSearchPaths = modSearchArg != null ?
+				FieldLoader.GetValue<string[]>("Engine.ModsPath", modSearchArg) :
+				new[] { Path.Combine(Platform.EngineDir, "mods") };
+
+			Mods = new InstalledMods(modSearchPaths, explicitModPaths);
+			Console.WriteLine("Internal mods:");
+			foreach (var mod in Mods)
+				Console.WriteLine($"\t{mod.Key} ({mod.Value.Metadata.Version})");
+
+			modLaunchWrapper = args.GetValue("Engine.LaunchWrapper", null);
+
+			ExternalMods = new ExternalMods();
+
+			if (modID != null && Mods.TryGetValue(modID, out _))
+			{
+				var launchPath = args.GetValue("Engine.LaunchPath", null);
+				var launchArgs = new List<string>();
+
+				// Sanitize input from platform-specific launchers
+				// Process.Start requires paths to not be quoted, even if they contain spaces
+				if (launchPath != null && launchPath[0] == '"' && launchPath.Last() == '"')
+					launchPath = launchPath[1..^1];
+
+				// Metadata registration requires an explicit launch path
+				if (launchPath != null)
+					ExternalMods.Register(Mods[modID], launchPath, launchArgs, ModRegistration.User);
+
+				ExternalMods.ClearInvalidRegistrations(ModRegistration.User);
+			}
+
+			Console.WriteLine("External mods:");
+			foreach (var mod in ExternalMods)
+				Console.WriteLine($"\t{mod.Key} ({mod.Value.Version})");
+
+			InitializeMod(modID, args);
 		}
 
 		public static IPlatform CreatePlatform(string platformName)
@@ -471,7 +438,7 @@ namespace OpenRA
 			return (IPlatform)platformType.GetConstructor(Type.EmptyTypes).Invoke(null);
 		}
 
-		public static void InitializeMod(Manifest manifest, Arguments args)
+		public static void InitializeMod(string mod, Arguments args)
 		{
 			// Clear static state if we have switched mods
 			LobbyInfoChanged = () => { };
@@ -495,25 +462,34 @@ namespace OpenRA
 
 			ModData = null;
 
-			Console.WriteLine($"Loading mod: {manifest.Id}");
+			if (mod == null)
+				throw new InvalidOperationException("Game.Mod argument missing.");
+
+			if (!Mods.ContainsKey(mod))
+				throw new InvalidOperationException($"Unknown or invalid mod '{mod}'.");
+
+			Console.WriteLine($"Loading mod: {mod}");
 
 			Sound.StopVideo();
 
-			ModData = new ModData(manifest, Mods, true);
+			ModData = new ModData(Mods[mod], Mods, true);
 
-			LocalPlayerProfile = new LocalPlayerProfile(Path.Combine(Platform.SupportDir, Settings.Game.AuthProfile), ModData.GetOrCreate<PlayerDatabase>());
+			LocalPlayerProfile = new LocalPlayerProfile(Path.Combine(Platform.SupportDir, Settings.Game.AuthProfile), ModData.Manifest.Get<PlayerDatabase>());
 
-			if (!ModData.LoadScreen.BeforeLoad(ModData))
+			if (!ModData.LoadScreen.BeforeLoad())
 				return;
 
 			ModData.InitializeLoaders(ModData.DefaultFileSystem);
 			Renderer.InitializeFonts(ModData);
 
 			using (new PerfTimer("LoadMaps"))
-				ModData.MapCache.LoadMaps(ModData);
+				ModData.MapCache.LoadMaps();
+
+			var grid = ModData.Manifest.Contains<MapGrid>() ? ModData.Manifest.Get<MapGrid>() : null;
+			Renderer.InitializeDepthBuffer(grid);
 
 			Cursor?.Dispose();
-			Cursor = new CursorManager(ModData);
+			Cursor = new CursorManager(ModData.CursorProvider, ModData.Manifest.CursorSheetSize);
 
 			var metadata = ModData.Manifest.Metadata;
 			if (!string.IsNullOrEmpty(metadata.WindowTitleTranslated))
@@ -531,16 +507,10 @@ namespace OpenRA
 			ModData.LoadScreen.StartGame(args);
 		}
 
-		public static void LoadEditor(string uid)
+		public static void LoadEditor(string mapUid)
 		{
 			JoinLocal();
-			StartGame(uid, WorldType.Editor);
-		}
-
-		public static void LoadEditor(Map map)
-		{
-			JoinLocal();
-			StartGame(map, WorldType.Editor);
+			StartGame(mapUid, WorldType.Editor);
 		}
 
 		public static void LoadShellMap()
@@ -614,7 +584,7 @@ namespace OpenRA
 				Directory.CreateDirectory(directory);
 
 				var filename = TimestampedFilename(true);
-				var path = Path.Combine(directory, $"{filename}.png");
+				var path = Path.Combine(directory, string.Concat(filename, ".png"));
 				Log.Write("debug", "Taking screenshot " + path);
 
 				Renderer.SaveScreenshot(path);
@@ -725,7 +695,7 @@ namespace OpenRA
 				// Use worldRenderer.World instead of OrderManager.World to avoid a rendering mismatch while processing orders
 				if (worldRenderer != null && !worldRenderer.World.IsLoadingGameSave)
 				{
-					Renderer.BeginWorld(worldRenderer.Viewport.CenterLocation, worldRenderer.Viewport.ViewportSize);
+					Renderer.BeginWorld(worldRenderer.Viewport.Rectangle);
 					Sound.SetListenerPosition(worldRenderer.Viewport.CenterPosition);
 					using (new PerfSample("render_world"))
 						worldRenderer.Draw();
@@ -740,12 +710,15 @@ namespace OpenRA
 
 					Ui.Draw();
 
-					if (HideCursor)
-						Cursor?.SetCursor(null);
-					else
+					if (ModData != null && ModData.CursorProvider != null)
 					{
-						Cursor?.SetCursor(Ui.Root.GetCursorOuter(Viewport.LastMousePos) ?? "default");
-						Cursor?.Render(Renderer);
+						if (HideCursor)
+							Cursor.SetCursor(null);
+						else
+						{
+							Cursor.SetCursor(Ui.Root.GetCursorOuter(Viewport.LastMousePos) ?? "default");
+							Cursor.Render(Renderer);
+						}
 					}
 				}
 
@@ -861,45 +834,33 @@ namespace OpenRA
 
 					var haveSomeTimeUntilNextLogic = now < nextLogic;
 					var isTimeToRender = now >= nextRender;
-					if (!Renderer.WindowIsSuspended)
+					if (!Renderer.WindowIsSuspended && ((isTimeToRender && haveSomeTimeUntilNextLogic) || forceRender))
 					{
-						if (isTimeToRender || forceRender)
-						{
-							if (haveSomeTimeUntilNextLogic || forceRender)
-								RenderTick();
+						nextRender = now + renderInterval;
 
-							nextRender = now + renderInterval;
+						// Pick the minimum allowed FPS (the lower between 'minReplayFPS'
+						// and the user's max frame rate) and convert it to maximum time
+						// allowed between screen updates.
+						// We do this before rendering to include the time rendering takes
+						// in this interval.
+						var maxRenderInterval = Math.Max(1000 / MinReplayFps, renderInterval);
+						forcedNextRender = now + maxRenderInterval;
 
-							// Pick the minimum allowed FPS (the lower between 'minReplayFPS'
-							// and the user's max frame rate) and convert it to maximum time
-							// allowed between screen updates.
-							// We do this before rendering to include the time rendering takes
-							// in this interval.
-							var maxRenderInterval = Math.Max(1000 / MinReplayFps, renderInterval);
-							forcedNextRender = now + maxRenderInterval;
-
-							renderBeforeNextTick = false;
-						}
+						RenderTick();
+						renderBeforeNextTick = false;
 					}
-					else
+
+					// Simulate a render tick if it was time to render but we skip actually rendering
+					if (Renderer.WindowIsSuspended && isTimeToRender)
 					{
-						// Simulate a render tick if it was time to render but we skip actually rendering
-						if (isTimeToRender || forceRender)
-						{
-							// Make sure that nextUpdate is set to a proper minimum interval
-							nextRender = now + renderInterval;
+						// Make sure that nextUpdate is set to a proper minimum interval
+						nextRender = now + renderInterval;
 
-							// Still process SDL events to allow a restore to come through
-							Renderer.Window.PumpInput(new NullInputHandler());
+						// Still process SDL events to allow a restore to come through
+						Renderer.Window.PumpInput(new NullInputHandler());
 
-							// Ensure that we still logic tick despite not rendering
-							renderBeforeNextTick = false;
-						}
-						else
-						{
-							// Avoid busy wait.
-							Thread.Sleep((int)(nextRender - now));
-						}
+						// Ensure that we still logic tick despite not rendering
+						renderBeforeNextTick = false;
 					}
 				}
 				else
@@ -979,8 +940,7 @@ namespace OpenRA
 			{
 				Name = "Skirmish Game",
 				Map = map,
-				AdvertiseOnline = false,
-				AdvertiseOnLocalNetwork = !isSkirmish
+				AdvertiseOnline = false
 			};
 
 			// Always connect to local games using the same loopback connection
@@ -1018,7 +978,7 @@ namespace OpenRA
 				Order.Command($"state {Session.ClientState.Ready}")
 			};
 
-			var map = ModData.MapCache.SingleOrDefault(m => m.Uid == launchMap || Path.GetFileName(m.Path) == launchMap);
+			var map = ModData.MapCache.SingleOrDefault(m => m.Uid == launchMap || Path.GetFileName(m.PackageName) == launchMap);
 			if (map == null)
 				throw new ArgumentException($"Could not find map '{launchMap}'.");
 

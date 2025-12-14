@@ -9,12 +9,11 @@
  */
 #endregion
 
-using System.Collections.Frozen;
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
-using OpenRA.Traits;
 
 namespace OpenRA.Mods.Common
 {
@@ -25,8 +24,8 @@ namespace OpenRA.Mods.Common
 			[FluentReference]
 			public readonly string Title;
 			public readonly string Identifier;
-			public readonly ImmutableArray<string> TestFiles = [];
-			public readonly ImmutableArray<string> Sources = [];
+			public readonly string[] TestFiles = Array.Empty<string>();
+			public readonly string[] Sources = Array.Empty<string>();
 			public readonly bool Required;
 			public readonly string Download;
 
@@ -47,7 +46,7 @@ namespace OpenRA.Mods.Common
 			public readonly MiniYaml Type;
 
 			// Used to find installation locations for SourceType.Install
-			public readonly ImmutableArray<string> RegistryPrefixes = [string.Empty];
+			public readonly string[] RegistryPrefixes = { string.Empty };
 			public readonly string RegistryKey;
 			public readonly string RegistryValue;
 
@@ -88,7 +87,7 @@ namespace OpenRA.Mods.Common
 			public readonly string MirrorList;
 			public readonly string SHA1;
 			public readonly string Type;
-			public readonly FrozenDictionary<string, string> Extract;
+			public readonly Dictionary<string, string> Extract;
 
 			public ModDownload(MiniYaml yaml)
 			{
@@ -102,37 +101,36 @@ namespace OpenRA.Mods.Common
 		[FieldLoader.Require]
 		public readonly string Mod;
 
-		[IncludeFluentReferences(LintDictionaryReference.Values)]
 		[FieldLoader.LoadUsing(nameof(LoadPackages))]
-		public readonly ImmutableArray<KeyValuePair<string, ModPackage>> Packages = [];
+		public readonly Dictionary<string, ModPackage> Packages = new();
 
 		static object LoadPackages(MiniYaml yaml)
 		{
-			var packages = new List<KeyValuePair<string, ModPackage>>();
+			var packages = new Dictionary<string, ModPackage>();
 			var packageNode = yaml.NodeWithKeyOrDefault("Packages");
 			if (packageNode != null)
 				foreach (var node in packageNode.Value.Nodes)
-					packages.Add(KeyValuePair.Create(node.Key, new ModPackage(node.Value)));
+					packages.Add(node.Key, new ModPackage(node.Value));
 
-			return packages.ToImmutableArray();
+			return packages;
 		}
 
 		[FieldLoader.LoadUsing(nameof(LoadDownloads))]
-		public readonly ImmutableArray<string> Downloads = [];
+		public readonly string[] Downloads = Array.Empty<string>();
 
 		static object LoadDownloads(MiniYaml yaml)
 		{
 			var downloadNode = yaml.NodeWithKeyOrDefault("Downloads");
-			return downloadNode != null ? downloadNode.Value.Nodes.Select(n => n.Key).ToImmutableArray() : [];
+			return downloadNode != null ? downloadNode.Value.Nodes.Select(n => n.Key).ToArray() : Array.Empty<string>();
 		}
 
 		[FieldLoader.LoadUsing(nameof(LoadSources))]
-		public readonly ImmutableArray<string> Sources = [];
+		public readonly string[] Sources = Array.Empty<string>();
 
 		static object LoadSources(MiniYaml yaml)
 		{
 			var sourceNode = yaml.NodeWithKeyOrDefault("Sources");
-			return sourceNode != null ? sourceNode.Value.Nodes.Select(n => n.Key).ToImmutableArray() : [];
+			return sourceNode != null ? sourceNode.Value.Nodes.Select(n => n.Key).ToArray() : Array.Empty<string>();
 		}
 	}
 }

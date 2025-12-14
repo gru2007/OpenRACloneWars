@@ -55,7 +55,7 @@ namespace OpenRA.Mods.Common.Activities
 			aircraft = self.Trait<Aircraft>();
 			this.target = target;
 			this.offset = offset;
-			this.clearCells = clearCells ?? [];
+			this.clearCells = clearCells ?? Array.Empty<CPos>();
 			this.landRange = landRange.Length >= 0 ? landRange : aircraft.Info.LandRange;
 			this.targetLineColor = targetLineColor;
 

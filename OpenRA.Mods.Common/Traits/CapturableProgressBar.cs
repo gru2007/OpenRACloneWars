@@ -26,7 +26,7 @@ namespace OpenRA.Mods.Common.Traits
 
 	sealed class CapturableProgressBar : ConditionalTrait<CapturableProgressBarInfo>, ISelectionBar, ICaptureProgressWatcher
 	{
-		readonly Dictionary<Actor, (int Current, int Total)> progress = [];
+		readonly Dictionary<Actor, (int Current, int Total)> progress = new();
 
 		public CapturableProgressBar(CapturableProgressBarInfo info)
 			: base(info) { }

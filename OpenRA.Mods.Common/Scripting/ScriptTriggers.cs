@@ -21,7 +21,7 @@ namespace OpenRA.Mods.Common.Scripting
 {
 	public enum Trigger
 	{
-		OnIdle, OnDamaged, OnKilled, OnProduction, OnOtherProduction, OnBuildingPlaced, OnPlayerWon, OnPlayerLost,
+		OnIdle, OnDamaged, OnKilled, OnProduction, OnOtherProduction, OnPlayerWon, OnPlayerLost,
 		OnObjectiveAdded, OnObjectiveCompleted, OnObjectiveFailed, OnCapture, OnInfiltrated,
 		OnAddedToWorld, OnRemovedFromWorld, OnDiscovered, OnPlayerDiscovered,
 		OnPassengerEntered, OnPassengerExited, OnSold, OnTimerExpired
@@ -33,7 +33,7 @@ namespace OpenRA.Mods.Common.Scripting
 		public override object Create(ActorInitializer init) { return new ScriptTriggers(init.World, init.Self); }
 	}
 
-	public sealed class ScriptTriggers : INotifyIdle, INotifyDamage, INotifyKilled, INotifyProduction, INotifyBuildingPlaced, INotifyOtherProduction,
+	public sealed class ScriptTriggers : INotifyIdle, INotifyDamage, INotifyKilled, INotifyProduction, INotifyOtherProduction,
 		INotifyObjectivesUpdated, INotifyCapture, INotifyInfiltrated, INotifyAddedToWorld, INotifyRemovedFromWorld, INotifyDiscovered, INotifyActorDisposing,
 		INotifyPassengerEntered, INotifyPassengerExited, INotifySold, INotifyWinStateChanged, INotifyTimeLimit
 	{
@@ -47,7 +47,7 @@ namespace OpenRA.Mods.Common.Scripting
 		public event Action<Actor, Actor> OnProducedInternal = (a, b) => { };
 		public event Action<Actor, Actor> OnOtherProducedInternal = (a, b) => { };
 
-		readonly List<Triggerable>[] triggerables = Exts.MakeArray(Enum.GetValues<Trigger>().Length, _ => new List<Triggerable>());
+		readonly List<Triggerable>[] triggerables = Exts.MakeArray(Enum.GetValues(typeof(Trigger)).Length, _ => new List<Triggerable>());
 
 		readonly struct Triggerable : IDisposable
 		{
@@ -270,28 +270,6 @@ namespace OpenRA.Mods.Common.Scripting
 				{
 					using (var a = player.ToLuaValue(f.Context))
 					using (var b = id.ToLuaValue(f.Context))
-						f.Function.Call(a, b).Dispose();
-				}
-				catch (Exception ex)
-				{
-					f.Context.FatalError(ex);
-					return;
-				}
-			}
-		}
-
-		void INotifyBuildingPlaced.BuildingPlaced(Actor self, Actor building)
-		{
-			if (world.Disposing)
-				return;
-
-			// Run Lua callbacks
-			foreach (var f in Triggerables(Trigger.OnBuildingPlaced))
-			{
-				try
-				{
-					using (var a = self.Owner.ToLuaValue(f.Context))
-					using (var b = building.ToLuaValue(f.Context))
 						f.Function.Call(a, b).Dispose();
 				}
 				catch (Exception ex)
@@ -548,7 +526,7 @@ namespace OpenRA.Mods.Common.Scripting
 
 		public void ClearAll()
 		{
-			foreach (var t in Enum.GetValues<Trigger>())
+			foreach (Trigger t in Enum.GetValues(typeof(Trigger)))
 				Clear(t);
 		}
 

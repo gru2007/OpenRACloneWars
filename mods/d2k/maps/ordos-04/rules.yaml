@@ -42,7 +42,6 @@ outpost:
 	Tooltip@Modified:
 		Name: actor-outpost-modified-name
 		RequiresCondition: modified
-		ShowOwnerRow: false
 
 quad:
 	Buildable:
@@ -58,16 +57,12 @@ engineer:
 
 repair_pad:
 	Buildable:
-		Prerequisites: heavy_factory
+		Prerequisites: heavy_factory, upgrade.heavy
 
 mcv:
 	Buildable:
-		Prerequisites: repair_pad
+		Prerequisites: repair_pad, upgrade.heavy
 
 upgrade.conyard:
-	Buildable:
-		Prerequisites: ~disabled
-
-upgrade.heavy:
 	Buildable:
 		Prerequisites: ~disabled

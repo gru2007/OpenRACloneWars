@@ -9,9 +9,6 @@
  */
 #endregion
 
-using System;
-using System.Linq;
-using OpenRA.Mods.Common.Traits;
 using OpenRA.Widgets;
 
 namespace OpenRA.Mods.Common.Widgets.Logic
@@ -20,7 +17,6 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 	{
 		enum MenuType { Select, Tiles, Layers, Actors, Tools, History }
 
-		readonly World world;
 		readonly Widget panelContainer;
 		readonly Widget tabContainer;
 		readonly EditorViewportControllerWidget editor;
@@ -28,12 +24,9 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 		MenuType menuType = MenuType.Tiles;
 		MenuType lastSelectedTab = MenuType.Tiles;
 
-		public static event Action OnTabChanged;
-
 		[ObjectCreator.UseCtor]
-		public MapEditorTabsLogic(Widget widget, World world)
+		public MapEditorTabsLogic(Widget widget)
 		{
-			this.world = world;
 			panelContainer = widget.Parent;
 			tabContainer = widget.Get("MAP_EDITOR_TAB_CONTAINER");
 
@@ -65,7 +58,6 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 					lastSelectedTab = tabType;
 
 				menuType = tabType;
-				OnTabChanged?.Invoke();
 
 				// Clear keyboard focus when switching tabs.
 				Ui.KeyboardFocusWidget = null;
@@ -74,12 +66,6 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 			// Selection tab is special, it can only be selected if a selection exists.
 			if (tabType == MenuType.Select)
 				tab.IsDisabled = () => !editor.DefaultBrush.Selection.HasSelection;
-
-			if (tabType == MenuType.Tools)
-			{
-				var toolsAvailable = world.WorldActor.TraitsImplementing<IEditorTool>().Any();
-				tab.IsDisabled = () => !toolsAvailable;
-			}
 
 			var container = panelContainer.Get<ContainerWidget>(tabId);
 			container.IsVisible = () => menuType == tabType;
@@ -93,8 +79,6 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 				menuType = MenuType.Select;
 			else if (menuType == MenuType.Select && !hasSelection)
 				menuType = lastSelectedTab;
-
-			OnTabChanged?.Invoke();
 		}
 	}
 }

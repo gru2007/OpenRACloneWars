@@ -22,7 +22,7 @@ namespace OpenRA.Scripting
 		protected abstract string MemberNotFoundError(string memberName);
 
 		protected readonly ScriptContext Context;
-		readonly Dictionary<string, ScriptMemberWrapper> members = [];
+		readonly Dictionary<string, ScriptMemberWrapper> members = new();
 
 		protected ScriptObjectWrapper(ScriptContext context)
 		{

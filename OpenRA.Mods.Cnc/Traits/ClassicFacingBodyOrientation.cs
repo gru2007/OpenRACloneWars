@@ -18,10 +18,6 @@ namespace OpenRA.Mods.Cnc.Traits
 	{
 		public override WAngle QuantizeFacing(WAngle facing, int facings)
 		{
-			// Quantization disabled
-			if (facings == 0)
-				return facing;
-
 			return Util.ClassicQuantizeFacing(facing, facings);
 		}
 

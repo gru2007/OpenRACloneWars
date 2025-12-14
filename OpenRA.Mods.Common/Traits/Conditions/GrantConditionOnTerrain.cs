@@ -9,7 +9,8 @@
  */
 #endregion
 
-using System.Collections.Immutable;
+using System;
+using System.Linq;
 using OpenRA.Traits;
 
 namespace OpenRA.Mods.Common.Traits
@@ -23,7 +24,7 @@ namespace OpenRA.Mods.Common.Traits
 
 		[FieldLoader.Require]
 		[Desc("Terrain names to trigger the condition.")]
-		public readonly ImmutableArray<string> TerrainTypes = [];
+		public readonly string[] TerrainTypes = Array.Empty<string>();
 
 		public override object Create(ActorInitializer init) { return new GrantConditionOnTerrain(init, this); }
 	}
@@ -31,7 +32,7 @@ namespace OpenRA.Mods.Common.Traits
 	public class GrantConditionOnTerrain : ITick
 	{
 		readonly GrantConditionOnTerrainInfo info;
-		readonly ImmutableArray<TerrainTypeInfo> terrainTypes;
+		readonly TerrainTypeInfo[] terrainTypes;
 
 		int conditionToken = Actor.InvalidConditionToken;
 		string cachedTerrain;

@@ -31,9 +31,6 @@ namespace OpenRA.Mods.Common.Scripting
 		public void ActivateNukePower(CPos target)
 		{
 			np.Activate(Self, Self.World.Map.CenterOfCell(target));
-
-			foreach (var notify in Self.TraitsImplementing<INotifySupportPower>())
-				notify.Activated(Self);
 		}
 	}
 }

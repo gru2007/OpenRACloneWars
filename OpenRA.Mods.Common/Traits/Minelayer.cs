@@ -10,7 +10,6 @@
 #endregion
 
 using System;
-using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Linq;
 using OpenRA.Graphics;
@@ -47,7 +46,7 @@ namespace OpenRA.Mods.Common.Traits
 		public readonly string TileUnknownName = "build-unknown";
 
 		[Desc("Only allow laying mines on listed terrain types. Leave empty to allow all terrain types.")]
-		public readonly FrozenSet<string> TerrainTypes = FrozenSet<string>.Empty;
+		public readonly HashSet<string> TerrainTypes = new();
 
 		[CursorReference]
 		[Desc("Cursor to display when able to lay a mine.")]
@@ -230,7 +229,7 @@ namespace OpenRA.Mods.Common.Traits
 
 			public MinefieldOrderGenerator(Actor a, CPos xy, bool queued)
 			{
-				minelayers = [a];
+				minelayers = new List<Actor>() { a };
 				minefieldStart = xy;
 				this.queued = queued;
 

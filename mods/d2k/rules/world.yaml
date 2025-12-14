@@ -1,5 +1,6 @@
 ^BaseWorld:
 	Inherits: ^Palettes
+	AlwaysVisible:
 	ScreenMap:
 	ActorMap:
 	Selection:
@@ -10,7 +11,6 @@
 	TerrainGeometryOverlay:
 	DebugVisualizations:
 	TerrainRenderer:
-	SonicBlastRenderer:
 	ShroudRenderer:
 		ShroudVariants: shrouda, shroudb, shroudc, shroudd
 		FogVariants: foga, fogb, fogc, fogd
@@ -123,7 +123,6 @@ World:
 	DebugVisualizationCommands:
 	PathFinderOverlay:
 	HierarchicalPathFinderOverlay:
-	ActorMapOverlay:
 	PlayerCommands:
 	HelpCommand:
 	AutoSave:
@@ -180,18 +179,12 @@ World:
 		ClassName: options-starting-units.mcv-only
 		BaseActor: mcv
 		Factions: atreides, ordos, harkonnen
-	StartingUnits@Carryall:
-		Class: carryall
-		ClassName: options-starting-units.carryall
-		BaseActor: mcv
-		SupportActors: carryall
-		Factions: atreides, ordos, harkonnen
 	StartingUnits@lightatreides:
 		Class: light
 		ClassName: options-starting-units.light-support
 		Factions: atreides
 		BaseActor: mcv
-		SupportActors: light_inf, light_inf, light_inf, trooper, grenadier, trike, quad, carryall
+		SupportActors: light_inf, light_inf, light_inf, trooper, grenadier, trike, quad
 		InnerSupportRadius: 3
 		OuterSupportRadius: 5
 	StartingUnits@lightharkonnen:
@@ -199,7 +192,7 @@ World:
 		ClassName: options-starting-units.light-support
 		Factions: harkonnen
 		BaseActor: mcv
-		SupportActors: light_inf, light_inf, light_inf, trooper, trooper, trike, quad, carryall
+		SupportActors: light_inf, light_inf, light_inf, trooper, trooper, trike, quad
 		InnerSupportRadius: 3
 		OuterSupportRadius: 5
 	StartingUnits@lightordos:
@@ -207,7 +200,7 @@ World:
 		ClassName: options-starting-units.light-support
 		Factions: ordos
 		BaseActor: mcv
-		SupportActors: light_inf, light_inf, light_inf, trooper, engineer, raider, quad, carryall
+		SupportActors: light_inf, light_inf, light_inf, trooper, engineer, raider, quad
 		InnerSupportRadius: 3
 		OuterSupportRadius: 5
 	StartingUnits@heavyatreides:
@@ -215,7 +208,7 @@ World:
 		ClassName: options-starting-units.heavy-support
 		Factions: atreides
 		BaseActor: mcv
-		SupportActors: light_inf, light_inf, light_inf, trooper, grenadier, trike, combat_tank_a, missile_tank, carryall
+		SupportActors: light_inf, light_inf, light_inf, trooper, grenadier, trike, combat_tank_a, missile_tank
 		InnerSupportRadius: 3
 		OuterSupportRadius: 5
 	StartingUnits@heavyharkonnen:
@@ -223,7 +216,7 @@ World:
 		ClassName: options-starting-units.heavy-support
 		Factions: harkonnen
 		BaseActor: mcv
-		SupportActors: light_inf, light_inf, light_inf, trooper, engineer, quad, combat_tank_h, siege_tank, carryall
+		SupportActors: light_inf, light_inf, light_inf, trooper, engineer, quad, combat_tank_h, siege_tank
 		InnerSupportRadius: 3
 		OuterSupportRadius: 5
 	StartingUnits@heavyordos:
@@ -231,7 +224,7 @@ World:
 		ClassName: options-starting-units.heavy-support
 		Factions: ordos
 		BaseActor: mcv
-		SupportActors: light_inf, light_inf, light_inf, trooper, engineer, raider, combat_tank_o, missile_tank, carryall
+		SupportActors: light_inf, light_inf, light_inf, trooper, engineer, raider, combat_tank_o, missile_tank
 		InnerSupportRadius: 3
 		OuterSupportRadius: 5
 	SpawnStartingUnits:
@@ -246,9 +239,6 @@ World:
 	ScriptTriggers:
 	CellTriggerOverlay:
 	StartGameNotification:
-	FlashPostProcessEffect:
-		Type: flash
-		Color: E2DD8F4D
 	TimeLimitManager:
 		TimeLimitDisplayOrder: 2
 	ColorPickerManager:
@@ -276,8 +266,3 @@ EditorWorld:
 	BuildableTerrainOverlay:
 		AllowedTerrainTypes: Rock, Concrete
 	MarkerLayerOverlay:
-	TilingPathTool:
-		DefaultStart: RockSmooth
-		DefaultInner: RockSmooth
-		DefaultEnd: RockSmooth
-	Inherits@MapGenerators: ^MapGenerators

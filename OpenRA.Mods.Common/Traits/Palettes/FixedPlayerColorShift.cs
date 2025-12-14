@@ -9,8 +9,7 @@
  */
 #endregion
 
-using System.Collections.Frozen;
-using System.Collections.Immutable;
+using System.Collections.Generic;
 using OpenRA.Graphics;
 using OpenRA.Primitives;
 using OpenRA.Traits;
@@ -26,7 +25,7 @@ namespace OpenRA.Mods.Common.Traits
 		[Desc("The name of the palette to base off.")]
 		public readonly string BasePalette = null;
 
-		public readonly FrozenDictionary<string, ImmutableArray<float>> PlayerIndex;
+		public readonly Dictionary<string, float[]> PlayerIndex;
 
 		public override object Create(ActorInitializer init) { return new FixedPlayerColorShift(this); }
 	}

@@ -10,7 +10,6 @@
 #endregion
 
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using OpenRA.Primitives;
 using OpenRA.Traits;
 
@@ -22,7 +21,7 @@ namespace OpenRA.Mods.Cnc.UtilityCommands
 
 		bool IUtilityCommand.ValidateArguments(string[] args) { return args.Length >= 2; }
 
-		[Desc("FILENAME [AUTHOR]", "Convert a Tiberian Sun map to the OpenRA format.")]
+		[Desc("FILENAME", "Convert a Tiberian Sun map to the OpenRA format.")]
 		void IUtilityCommand.Run(Utility utility, string[] args)
 		{
 			Run(utility, args);
@@ -209,7 +208,6 @@ namespace OpenRA.Mods.Cnc.UtilityCommands
 			{ 0x65, DamageState.Undamaged },
 		};
 
-		[SuppressMessage("Style", "IDE0230:Use UTF-8 string literal", Justification = "False positive")]
 		protected override Dictionary<byte, byte[]> ResourceFromOverlay { get; } = new()
 		{
 			// "tib" - Regular Tiberium
@@ -260,12 +258,12 @@ namespace OpenRA.Mods.Cnc.UtilityCommands
 		};
 
 		protected override string[] LampActors { get; } =
-		[
+		{
 			"GALITE", "INGALITE", "NEGLAMP", "REDLAMP", "NEGRED", "GRENLAMP", "BLUELAMP", "YELWLAMP",
 			"INYELWLAMP", "PURPLAMP", "INPURPLAMP", "INORANLAMP", "INGRNLMP", "INREDLMP", "INBLULMP"
-		];
+		};
 
-		protected override string[] CreepActors { get; } = ["DOGGIE", "VISC_SML", "VISC_LRG", "JFISH"];
+		protected override string[] CreepActors { get; } = { "DOGGIE", "VISC_SML", "VISC_LRG", "JFISH" };
 
 		#endregion
 

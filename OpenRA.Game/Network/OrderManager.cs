@@ -10,7 +10,6 @@
 #endregion
 
 using System;
-using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -27,8 +26,8 @@ namespace OpenRA.Network
 		const string DesyncCompareLogs = "notification-desync-compare-logs";
 
 		readonly SyncReport syncReport;
-		readonly Dictionary<int, Queue<(int Frame, OrderPacket Orders)>> pendingOrders = [];
-		readonly Dictionary<int, (int SyncHash, ulong DefeatState)> syncForFrame = [];
+		readonly Dictionary<int, Queue<(int Frame, OrderPacket Orders)>> pendingOrders = new();
+		readonly Dictionary<int, (int SyncHash, ulong DefeatState)> syncForFrame = new();
 
 		public Session LobbyInfo = new();
 
@@ -41,7 +40,7 @@ namespace OpenRA.Network
 		public bool AuthenticationFailed = false;
 
 		// The default null means "no map restriction" while an empty set means "all maps restricted"
-		public FrozenSet<string> ServerMapPool = null;
+		public HashSet<string> ServerMapPool = null;
 
 		public int NetFrameNumber { get; private set; }
 		public int LocalFrameNumber;
@@ -54,11 +53,11 @@ namespace OpenRA.Network
 		internal int GameSaveLastFrame = -1;
 		internal int GameSaveLastSyncFrame = -1;
 
-		readonly List<Order> localOrders = [];
-		readonly List<Order> localImmediateOrders = [];
+		readonly List<Order> localOrders = new();
+		readonly List<Order> localImmediateOrders = new();
 
-		readonly List<ClientOrder> processClientOrders = [];
-		readonly List<int> processClientsToRemove = [];
+		readonly List<ClientOrder> processClientOrders = new();
+		readonly List<int> processClientsToRemove = new();
 
 		bool disposed;
 		bool generateSyncReport = false;

@@ -9,7 +9,6 @@
  */
 #endregion
 
-using System.Collections.Immutable;
 using System.Linq;
 using OpenRA.Traits;
 
@@ -20,10 +19,10 @@ namespace OpenRA.Mods.Common.Traits.Render
 	{
 		[SequenceReference]
 		[Desc("Sequence names to use.")]
-		public readonly ImmutableArray<string> Sequences = ["active"];
+		public readonly string[] Sequences = { "active" };
 
 		[Desc("The amount of time (in ticks) between animations. Two values indicate a range between which a random value is chosen.")]
-		public readonly ImmutableArray<int> Interval = [750];
+		public readonly int[] Interval = { 750 };
 
 		[Desc("Which sprite body to play the animation on.")]
 		public readonly string Body = "body";

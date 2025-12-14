@@ -58,20 +58,16 @@ namespace OpenRA.Mods.Common.Traits.BotModules.Squads
 		protected static CPos? FindSafePlace(Squad owner, out Actor detectedEnemyTarget, bool needTarget)
 		{
 			var map = owner.World.Map;
-			var dangerIndiceSideLength = owner.SquadManager.Info.DangerScanRadius * 141 / 100; // ¡Ö DangerScanRadius * sqrt(2)
+			var dangerRadius = owner.SquadManager.Info.DangerScanRadius;
 			detectedEnemyTarget = null;
 
-			var columnCount = (map.Bounds.Width + dangerIndiceSideLength - 1) / dangerIndiceSideLength;
-			var rowCount = (map.Bounds.Height + dangerIndiceSideLength - 1) / dangerIndiceSideLength;
-			var xoffset = map.Bounds.X;
-			var yoffset = map.Bounds.Y;
+			var columnCount = (map.MapSize.X + dangerRadius - 1) / dangerRadius;
+			var rowCount = (map.MapSize.Y + dangerRadius - 1) / dangerRadius;
 
-			// Construct a grid of points as the center of square with side length of dangerDiameter to divide the map and shuffle them to get a random search pattern.
-			// Make sure when search with DangerScanRadius, covers the whole indice and covers the least cells in other indice.
-			foreach (var i in Exts.MakeArray(columnCount * rowCount, i => i).Shuffle(owner.World.LocalRandom))
+			var checkIndices = Exts.MakeArray(columnCount * rowCount, i => i).Shuffle(owner.World.LocalRandom);
+			foreach (var i in checkIndices)
 			{
-				var pos = new MPos(xoffset + i % columnCount * dangerIndiceSideLength + (dangerIndiceSideLength >> 1),
-					yoffset + i / columnCount * dangerIndiceSideLength + (dangerIndiceSideLength >> 1)).ToCPos(map);
+				var pos = new MPos(i % columnCount * dangerRadius + dangerRadius / 2, i / columnCount * dangerRadius + dangerRadius / 2).ToCPos(map);
 
 				if (NearToPosSafely(owner, map.CenterOfCell(pos), out detectedEnemyTarget))
 				{
@@ -163,7 +159,7 @@ namespace OpenRA.Mods.Common.Traits.BotModules.Squads
 				}
 			}
 
-			if (!NearToPosSafely(owner, owner.Units.ClosestToIgnoringPath(owner.TargetActor).CenterPosition))
+			if (!NearToPosSafely(owner, owner.Target.CenterPosition))
 			{
 				owner.FuzzyStateMachine.ChangeState(owner, new AirFleeState());
 				return;

@@ -10,9 +10,7 @@
 #endregion
 
 using System;
-using System.Collections.Frozen;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 using OpenRA.Activities;
 using OpenRA.Mods.Common.Activities;
@@ -85,7 +83,7 @@ namespace OpenRA.Mods.Common.Traits
 		[Desc("Minimum altitude where this aircraft is considered airborne.")]
 		public readonly int MinAirborneAltitude = 1;
 
-		public readonly FrozenSet<string> LandableTerrainTypes = FrozenSet<string>.Empty;
+		public readonly HashSet<string> LandableTerrainTypes = new();
 
 		[Desc("Can the actor be ordered to move in to shroud?")]
 		public readonly bool MoveIntoShroud = true;
@@ -144,10 +142,10 @@ namespace OpenRA.Mods.Common.Traits
 		public readonly WDist AltitudeVelocity = new(43);
 
 		[Desc("Sounds to play when the actor is taking off.")]
-		public readonly ImmutableArray<string> TakeoffSounds = [];
+		public readonly string[] TakeoffSounds = Array.Empty<string>();
 
 		[Desc("Sounds to play when the actor is landing.")]
-		public readonly ImmutableArray<string> LandingSounds = [];
+		public readonly string[] LandingSounds = Array.Empty<string>();
 
 		[Desc("The distance of the resupply base that the aircraft will wait for its turn.")]
 		public readonly WDist WaitDistanceFromResupplyBase = new(3072);
@@ -286,7 +284,7 @@ namespace OpenRA.Mods.Common.Traits
 		public bool MayYieldReservation { get; private set; }
 		public bool ForceLanding { get; private set; }
 
-		(CPos, SubCell)[] landingCells = [];
+		(CPos, SubCell)[] landingCells = Array.Empty<(CPos, SubCell)>();
 		public bool RequireForceMove;
 
 		readonly int creationActivityDelay;
@@ -884,7 +882,7 @@ namespace OpenRA.Mods.Common.Traits
 
 		public void AddInfluence(CPos landingCell)
 		{
-			AddInfluence([(landingCell, SubCell.FullCell)]);
+			AddInfluence(new[] { (landingCell, SubCell.FullCell) });
 		}
 
 		public void RemoveInfluence()
@@ -892,7 +890,7 @@ namespace OpenRA.Mods.Common.Traits
 			if (self.IsInWorld)
 				self.World.ActorMap.RemoveInfluence(self, this);
 
-			landingCells = [];
+			landingCells = Array.Empty<(CPos, SubCell)>();
 		}
 
 		public bool HasInfluence()
@@ -1327,11 +1325,9 @@ namespace OpenRA.Mods.Common.Traits
 
 			public override IEnumerable<TargetLineNode> TargetLineNodes(Actor self)
 			{
-				var a = ChildActivity;
-				for (; a != null; a = a.NextActivity)
-					if (!a.IsCanceling)
-						foreach (var n in a.TargetLineNodes(self))
-							yield return n;
+				if (ChildActivity != null)
+					foreach (var n in ChildActivity.TargetLineNodes(self))
+						yield return n;
 			}
 		}
 

@@ -42,8 +42,8 @@ namespace OpenRA.Mods.Cnc.Traits
 
 		readonly Player owner;
 
-		readonly List<Actor> actors = [];
-		readonly HashSet<TraitPair<IOnGpsRefreshed>> notifyOnRefresh = [];
+		readonly List<Actor> actors = new();
+		readonly HashSet<TraitPair<IOnGpsRefreshed>> notifyOnRefresh = new();
 
 		public GpsWatcher(Player owner)
 		{

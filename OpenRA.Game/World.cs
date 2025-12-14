@@ -10,7 +10,6 @@
 #endregion
 
 using System;
-using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -30,14 +29,14 @@ namespace OpenRA
 	public sealed class World : IDisposable
 	{
 		internal readonly TraitDictionary TraitDict = new();
-		readonly SortedDictionary<uint, Actor> actors = [];
-		readonly List<IEffect> effects = [];
-		readonly List<IEffect> unpartitionedEffects = [];
-		readonly List<ISync> syncedEffects = [];
+		readonly SortedDictionary<uint, Actor> actors = new();
+		readonly List<IEffect> effects = new();
+		readonly List<IEffect> unpartitionedEffects = new();
+		readonly List<ISync> syncedEffects = new();
 		readonly GameSettings gameSettings;
 		readonly ModData modData;
 
-		readonly Queue<Action<World>> frameEndActions = [];
+		readonly Queue<Action<World>> frameEndActions = new();
 
 		public readonly GameSpeed GameSpeed;
 
@@ -53,7 +52,7 @@ namespace OpenRA
 		public LongBitSet<PlayerBitMask> AllPlayersMask = default;
 		public readonly LongBitSet<PlayerBitMask> NoPlayersMask = default;
 
-		public Player[] Players = [];
+		public Player[] Players = Array.Empty<Player>();
 
 		public event Action<Player> RenderPlayerChanged;
 
@@ -189,12 +188,13 @@ namespace OpenRA
 
 		bool wasLoadingGameSave;
 
-		internal World(Map map, ModData modData, OrderManager orderManager, WorldType type)
+		internal World(string mapUID, ModData modData, OrderManager orderManager, WorldType type)
 		{
 			this.modData = modData;
 			Type = type;
 			OrderManager = orderManager;
-			Map = map;
+			using (new PerfTimer("PrepareMap"))
+				Map = modData.PrepareMap(mapUID);
 
 			if (string.IsNullOrEmpty(modData.Manifest.DefaultOrderGenerator))
 				throw new InvalidDataException("mod.yaml must define a DefaultOrderGenerator");
@@ -205,7 +205,7 @@ namespace OpenRA
 
 			orderGenerator = (IOrderGenerator)modData.ObjectCreator.CreateBasic(defaultOrderGeneratorType);
 
-			var gameSpeeds = modData.GetOrCreate<GameSpeeds>();
+			var gameSpeeds = modData.Manifest.Get<GameSpeeds>();
 			var gameSpeedName = orderManager.LobbyInfo.GlobalSettings.OptionOrDefault("gamespeed", gameSpeeds.DefaultSpeed);
 			GameSpeed = gameSpeeds.Speeds[gameSpeedName];
 			Timestep = ReplayTimestep = GameSpeed.Timestep;
@@ -214,7 +214,7 @@ namespace OpenRA
 			LocalRandom = new MersenneTwister();
 
 			var worldActorType = type == WorldType.Editor ? SystemActors.EditorWorld : SystemActors.World;
-			WorldActor = CreateActor(worldActorType.ToString(), []);
+			WorldActor = CreateActor(worldActorType.ToString(), new TypeDictionary());
 			ActorMap = WorldActor.Trait<IActorMap>();
 			ScreenMap = WorldActor.Trait<ScreenMap>();
 			Selection = WorldActor.Trait<ISelection>();
@@ -239,10 +239,6 @@ namespace OpenRA
 				MapUid = Map.Uid,
 				MapTitle = Map.Title
 			};
-
-			var preview = modData.MapCache[Map.Uid];
-			if (preview.Class == MapClassification.Generated)
-				gameInfo.MapData = preview.ToBase64String();
 
 			RulesContainTemporaryBlocker = Map.Rules.Actors.Any(a => a.Value.HasTraitInfo<ITemporaryBlockerInfo>());
 			gameSettings = Game.Settings.Game;
@@ -303,7 +299,7 @@ namespace OpenRA
 			foreach (var player in Players)
 				gameInfo.AddPlayer(player, OrderManager.LobbyInfo);
 
-			gameInfo.DisabledSpawnPoints = OrderManager.LobbyInfo.DisabledSpawnPoints.ToFrozenSet();
+			gameInfo.DisabledSpawnPoints = OrderManager.LobbyInfo.DisabledSpawnPoints;
 
 			gameInfo.StartTimeUtc = DateTime.UtcNow;
 
@@ -404,7 +400,7 @@ namespace OpenRA
 
 		public int WorldTick { get; private set; }
 
-		readonly Dictionary<int, MiniYaml> gameSaveTraitData = [];
+		readonly Dictionary<int, MiniYaml> gameSaveTraitData = new();
 		internal void AddGameSaveTraitData(int traitIndex, MiniYaml yaml)
 		{
 			gameSaveTraitData[traitIndex] = yaml;
@@ -640,10 +636,12 @@ namespace OpenRA
 		}
 	}
 
-	public readonly struct TraitPair<T>(Actor actor, T trait) : IEquatable<TraitPair<T>>
+	public readonly struct TraitPair<T> : IEquatable<TraitPair<T>>
 	{
-		public readonly Actor Actor = actor;
-		public readonly T Trait = trait;
+		public readonly Actor Actor;
+		public readonly T Trait;
+
+		public TraitPair(Actor actor, T trait) { Actor = actor; Trait = trait; }
 
 		public static bool operator ==(TraitPair<T> me, TraitPair<T> other) { return me.Actor == other.Actor && Equals(me.Trait, other.Trait); }
 		public static bool operator !=(TraitPair<T> me, TraitPair<T> other) { return !(me == other); }

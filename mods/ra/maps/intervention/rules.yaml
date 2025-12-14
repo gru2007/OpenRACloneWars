@@ -52,6 +52,7 @@ WEAP:
 		Prerequisite: givefix
 
 MAINLAND:
+	AlwaysVisible:
 	Interactable:
 	Tooltip:
 		Name: actor-mainland-name
@@ -67,6 +68,7 @@ FIX:
 		Prerequisites: givefix
 
 GIVEFIX:
+	AlwaysVisible:
 	Interactable:
 	Tooltip:
 		Name: actor-givefix-name

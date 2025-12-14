@@ -11,7 +11,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using Linguini.Shared.Types.Bundle;
 
 namespace OpenRA.Network
@@ -56,32 +55,31 @@ namespace OpenRA.Network
 		public readonly string Key = string.Empty;
 
 		[FieldLoader.LoadUsing(nameof(LoadArguments))]
-		public readonly ImmutableArray<object> Arguments;
+		public readonly object[] Arguments;
 
 		static object LoadArguments(MiniYaml yaml)
 		{
+			var arguments = new List<object>();
 			var argumentsNode = yaml.NodeWithKeyOrDefault("Arguments");
-
-			if (argumentsNode == null)
-				return ImmutableArray<object>.Empty;
-
-			var arguments = new List<object>(argumentsNode.Value.Nodes.Length * 2);
-			foreach (var argumentNode in argumentsNode.Value.Nodes)
+			if (argumentsNode != null)
 			{
-				var argument = FieldLoader.Load<FluentArgument>(argumentNode.Value);
-				arguments.Add(argument.Key);
-				if (argument.Type == FluentArgument.FluentArgumentType.Number)
+				foreach (var argumentNode in argumentsNode.Value.Nodes)
 				{
-					if (!double.TryParse(argument.Value, out var number))
-						Log.Write("debug", $"Failed to parse {argument.Value}");
+					var argument = FieldLoader.Load<FluentArgument>(argumentNode.Value);
+					arguments.Add(argument.Key);
+					if (argument.Type == FluentArgument.FluentArgumentType.Number)
+					{
+						if (!double.TryParse(argument.Value, out var number))
+							Log.Write("debug", $"Failed to parse {argument.Value}");
 
-					arguments.Add(number);
+						arguments.Add(number);
+					}
+					else
+						arguments.Add(argument.Value);
 				}
-				else
-					arguments.Add(argument.Value);
 			}
 
-			return arguments.ToImmutableArray();
+			return arguments.ToArray();
 		}
 
 		public FluentMessage(MiniYaml yaml)

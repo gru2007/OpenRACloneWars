@@ -36,7 +36,7 @@ namespace OpenRA.Mods.Common.Traits
 		public void RulesetLoaded(Ruleset rules, ActorInfo ai)
 		{
 			if (!rules.Actors[SystemActors.World].HasTraitInfo<TerrainLightingInfo>())
-				throw new YamlException($"{nameof(TerrainLightSource)} can only be used with the world {nameof(TerrainLighting)} trait.");
+				throw new YamlException("TerrainLightSource can only be used with the world TerrainLighting trait.");
 		}
 
 		public override object Create(ActorInitializer init) { return new TerrainLightSource(init.Self, this); }

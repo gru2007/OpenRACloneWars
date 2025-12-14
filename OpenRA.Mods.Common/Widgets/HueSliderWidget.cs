@@ -19,7 +19,6 @@ namespace OpenRA.Mods.Common.Widgets
 	{
 		Sprite hueSprite;
 		Sprite pickerSprite;
-		Sheet hueSheet;
 
 		public HueSliderWidget() { }
 		public HueSliderWidget(HueSliderWidget other)
@@ -29,7 +28,7 @@ namespace OpenRA.Mods.Common.Widgets
 		{
 			base.Initialize(args);
 
-			hueSheet = new Sheet(SheetType.BGRA, new Size(256, 1));
+			var hueSheet = new Sheet(SheetType.BGRA, new Size(256, 1));
 
 			var buffer = new byte[4 * 256];
 
@@ -63,12 +62,6 @@ namespace OpenRA.Mods.Common.Widgets
 
 			var pos = RenderOrigin + new int2(PxFromValue(Value).Clamp(0, rb.Width - 1) - (int)pickerSprite.Size.X / 2, (rb.Height - (int)pickerSprite.Size.Y) / 2);
 			WidgetUtils.DrawSprite(pickerSprite, pos);
-		}
-
-		public override void Removed()
-		{
-			hueSheet?.Dispose();
-			base.Removed();
 		}
 	}
 }

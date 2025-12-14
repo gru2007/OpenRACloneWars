@@ -49,16 +49,10 @@ namespace OpenRA.Platforms.Default
 			OpenGL.CheckGLError();
 		}
 
-		public IVertexBuffer<T> CreateEmptyVertexBuffer<T>(int size) where T : struct
+		public IVertexBuffer<T> CreateVertexBuffer<T>(int size) where T : struct
 		{
 			VerifyThreadAffinity();
 			return new VertexBuffer<T>(size);
-		}
-
-		public IVertexBuffer<T> CreateVertexBuffer<T>(T[] data, bool dynamic = true) where T : struct
-		{
-			VerifyThreadAffinity();
-			return new VertexBuffer<T>(data, dynamic);
 		}
 
 		public IIndexBuffer CreateIndexBuffer(uint[] indices)

@@ -9,7 +9,7 @@
  */
 #endregion
 
-using System.Collections.Frozen;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using OpenRA.Traits;
@@ -28,7 +28,7 @@ namespace OpenRA.Mods.Common.Traits
 		readonly Actor[] parents = null;
 
 		public LineBuildParentInit(Actor[] value)
-			: base([])
+			: base(Array.Empty<string>())
 		{
 			parents = value;
 		}
@@ -56,7 +56,7 @@ namespace OpenRA.Mods.Common.Traits
 		public readonly int Range = 5;
 
 		[Desc("LineBuildNode 'Types' to attach to.")]
-		public readonly FrozenSet<string> NodeTypes = new HashSet<string> { "wall" }.ToFrozenSet();
+		public readonly HashSet<string> NodeTypes = new() { "wall" };
 
 		[ActorReference(typeof(LineBuildInfo))]
 		[Desc("Actor type for line-built segments (defaults to same actor).")]
@@ -71,7 +71,7 @@ namespace OpenRA.Mods.Common.Traits
 	public class LineBuild : INotifyKilled, INotifyAddedToWorld, INotifyRemovedFromWorld, INotifyLineBuildSegmentsChanged
 	{
 		readonly LineBuildInfo info;
-		readonly Actor[] parentNodes = [];
+		readonly Actor[] parentNodes = Array.Empty<Actor>();
 		HashSet<Actor> segments;
 
 		public LineBuild(ActorInitializer init, LineBuildInfo info)
@@ -84,7 +84,7 @@ namespace OpenRA.Mods.Common.Traits
 
 		void INotifyLineBuildSegmentsChanged.SegmentAdded(Actor self, Actor segment)
 		{
-			segments ??= [];
+			segments ??= new HashSet<Actor>();
 
 			segments.Add(segment);
 		}

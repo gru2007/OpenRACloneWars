@@ -216,8 +216,10 @@ namespace OpenRA
 		}
 	}
 
-	public class LocationInit(CPos value) : ValueActorInit<CPos>(value), ISingleInstanceInit
+	public class LocationInit : ValueActorInit<CPos>, ISingleInstanceInit
 	{
+		public LocationInit(CPos value)
+			: base(value) { }
 	}
 
 	public class OwnerInit : ActorInit, ISingleInstanceInit

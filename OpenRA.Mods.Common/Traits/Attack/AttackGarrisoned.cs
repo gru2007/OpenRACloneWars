@@ -11,7 +11,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 using OpenRA.Graphics;
 using OpenRA.Mods.Common.Traits.Render;
@@ -33,17 +32,17 @@ namespace OpenRA.Mods.Common.Traits
 	{
 		[FieldLoader.Require]
 		[Desc("Fire port offsets in local coordinates.")]
-		public readonly ImmutableArray<WVec> PortOffsets = default;
+		public readonly WVec[] PortOffsets = null;
 
 		[FieldLoader.Require]
 		[Desc("Fire port yaw angles.")]
-		public readonly ImmutableArray<WAngle> PortYaws = default;
+		public readonly WAngle[] PortYaws = null;
 
 		[FieldLoader.Require]
 		[Desc("Fire port yaw cone angle.")]
-		public readonly ImmutableArray<WAngle> PortCones = default;
+		public readonly WAngle[] PortCones = null;
 
-		public ImmutableArray<FirePort> Ports { get; private set; }
+		public FirePort[] Ports { get; private set; }
 
 		[PaletteReference]
 		public readonly string MuzzlePalette = "effect";
@@ -60,19 +59,17 @@ namespace OpenRA.Mods.Common.Traits
 			if (PortCones.Length != PortOffsets.Length)
 				throw new YamlException("PortCones must define an angle for each port.");
 
-			var ports = new FirePort[PortOffsets.Length];
+			Ports = new FirePort[PortOffsets.Length];
 
 			for (var i = 0; i < PortOffsets.Length; i++)
 			{
-				ports[i] = new FirePort
+				Ports[i] = new FirePort
 				{
 					Offset = PortOffsets[i],
 					Yaw = PortYaws[i],
 					Cone = PortCones[i],
 				};
 			}
-
-			Ports = ports.ToImmutableArray();
 
 			base.RulesetLoaded(rules, ai);
 		}
@@ -93,12 +90,12 @@ namespace OpenRA.Mods.Common.Traits
 			: base(self, info)
 		{
 			Info = info;
-			coords = Exts.Lazy(self.Trait<BodyOrientation>);
-			armaments = [];
-			muzzles = [];
-			paxFacing = [];
-			paxPos = [];
-			paxRender = [];
+			coords = Exts.Lazy(() => self.Trait<BodyOrientation>());
+			armaments = new List<Armament>();
+			muzzles = new List<AnimationWithOffset>();
+			paxFacing = new Dictionary<Actor, IFacing>();
+			paxPos = new Dictionary<Actor, IPositionable>();
+			paxRender = new Dictionary<Actor, RenderSprites>();
 		}
 
 		protected override void Created(Actor self)

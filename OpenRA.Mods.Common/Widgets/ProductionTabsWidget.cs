@@ -28,7 +28,7 @@ namespace OpenRA.Mods.Common.Widgets
 
 	public class ProductionTabGroup
 	{
-		public List<ProductionTab> Tabs = [];
+		public List<ProductionTab> Tabs = new();
 		public string Group;
 		public int NextQueueName = 1;
 		public bool Alert { get { return Tabs.Any(t => t.Queue.AllQueued().Any(i => i.Done)); } }
@@ -105,7 +105,7 @@ namespace OpenRA.Mods.Common.Widgets
 		readonly Lazy<ProductionPaletteWidget> paletteWidget;
 		string queueGroup;
 
-		readonly List<(ProductionQueue Queue, bool Enabled)> cachedProductionQueueEnabledStates = [];
+		readonly List<(ProductionQueue Queue, bool Enabled)> cachedProductionQueueEnabledStates = new();
 
 		[ObjectCreator.UseCtor]
 		public ProductionTabsWidget(World world)
@@ -243,32 +243,31 @@ namespace OpenRA.Mods.Common.Widgets
 		// Is added to world.ActorAdded by the SidebarLogic handler
 		public void ActorChanged(Actor a)
 		{
-			// Ignore non-production actors and actors owned by non-local player
-			if (!a.Info.HasTraitInfo<ProductionQueueInfo>() || a.Owner != a.World.LocalPlayer)
-				return;
+			if (a.Info.HasTraitInfo<ProductionQueueInfo>())
+			{
+				var queues = a.World.ActorsWithTrait<ProductionQueue>()
+					.Where(p => p.Actor.Owner == p.Actor.World.LocalPlayer && p.Actor.IsInWorld)
+					.Select(p => p.Trait);
 
-			var queues = a.World.ActorsWithTrait<ProductionQueue>()
-				.Where(p => p.Actor.Owner == p.Actor.World.LocalPlayer && p.Actor.IsInWorld)
-				.Select(p => p.Trait);
+				cachedProductionQueueEnabledStates.Clear();
+				foreach (var queue in queues)
+					cachedProductionQueueEnabledStates.Add((queue, queue.Enabled));
 
-			cachedProductionQueueEnabledStates.Clear();
-			foreach (var queue in queues)
-				cachedProductionQueueEnabledStates.Add((queue, queue.Enabled));
+				foreach (var g in Groups.Values)
+					g.Update(cachedProductionQueueEnabledStates.Select(t => t.Queue));
 
-			foreach (var g in Groups.Values)
-				g.Update(cachedProductionQueueEnabledStates.Select(t => t.Queue));
+				if (queueGroup == null)
+					return;
 
-			if (queueGroup == null)
-				return;
+				// Queue destroyed, was last of type: switch to a new group
+				if (Groups[queueGroup].Tabs.Count == 0)
+					QueueGroup = Groups.Where(g => g.Value.Tabs.Count > 0)
+						.Select(g => g.Key).FirstOrDefault();
 
-			// Queue destroyed, was last of type: switch to a new group
-			if (Groups[queueGroup].Tabs.Count == 0)
-				QueueGroup = Groups.Where(g => g.Value.Tabs.Count > 0)
-					.Select(g => g.Key).FirstOrDefault();
-
-			// Queue destroyed, others of same type: switch to another tab
-			else if (!Groups[queueGroup].Tabs.Select(t => t.Queue).Contains(CurrentQueue))
-				SelectNextTab(false);
+				// Queue destroyed, others of same type: switch to another tab
+				else if (!Groups[queueGroup].Tabs.Select(t => t.Queue).Contains(CurrentQueue))
+					SelectNextTab(false);
+			}
 		}
 
 		public override void Tick()
@@ -279,16 +278,12 @@ namespace OpenRA.Mods.Common.Widgets
 			// It is possible that production queues get enabled/disabled during their lifetime.
 			// This makes sure every enabled production queue always has its tab associated with it.
 			var shouldUpdateQueues = false;
-			for (var i = 0; i < cachedProductionQueueEnabledStates.Count; i++)
+			foreach (var (queue, enabled) in cachedProductionQueueEnabledStates)
 			{
-				var (queue, enabled) = cachedProductionQueueEnabledStates[i];
-
 				if (queue.Enabled != enabled)
 				{
 					shouldUpdateQueues = true;
-
-					// Refresh queue.Enabled value in cache
-					cachedProductionQueueEnabledStates[i] = (queue, queue.Enabled);
+					break;
 				}
 			}
 

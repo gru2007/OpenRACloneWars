@@ -9,7 +9,7 @@
  */
 #endregion
 
-using System.Collections.Immutable;
+using System;
 using OpenRA.Primitives;
 using OpenRA.Traits;
 
@@ -26,7 +26,7 @@ namespace OpenRA.Mods.Common.Traits
 		[Desc("Actor type to replace with on repair.")]
 		public readonly string ReplaceWithActor = null;
 
-		public readonly ImmutableArray<CVec> NeighbourOffsets = [];
+		public readonly CVec[] NeighbourOffsets = Array.Empty<CVec>();
 
 		public override object Create(ActorInitializer init) { return new BridgePlaceholder(init.Self, this); }
 	}
@@ -63,11 +63,11 @@ namespace OpenRA.Mods.Common.Traits
 			{
 				self.Dispose();
 
-				w.CreateActor(Info.ReplaceWithActor,
-				[
+				w.CreateActor(Info.ReplaceWithActor, new TypeDictionary
+				{
 					new LocationInit(self.Location),
 					new OwnerInit(self.Owner),
-				]);
+				});
 			});
 		}
 
@@ -79,7 +79,7 @@ namespace OpenRA.Mods.Common.Traits
 		string IBridgeSegment.Type => Info.Type;
 		DamageState IBridgeSegment.DamageState => Info.DamageState;
 		bool IBridgeSegment.Valid => self.IsInWorld;
-		ImmutableArray<CVec> IBridgeSegment.NeighbourOffsets => Info.NeighbourOffsets;
+		CVec[] IBridgeSegment.NeighbourOffsets => Info.NeighbourOffsets;
 		CPos IBridgeSegment.Location => self.Location;
 	}
 }

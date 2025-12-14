@@ -10,7 +10,6 @@
 #endregion
 
 using System;
-using System.Collections.Immutable;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -20,16 +19,12 @@ using OpenRA.Widgets;
 
 namespace OpenRA.Mods.Common.Widgets.Logic
 {
-	[IncludeStaticFluentReferences(
-		typeof(PaintTileEditorAction),
-		typeof(FloodFillEditorAction),
-		typeof(CommonSelectorLogic))]
 	public class TileSelectorLogic : CommonSelectorLogic
 	{
 		sealed class TileSelectorTemplate
 		{
 			public readonly TerrainTemplateInfo Template;
-			public readonly ImmutableArray<string> Categories;
+			public readonly string[] Categories;
 			public readonly string[] SearchTerms;
 			public readonly string Tooltip;
 
@@ -38,7 +33,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 				Template = template;
 				Categories = template.Categories;
 				Tooltip = template.Id.ToString(NumberFormatInfo.CurrentInfo);
-				SearchTerms = [Tooltip];
+				SearchTerms = new[] { Tooltip };
 			}
 		}
 
@@ -117,18 +112,11 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 				preview.SetTemplate(terrainInfo.Templates[tileId]);
 
 				// Scale templates to fit within the panel
-				// Preview position is assumed to be a margin
-				var maxPreviewWidth = item.Bounds.Width - 2 * preview.Bounds.X;
-				var maxPreviewHeight = item.Bounds.Height - 2 * preview.Bounds.Y;
-
 				var scale = 1f;
-				if (preview.IdealPreviewSize.X > maxPreviewWidth)
-					scale = maxPreviewWidth / (float)preview.IdealPreviewSize.X;
+				if (scale * preview.IdealPreviewSize.X > ItemTemplate.Bounds.Width)
+					scale = (ItemTemplate.Bounds.Width - Panel.ItemSpacing) / (float)preview.IdealPreviewSize.X;
 
-				if (preview.IdealPreviewSize.Y * scale > maxPreviewHeight)
-					scale = maxPreviewHeight / (float)preview.IdealPreviewSize.Y;
-
-				preview.Scale = scale;
+				preview.GetScale = () => scale;
 				preview.Bounds.Width = (int)(scale * preview.IdealPreviewSize.X);
 				preview.Bounds.Height = (int)(scale * preview.IdealPreviewSize.Y);
 

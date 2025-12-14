@@ -35,18 +35,27 @@ namespace OpenRA.Mods.Common.Traits
 
 	public sealed class TerrainLighting : ITerrainLighting
 	{
-		sealed class LightSource(WPos pos, CPos cell, WDist range, float intensity, in float3 tint)
+		sealed class LightSource
 		{
-			public readonly WPos Pos = pos;
-			public readonly CPos Cell = cell;
-			public readonly WDist Range = range;
-			public readonly float Intensity = intensity;
-			public readonly float3 Tint = tint;
+			public readonly WPos Pos;
+			public readonly CPos Cell;
+			public readonly WDist Range;
+			public readonly float Intensity;
+			public readonly float3 Tint;
+
+			public LightSource(WPos pos, CPos cell, WDist range, float intensity, in float3 tint)
+			{
+				Pos = pos;
+				Cell = cell;
+				Range = range;
+				Intensity = intensity;
+				Tint = tint;
+			}
 		}
 
 		readonly TerrainLightingInfo info;
 		readonly Map map;
-		readonly Dictionary<int, LightSource> lightSources = [];
+		readonly Dictionary<int, LightSource> lightSources = new();
 		readonly SpatiallyPartitioned<LightSource> partitionedLightSources;
 		readonly float3 globalTint;
 		int nextLightSourceToken = 1;
@@ -61,8 +70,8 @@ namespace OpenRA.Mods.Common.Traits
 
 			var tileScale = map.Grid.TileScale;
 			partitionedLightSources = new SpatiallyPartitioned<LightSource>(
-				(map.MapSize.Width + 1) * tileScale,
-				(map.MapSize.Height + 1) * tileScale,
+				(map.MapSize.X + 1) * tileScale,
+				(map.MapSize.Y + 1) * tileScale,
 				info.BinSize * tileScale);
 		}
 

@@ -2194,16 +2194,19 @@ WOOD:
 		Type: woodfence
 
 BARRACKS:
+	AlwaysVisible:
 	Interactable:
 	Tooltip:
 		Name: actor-barracks-name
 
 TECHCENTER:
+	AlwaysVisible:
 	Interactable:
 	Tooltip:
 		Name: actor-techcenter-name
 
 ANYPOWER:
+	AlwaysVisible:
 	Interactable:
 	Tooltip:
 		Name: actor-anypower-name

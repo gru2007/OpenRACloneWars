@@ -60,59 +60,20 @@ namespace OpenRA.Mods.Common.MapGenerator
 			}
 		}
 
-		public static WPos Center(Map map)
-		{
-			return Center(map.Tiles);
-		}
-
-		/// <summary>
-		/// Return the radius of the largest circle that can be contained in the cell layer.
-		/// </summary>
-		public static WDist Radius<T>(CellLayer<T> cellLayer)
-		{
-			var center = Center(cellLayer);
-			return new WDist(Math.Min(center.X, center.Y));
-		}
-
-		public static WDist Radius(Map map)
-		{
-			return Radius(map.Tiles);
-		}
-
 		/// <summary>Get the WPos of the -X-Y corner of a CPos cell.</summary>
-		public static WPos CornerToWPos(CPos cpos, MapGridType gridType)
+		public static WPos CornerToWPos(CPos xy, MapGridType gridType)
 		{
 			switch (gridType)
 			{
 				case MapGridType.Rectangular:
 					return new WPos(
-						cpos.X * 1024,
-						cpos.Y * 1024,
+						xy.X * 1024,
+						xy.Y * 1024,
 						0);
 				case MapGridType.RectangularIsometric:
 					return new WPos(
-						(cpos.X - cpos.Y) * 724 + 724,
-						(cpos.X + cpos.Y) * 724,
-						0);
-				default:
-					throw new NotImplementedException();
-			}
-		}
-
-		/// <summary>Get the closest -X-Y corner of a CPos cell to a WPos.</summary>
-		public static CPos WPosToCorner(WPos wpos, MapGridType gridType)
-		{
-			switch (gridType)
-			{
-				case MapGridType.Rectangular:
-					return new CPos(
-						FloorDiv(wpos.X + 512, 1024),
-						FloorDiv(wpos.Y + 512, 1024),
-						0);
-				case MapGridType.RectangularIsometric:
-					return new CPos(
-						FloorDiv(wpos.Y + wpos.X, 1448),
-						FloorDiv(wpos.Y - wpos.X + 1448, 1448),
+						(xy.X - xy.Y) * 724 + 724,
+						(xy.X + xy.Y) * 724,
 						0);
 				default:
 					throw new NotImplementedException();
@@ -237,7 +198,7 @@ namespace OpenRA.Mods.Common.MapGenerator
 		public static void OverCircle<T>(
 			CellLayer<T> cellLayer,
 			WPos wCenter,
-			WDist wRadius,
+			int wRadius,
 			bool outside,
 			Action<MPos, CPos, WPos, long> action)
 		{
@@ -257,21 +218,8 @@ namespace OpenRA.Mods.Common.MapGenerator
 			{
 				var mCenter = WPosToMPos(wCenter, gridType);
 
-				int mRadiusU;
-				int mRadiusV;
-				switch (gridType)
-				{
-					case MapGridType.Rectangular:
-						mRadiusU = wRadius.Length / 1024 + 1;
-						mRadiusV = wRadius.Length / 1024 + 1;
-						break;
-					case MapGridType.RectangularIsometric:
-						mRadiusU = wRadius.Length / 1448 + 2;
-						mRadiusV = wRadius.Length / 724 + 2;
-						break;
-					default:
-						throw new NotImplementedException();
-				}
+				var mRadiusU = wRadius / 1448 + 2;
+				var mRadiusV = wRadius / 724 + 1;
 
 				minU = Math.Max(mCenter.U - mRadiusU, 0);
 				minV = Math.Max(mCenter.V - mRadiusV, 0);
@@ -279,7 +227,7 @@ namespace OpenRA.Mods.Common.MapGenerator
 				maxV = Math.Min(mCenter.V + mRadiusV, cellLayer.Size.Height - 1);
 			}
 
-			var wRadiusSquared = wRadius.LengthSquared;
+			var wRadiusSquared = (long)wRadius * wRadius;
 			for (var v = minV; v <= maxV; v++)
 				for (var u = minU; u <= maxU; u++)
 				{
@@ -307,44 +255,16 @@ namespace OpenRA.Mods.Common.MapGenerator
 		}
 
 		/// <summary>
-		/// Uniformally add to or subtract from all cells such that the quantile (count/outOf) has at the target value.
-		/// For example, (target: 0, count: 25, outOf: 75) where there are 401 cells would mean
-		/// that 100 cells are no greater than 0, 300 cells are no less than 0, and at least 1 cell
-		/// is 0.
+		/// Uniformally add to or subtract from all matrix cells such that the given quantile,
+		/// fraction, has the given target value.
 		/// </summary>
-		public static void CalibrateQuantileInPlace(CellLayer<int> cellLayer, int target, int count, int outOf)
+		public static void CalibrateQuantileInPlace(CellLayer<float> cellLayer, float target, float fraction)
 		{
 			var sorted = Entries(cellLayer);
 			Array.Sort(sorted);
-			var adjustment = target - sorted[(long)(sorted.Length - 1) * count / outOf];
+			var adjustment = target - MatrixUtils.ArrayQuantile(sorted, fraction);
 			foreach (var mpos in cellLayer.CellRegion.MapCoords)
 				cellLayer[mpos] += adjustment;
-		}
-
-		/// <summary>
-		/// Return a boolean CellLayer where true correlates with the largest values in the input,
-		/// such that the fraction of true cells is at least (but approximately) count/outOf.
-		/// </summary>
-		public static CellLayer<bool> CalibratedBooleanThreshold(CellLayer<int> input, int count, int outOf)
-		{
-			var output = new CellLayer<bool>(input.GridType, input.Size);
-			if (count <= 0)
-			{
-				return output;
-			}
-			else if (count >= outOf)
-			{
-				output.Clear(true);
-				return output;
-			}
-
-			var sorted = Entries(input);
-			Array.Sort(sorted);
-			var threshold = sorted[(long)sorted.Length * (outOf - count) / outOf];
-			foreach (var mpos in input.CellRegion.MapCoords)
-				output[mpos] = input[mpos] >= threshold;
-
-			return output;
 		}
 
 		/// <summary>
@@ -389,7 +309,7 @@ namespace OpenRA.Mods.Common.MapGenerator
 		/// </summary>
 		public static Rectangle CellBounds(Map map)
 		{
-			return CellBounds(map.MapSize, map.Grid.Type);
+			return CellBounds(new Size(map.MapSize.X, map.MapSize.Y), map.Grid.Type);
 		}
 
 		/// <summary>
@@ -461,15 +381,12 @@ namespace OpenRA.Mods.Common.MapGenerator
 			FromMatrix(output, roominess);
 		}
 
-		/// <summary>
-		/// Wrapper around MatrixUtils.WalkingDistance in CPos space.
-		/// Returns world distances (1024ths).
-		/// </summary>
+		/// <summary>Wrapper around MatrixUtils.WalkingDistance in CPos space.</summary>
 		public static void WalkingDistances(
-			CellLayer<WDist> distances,
+			CellLayer<float> distances,
 			CellLayer<bool> passable,
 			IEnumerable<CPos> seeds,
-			WDist maxDistance)
+			float maxDistance)
 		{
 			var passableMatrix = ToMatrix(passable, false);
 			var cellBounds = CellBounds(passable);
@@ -511,7 +428,7 @@ namespace OpenRA.Mods.Common.MapGenerator
 		/// Pick a random MPos position in a CellLayer where each cell is a
 		/// selection weight.
 		/// </summary>
-		public static MPos PickWeighted(CellLayer<int> weights, MersenneTwister random)
+		public static MPos PickWeighted(CellLayer<float> weights, MersenneTwister random)
 		{
 			var entries = Entries(weights);
 			var choice = random.PickWeighted(entries);
@@ -565,7 +482,7 @@ namespace OpenRA.Mods.Common.MapGenerator
 			while (next.Count != 0)
 			{
 				var current = next;
-				next = [];
+				next = new List<(CPos, P)>();
 				foreach (var (source, prop) in current)
 				{
 					var newProp = filler(source, prop);
@@ -578,112 +495,6 @@ namespace OpenRA.Mods.Common.MapGenerator
 						}
 				}
 			}
-		}
-
-		/// <summary>
-		/// Simple flood fill that propagates, starting from seed cells, throughout a masked area.
-		/// The fillAction is run once (in a consistent order) for each filled cell.
-		/// </summary>
-		public static void SimpleFloodFill(
-			CellLayer<bool> mask,
-			CellLayer<bool> seeds,
-			Action<CPos> fillAction,
-			ImmutableArray<CVec> spread)
-		{
-			if (!AreSameShape(mask, seeds))
-				throw new ArgumentException("mask and seeds did not have same shape");
-
-			var available = Clone(mask);
-
-			bool? Filler(CPos cpos, bool _)
-			{
-				if (!available[cpos])
-					return null;
-
-				fillAction(cpos);
-				available[cpos] = false;
-				return true;
-			}
-
-			FloodFill(
-				available,
-				seeds.CellRegion
-					.Where(cpos => seeds[cpos] && mask[cpos])
-					.Select(cpos => (cpos, true)),
-				Filler,
-				spread);
-		}
-
-		/// <summary>Return logical AND / conjunction / intersection of layers.</summary>
-		public static CellLayer<bool> Intersect(IEnumerable<CellLayer<bool>> layers)
-		{
-			return Aggregate(layers, (a, b) => a && b);
-		}
-
-		/// <summary>
-		/// Return the difference of layers. Each cell is true if and only if something appears
-		/// only in the first layer.
-		/// </summary>
-		public static CellLayer<bool> Subtract(IEnumerable<CellLayer<bool>> layers)
-		{
-			return Aggregate(layers, (a, b) => a && !b);
-		}
-
-		public static CellLayer<T> Aggregate<T>(
-			IEnumerable<CellLayer<T>> layers,
-			Func<T, T, T> aggregator)
-		{
-			var layersArray = layers.ToArray();
-			if (layersArray.Length == 0)
-				throw new ArgumentException("No layers were supplied");
-
-			var accumulator = new CellLayer<T>(layersArray[0].GridType, layersArray[0].Size);
-			accumulator.CopyValuesFrom(layersArray[0]);
-			foreach (var layer in layersArray.Skip(1))
-			{
-				if (!AreSameShape(accumulator, layer))
-					throw new ArgumentException("Layers are not the same shape");
-				foreach (var mpos in accumulator.CellRegion.MapCoords)
-					accumulator[mpos] = aggregator(accumulator[mpos], layer[mpos]);
-			}
-
-			return accumulator;
-		}
-
-		/// <summary>Create a shallow copy of a CellLayer.</summary>
-		public static CellLayer<T> Clone<T>(CellLayer<T> input)
-		{
-			var output = new CellLayer<T>(input.GridType, input.Size);
-			output.CopyValuesFrom(input);
-			return output;
-		}
-
-		public static CellLayer<R> Map<T, R>(CellLayer<T> input, Func<T, R> func)
-		{
-			var output = new CellLayer<R>(input.GridType, input.Size);
-			foreach (var mpos in input.CellRegion.MapCoords)
-				output[mpos] = func(input[mpos]);
-			return output;
-		}
-
-		/// <summary>Create and initialize a CellLayer according to the given function.</summary>
-		public static CellLayer<T> Create<T>(Map map, Func<MPos, T> func)
-		{
-			var layer = new CellLayer<T>(map);
-			foreach (var mpos in map.AllCells.MapCoords)
-				layer[mpos] = func(mpos);
-
-			return layer;
-		}
-
-		/// <summary>Create and initialize a CellLayer according to the given function.</summary>
-		public static CellLayer<T> Create<T>(Map map, Func<CPos, T> func)
-		{
-			var layer = new CellLayer<T>(map);
-			foreach (var cpos in map.AllCells)
-				layer[cpos] = func(cpos);
-
-			return layer;
 		}
 	}
 }

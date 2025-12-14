@@ -82,8 +82,7 @@ namespace OpenRA.Mods.Common.Scripting
 			GetScriptTriggers(actor).RegisterCallback(Trigger.OnIdle, func, Context);
 		}
 
-		[Desc("Call a function when the actor is damaged. " +
-			"Repairs or other negative damage can activate this trigger. The callback " +
+		[Desc("Call a function when the actor is damaged. The callback " +
 			"function will be called as func(self: actor, attacker: actor, damage: integer).")]
 		public void OnDamaged(Actor actor, [ScriptEmmyTypeOverride("fun(self: actor, attacker: actor, damage: integer)")] LuaFunction func)
 		{
@@ -131,8 +130,7 @@ namespace OpenRA.Mods.Common.Scripting
 				GetScriptTriggers(a).OnKilledInternal += OnMemberKilled;
 		}
 
-		[Desc("Call a function when one of the actors in a group is killed. " +
-			"This trigger is only called once. The callback " +
+		[Desc("Call a function when one of the actors in a group is killed. The callback " +
 			"function will be called as func(killed: actor).")]
 		public void OnAnyKilled(Actor[] actors, [ScriptEmmyTypeOverride("fun(killed: actor)")] LuaFunction func)
 		{
@@ -166,12 +164,12 @@ namespace OpenRA.Mods.Common.Scripting
 
 		[Desc("Call a function when this actor produces another actor. " +
 			"The callback function will be called as func(producer: actor, produced: actor).")]
-		public void OnProduction(Actor actor, [ScriptEmmyTypeOverride("fun(producer: actor, produced: actor)")] LuaFunction func)
+		public void OnProduction(Actor actors, [ScriptEmmyTypeOverride("fun(producer: actor, produced: actor)")] LuaFunction func)
 		{
-			if (actor == null)
-				throw new NullReferenceException(nameof(actor));
+			if (actors == null)
+				throw new NullReferenceException(nameof(actors));
 
-			GetScriptTriggers(actor).RegisterCallback(Trigger.OnProduction, func, Context);
+			GetScriptTriggers(actors).RegisterCallback(Trigger.OnProduction, func, Context);
 		}
 
 		[Desc("Call a function when any actor produces another actor. The callback " +
@@ -229,16 +227,6 @@ namespace OpenRA.Mods.Common.Scripting
 				throw new NullReferenceException(nameof(player));
 
 			GetScriptTriggers(player.PlayerActor).RegisterCallback(Trigger.OnObjectiveFailed, func, Context);
-		}
-
-		[Desc("Call a function when this player places a building. " +
-			"The callback function will be called as func(p: player, placed: actor).")]
-		public void OnBuildingPlaced(Player player, [ScriptEmmyTypeOverride("fun(p: player, placed: actor)")] LuaFunction func)
-		{
-			if (player == null)
-				throw new NullReferenceException(nameof(player));
-
-			GetScriptTriggers(player.PlayerActor).RegisterCallback(Trigger.OnBuildingPlaced, func, Context);
 		}
 
 		[Desc("Call a function when this actor is added to the world. " +
@@ -316,16 +304,15 @@ namespace OpenRA.Mods.Common.Scripting
 
 		[Desc("Call a function when this actor is captured. The callback function " +
 			"will be called as func(self: actor, captor: actor, oldOwner: player, newOwner: player).")]
-		public void OnCapture(Actor actor, [ScriptEmmyTypeOverride("fun(self: actor, captor: actor, oldOwner: player, newOwner: player)")] LuaFunction func)
+		public void OnCapture(Actor actors, [ScriptEmmyTypeOverride("fun(self: actor, captor: actor, oldOwner: player, newOwner: player)")] LuaFunction func)
 		{
-			if (actor == null)
-				throw new NullReferenceException(nameof(actor));
+			if (actors == null)
+				throw new NullReferenceException(nameof(actors));
 
-			GetScriptTriggers(actor).RegisterCallback(Trigger.OnCapture, func, Context);
+			GetScriptTriggers(actors).RegisterCallback(Trigger.OnCapture, func, Context);
 		}
 
 		[Desc("Call a function when this actor is killed or captured. " +
-			"This trigger is only called once. " +
 			"The callback function will be called as func().")]
 		public void OnKilledOrCaptured(Actor actor, [ScriptEmmyTypeOverride("fun()")] LuaFunction func)
 		{
@@ -358,7 +345,6 @@ namespace OpenRA.Mods.Common.Scripting
 		}
 
 		[Desc("Call a function when all of the actors in a group have been killed or captured. " +
-			"This trigger is only called once. " +
 			"The callback function will be called as func().")]
 		public void OnAllKilledOrCaptured(Actor[] actors, [ScriptEmmyTypeOverride("fun()")] LuaFunction func)
 		{
@@ -577,7 +563,7 @@ namespace OpenRA.Mods.Common.Scripting
 			"so you must not add new triggers at the same time that you are calling this function.")]
 		public void Clear(Actor actor, string triggerName)
 		{
-			var trigger = Enum.Parse<Trigger>(triggerName);
+			var trigger = (Trigger)Enum.Parse(typeof(Trigger), triggerName);
 
 			if (actor == null)
 				throw new NullReferenceException(nameof(actor));

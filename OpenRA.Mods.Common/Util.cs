@@ -10,9 +10,7 @@
 #endregion
 
 using System;
-using System.Collections.Frozen;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
@@ -195,7 +193,7 @@ namespace OpenRA.Mods.Common
 
 		public static IEnumerable<CPos> AdjacentCells(World w, in Target target)
 		{
-			var cells = target.Positions.Select(w.Map.CellContaining).Distinct();
+			var cells = target.Positions.Select(p => w.Map.CellContaining(p)).Distinct();
 			return ExpandFootprint(cells, true);
 		}
 
@@ -224,7 +222,7 @@ namespace OpenRA.Mods.Common
 			}
 		}
 
-		public static int RandomInRange(MersenneTwister random, ImmutableArray<int> range)
+		public static int RandomInRange(MersenneTwister random, int[] range)
 		{
 			if (range.Length == 0)
 				return 0;
@@ -242,7 +240,7 @@ namespace OpenRA.Mods.Common
 				: t.Name;
 		}
 
-		public static WDist RandomDistance(MersenneTwister random, ImmutableArray<WDist> distance)
+		public static WDist RandomDistance(MersenneTwister random, WDist[] distance)
 		{
 			if (distance.Length == 0)
 				return WDist.Zero;
@@ -253,7 +251,7 @@ namespace OpenRA.Mods.Common
 			return new WDist(random.Next(distance[0].Length, distance[1].Length));
 		}
 
-		public static WVec RandomVector(MersenneTwister random, ImmutableArray<WVec> vector)
+		public static WVec RandomVector(MersenneTwister random, WVec[] vector)
 		{
 			if (vector.Length == 0)
 				return WVec.Zero;
@@ -272,20 +270,10 @@ namespace OpenRA.Mods.Common
 			if (t.IsEnum)
 				return $"{t.Name} (enum)";
 
-			if (t.IsGenericType &&
-				(t.GetGenericTypeDefinition() == typeof(HashSet<>) ||
-				t.GetGenericTypeDefinition()
-					.BaseTypes()
-					.Select(bt => bt.IsGenericType ? bt.GetGenericTypeDefinition() : null)
-					.Any(bt => bt == typeof(FrozenSet<>))))
+			if (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(HashSet<>))
 				return $"Set of {t.GetGenericArguments().Select(FriendlyTypeName).First()}";
 
-			if (t.IsGenericType &&
-				(t.GetGenericTypeDefinition() == typeof(Dictionary<,>) ||
-				t.GetGenericTypeDefinition()
-					.BaseTypes()
-					.Select(bt => bt.IsGenericType ? bt.GetGenericTypeDefinition() : null)
-					.Any(bt => bt == typeof(FrozenDictionary<,>))))
+			if (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(Dictionary<,>))
 			{
 				var args = t.GetGenericArguments().Select(FriendlyTypeName).ToArray();
 				return $"Dictionary with Key: {args[0]}, Value: {args[1]}";

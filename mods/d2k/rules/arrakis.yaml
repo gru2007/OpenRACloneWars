@@ -2,6 +2,7 @@ spicebloom.spawnpoint:
 	Interactable:
 	EditorOnlyTooltip:
 		Name: actor-spicebloom-spawnpoint-name
+	AlwaysVisible:
 	RenderSpritesEditorOnly:
 		Image: spicebloom.editor
 	WithSpriteBody:
@@ -145,7 +146,6 @@ sietch:
 		Type: wood
 	RevealsShroud:
 		Range: 10c0
-	-AmbientSound@onBeingDemolished:
 	-GivesBuildableArea:
 	-Sellable:
 	-Capturable:
@@ -156,7 +156,6 @@ sietch:
 	-WithMakeAnimation:
 	-WithCrumbleOverlay:
 	-WithBuildingRepairDecoration:
-	-FireWarheadsOnDeath@sabotuerDemolition:
 
 pass01_destroyable_bottom:
 	Inherits: ^DestroyableTile

@@ -10,6 +10,8 @@
 #endregion
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace OpenRA.Support
 {
@@ -33,7 +35,7 @@ namespace OpenRA.Support
 		}
 
 		/// <summary>
-		/// Produces a random unsigned 32-bit integer.
+		/// Produces an unsigned integer between -0x80000000 and 0x7fffffff inclusive.
 		/// </summary>
 		public uint NextUint()
 		{
@@ -52,7 +54,7 @@ namespace OpenRA.Support
 		}
 
 		/// <summary>
-		/// Produces a random unsigned 64-bit integer.
+		/// Produces an unsigned integer between -0x80000000 and 0x7fffffff inclusive.
 		/// </summary>
 		public ulong NextUlong()
 		{
@@ -96,44 +98,60 @@ namespace OpenRA.Support
 		}
 
 		/// <summary>
-		/// Pick a random index from a list of weights.
+		/// Produces uniformally distributed random floats between 0 inclusive and 1 exclusive.
+		/// Note that whilst floats are 32-bit (23-bit mantissa), each output contains exactly 23 bits of entropy.
 		/// </summary>
-		public int PickWeighted(ReadOnlySpan<int> weights)
+		public float NextFloatExclusive()
 		{
-			ulong total = 0;
-			for (var i = 0; i < weights.Length; i++)
-			{
-				var weight = weights[i];
-				if (weight < 0)
-					throw new ArgumentException("Found a negative weight.");
-				total += (ulong)weight;
-			}
+			return (NextUint() & 0x7fffff) / (float)0x800000;
+		}
 
-			if (total == 0)
-				return Next(0, weights.Length);
+		/// <summary>
+		/// Produces uniformally distributed random doubles between 0 inclusive and 1 exclusive.
+		/// Note that whilst doubles are 64-bit (52-bit mantissa), each output contains exactly 52 bits of entropy.
+		/// </summary>
+		public double NextDoubleExclusive()
+		{
+			return (NextUlong() & 0xfffffffffffffL) / (double)0x10000000000000L;
+		}
 
-			var spin = NextUlong() % total;
-			ulong acc = 0;
-			for (var i = 0; i < weights.Length; i++)
+		/// <summary>
+		/// Pick a random an index from a list of weights.
+		/// </summary>
+		public int PickWeighted(IReadOnlyList<float> weights)
+		{
+			var total = weights.Sum();
+			var spin = NextFloatExclusive() * total;
+			int i;
+			float acc = 0;
+			for (i = 0; i < weights.Count; i++)
 			{
-				acc += (ulong)weights[i];
+				acc += weights[i];
 				if (spin < acc)
 					return i;
 			}
 
-			throw new InvalidOperationException("unreachable");
+			// This might be possible due to floating point precision loss
+			// (in rare cases). Or we might have been given rubbish
+			// weights. Return anything > 0.
+			for (i = 0; i < weights.Count; i++)
+				if (weights[i] > 0)
+					return i;
+
+			// All <= 0!
+			return Next(0, weights.Count);
 		}
 
 		/// <summary>
-		/// Shuffle a portion of a list in place. Has minor biases.
+		/// Shuffle a portion of a list list in place. Has minor biases.
 		/// </summary>
-		public void ShuffleInPlace<T>(Span<T> span, int start, int len)
+		public void ShuffleInPlace<T>(IList<T> list, int start, int len)
 		{
 			for (var i = len; i > 1; i--)
 			{
 				var swap = Next(i);
-				(span[start + i - 1], span[start + swap]) =
-					(span[start + swap], span[start + i - 1]);
+				(list[start + i - 1], list[start + swap]) =
+					(list[start + swap], list[start + i - 1]);
 			}
 		}
 

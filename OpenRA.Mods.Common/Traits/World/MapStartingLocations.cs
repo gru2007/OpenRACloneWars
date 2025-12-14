@@ -10,7 +10,6 @@
 #endregion
 
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 using OpenRA.Graphics;
 using OpenRA.Mods.Common.Widgets.Logic;
@@ -63,9 +62,9 @@ namespace OpenRA.Mods.Common.Traits
 
 		sealed class AssignSpawnLocationsState
 		{
-			public ImmutableArray<CPos> SpawnLocations;
+			public CPos[] SpawnLocations;
 			public List<int> AvailableSpawnPoints;
-			public readonly Dictionary<int, Session.Client> OccupiedSpawnPoints = [];
+			public readonly Dictionary<int, Session.Client> OccupiedSpawnPoints = new();
 		}
 
 		object IAssignSpawnPointsInfo.InitializeState(MapPreview map, Session lobbyInfo)
@@ -113,7 +112,7 @@ namespace OpenRA.Mods.Common.Traits
 	public class MapStartingLocations : IWorldLoaded, INotifyCreated, IAssignSpawnPoints
 	{
 		readonly MapStartingLocationsInfo info;
-		readonly Dictionary<int, Session.Client> occupiedSpawnPoints = [];
+		readonly Dictionary<int, Session.Client> occupiedSpawnPoints = new();
 		bool separateTeamSpawns;
 		CPos[] spawnLocations;
 		List<int> availableSpawnPoints;

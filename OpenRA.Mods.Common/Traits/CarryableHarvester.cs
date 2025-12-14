@@ -52,10 +52,6 @@ namespace OpenRA.Mods.Common.Traits
 				t.MovementCancelled(self);
 		}
 
-		void INotifyHarvestAction.Harvested(Actor self, string resourceType)
-		{
-			foreach (var t in transports)
-				t.MovementCancelled(self);
-		}
+		void INotifyHarvestAction.Harvested(Actor self, string resourceType) { }
 	}
 }

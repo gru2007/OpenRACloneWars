@@ -10,7 +10,6 @@
 #endregion
 
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using OpenRA.Graphics;
 using OpenRA.Mods.Cnc.Traits;
 using OpenRA.Mods.Common.Graphics;
@@ -23,8 +22,8 @@ namespace OpenRA.Mods.Cnc.Graphics
 		readonly ModelRenderer renderer;
 		readonly ModelAnimation[] components;
 		readonly float scale;
-		readonly ImmutableArray<float> lightAmbientColor;
-		readonly ImmutableArray<float> lightDiffuseColor;
+		readonly float[] lightAmbientColor;
+		readonly float[] lightDiffuseColor;
 		readonly WRot lightSource;
 		readonly WRot camera;
 		readonly PaletteReference colorPalette;
@@ -34,7 +33,7 @@ namespace OpenRA.Mods.Cnc.Graphics
 		readonly int zOffset;
 
 		public ModelPreview(ModelRenderer renderer, ModelAnimation[] components, in WVec offset, int zOffset, float scale, WAngle lightPitch, WAngle lightYaw,
-			ImmutableArray<float> lightAmbientColor, ImmutableArray<float> lightDiffuseColor, WAngle cameraPitch,
+			float[] lightAmbientColor, float[] lightDiffuseColor, WAngle cameraPitch,
 			PaletteReference colorPalette, PaletteReference normalsPalette, PaletteReference shadowPalette)
 		{
 			this.renderer = renderer;

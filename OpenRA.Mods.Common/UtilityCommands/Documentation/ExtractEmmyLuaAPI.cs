@@ -10,7 +10,6 @@
 #endregion
 
 using System;
-using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -387,7 +386,7 @@ namespace OpenRA.Mods.Common.UtilityCommands.Documentation
 
 	public static class EmmyLuaExts
 	{
-		static readonly FrozenDictionary<string, string> LuaTypeNameReplacements = new Dictionary<string, string>
+		static readonly Dictionary<string, string> LuaTypeNameReplacements = new()
 		{
 			// These are weak type mappings, don't add these.
 			// Instead, use ScriptEmmyTypeOverrideAttribute to provide a specific type.
@@ -410,7 +409,7 @@ namespace OpenRA.Mods.Common.UtilityCommands.Documentation
 			{ "Color", "color" },
 			{ "Actor", "actor" },
 			{ "Player", "player" },
-		}.ToFrozenDictionary();
+		};
 
 		public static string EmmyLuaString(this Type type, string notSupportedExceptionContext)
 		{

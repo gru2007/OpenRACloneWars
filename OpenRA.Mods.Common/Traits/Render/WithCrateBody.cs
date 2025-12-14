@@ -10,9 +10,7 @@
 #endregion
 
 using System;
-using System.Collections.Frozen;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using OpenRA.Graphics;
 using OpenRA.Mods.Common.Graphics;
 using OpenRA.Traits;
@@ -23,10 +21,10 @@ namespace OpenRA.Mods.Common.Traits.Render
 	sealed class WithCrateBodyInfo : TraitInfo, Requires<RenderSpritesInfo>, IRenderActorPreviewSpritesInfo
 	{
 		[Desc("Easteregg sequences to use in December.")]
-		public readonly ImmutableArray<string> XmasImages = [];
+		public readonly string[] XmasImages = Array.Empty<string>();
 
 		[Desc("Terrain types on which to display WaterSequence.")]
-		public readonly FrozenSet<string> WaterTerrainTypes = new HashSet<string> { "Water" }.ToFrozenSet();
+		public readonly HashSet<string> WaterTerrainTypes = new() { "Water" };
 
 		[SequenceReference]
 		public readonly string IdleSequence = "idle";
@@ -60,7 +58,7 @@ namespace OpenRA.Mods.Common.Traits.Render
 
 			var rs = self.Trait<RenderSprites>();
 			var image = rs.GetImage(self);
-			var images = info.XmasImages.Length > 0 && DateTime.Today.Month == 12 ? info.XmasImages : [image];
+			var images = info.XmasImages.Length > 0 && DateTime.Today.Month == 12 ? info.XmasImages : new[] { image };
 
 			anim = new Animation(self.World, images.Random(Game.CosmeticRandom));
 			anim.Play(info.IdleSequence);

@@ -9,7 +9,7 @@
  */
 #endregion
 
-using System.Collections.Frozen;
+using System.Collections.Generic;
 using OpenRA.Traits;
 
 namespace OpenRA.Mods.Common.Traits
@@ -18,7 +18,7 @@ namespace OpenRA.Mods.Common.Traits
 	{
 		[FieldLoader.Require]
 		[Desc("Replacement type (matched against Types in Replaceable).")]
-		public readonly FrozenSet<string> ReplaceableTypes = FrozenSet<string>.Empty;
+		public readonly HashSet<string> ReplaceableTypes = new();
 	}
 
 	public class Replacement { }

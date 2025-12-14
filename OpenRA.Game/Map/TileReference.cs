@@ -11,10 +11,16 @@
 
 namespace OpenRA
 {
-	public readonly struct TerrainTile(ushort type, byte index)
+	public readonly struct TerrainTile
 	{
-		public readonly ushort Type = type;
-		public readonly byte Index = index;
+		public readonly ushort Type;
+		public readonly byte Index;
+
+		public TerrainTile(ushort type, byte index)
+		{
+			Type = type;
+			Index = index;
+		}
 
 		public override int GetHashCode() { return Type.GetHashCode() ^ Index.GetHashCode(); }
 
@@ -36,10 +42,16 @@ namespace OpenRA
 		}
 	}
 
-	public readonly struct ResourceTile(byte type, byte index)
+	public readonly struct ResourceTile
 	{
-		public readonly byte Type = type;
-		public readonly byte Index = index;
+		public readonly byte Type;
+		public readonly byte Index;
+
+		public ResourceTile(byte type, byte index)
+		{
+			Type = type;
+			Index = index;
+		}
 
 		public override int GetHashCode() { return Type.GetHashCode() ^ Index.GetHashCode(); }
 	}

@@ -9,7 +9,6 @@
  */
 #endregion
 
-using System;
 using System.Collections.Generic;
 using OpenRA.Graphics;
 using OpenRA.Mods.Common.Commands;
@@ -20,7 +19,6 @@ using OpenRA.Traits;
 namespace OpenRA.Mods.Common.Traits
 {
 	[TraitLocation(SystemActors.World | SystemActors.EditorWorld)]
-	[IncludeStaticFluentReferences(typeof(TerrainGeometryOverlay))]
 	[Desc("Renders a debug overlay showing the terrain cells. Attach this to the world actor.")]
 	public class TerrainGeometryOverlayInfo : TraitInfo<TerrainGeometryOverlay> { }
 
@@ -58,8 +56,6 @@ namespace OpenRA.Mods.Common.Traits
 
 			var map = wr.World.Map;
 			var colors = wr.World.Map.Rules.TerrainInfo.HeightDebugColors;
-			var lastColor = colors.Length - 1;
-			var heightStep = map.Grid.TileScale / 2;
 			var mouseCell = wr.Viewport.ViewToWorld(Viewport.LastMousePos).ToMPos(wr.World.Map);
 
 			foreach (var uv in wr.Viewport.AllVisibleCells.CandidateMapCoords)
@@ -80,8 +76,8 @@ namespace OpenRA.Mods.Common.Traits
 						var j = (i + 1) % p.Length;
 						var start = pos + p[i];
 						var end = pos + p[j];
-						var startColor = colors[Math.Min(lastColor, height + p[i].Z / heightStep)];
-						var endColor = colors[Math.Min(lastColor, height + p[j].Z / heightStep)];
+						var startColor = colors[height + p[i].Z / 512];
+						var endColor = colors[height + p[j].Z / 512];
 						yield return new LineAnnotationRenderable(start, end, width, startColor, endColor);
 					}
 				}

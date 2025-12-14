@@ -11,7 +11,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using OpenRA.Graphics;
@@ -20,12 +19,24 @@ using OpenRA.Support;
 
 namespace OpenRA.Mods.Common.Terrain
 {
-	public record TheaterTemplate(Sprite[] Sprites, int Stride, int Variants);
+	public class TheaterTemplate
+	{
+		public readonly Sprite[] Sprites;
+		public readonly int Stride;
+		public readonly int Variants;
+
+		public TheaterTemplate(Sprite[] sprites, int stride, int variants)
+		{
+			Sprites = sprites;
+			Stride = stride;
+			Variants = variants;
+		}
+	}
 
 	public sealed class DefaultTileCache : IDisposable
 	{
+		readonly Dictionary<ushort, TheaterTemplate> templates = new();
 		readonly Cache<SheetType, SheetBuilder> sheetBuilders;
-		readonly Dictionary<ushort, TheaterTemplate> templates = [];
 		readonly MersenneTwister random;
 
 		public Sprite MissingTile { get; }
@@ -84,7 +95,7 @@ namespace OpenRA.Mods.Common.Terrain
 					}
 
 					var frameCount = terrainInfo.EnableDepth && depthFrames == null ? allFrames.Length / 2 : allFrames.Length;
-					var indices = templateInfo.Frames != null ? templateInfo.Frames : Exts.MakeArray(t.Value.TilesCount, j => j).ToImmutableArray();
+					var indices = templateInfo.Frames ?? Exts.MakeArray(t.Value.TilesCount, j => j);
 
 					var start = indices.Min();
 					var end = indices.Max();
@@ -146,7 +157,7 @@ namespace OpenRA.Mods.Common.Terrain
 
 			MissingTile = sheetBuilders[missingSheetType].Add(new byte[missingDataLength], missingFrameType, new Size(1, 1));
 			foreach (var sb in sheetBuilders.Values)
-				sb.Current?.ReleaseBuffer();
+				sb.Current.ReleaseBuffer();
 		}
 
 		public bool HasTileSprite(TerrainTile r, int? variant = null)
@@ -164,11 +175,6 @@ namespace OpenRA.Mods.Common.Terrain
 
 			var start = template.Variants > 1 ? variant ?? random.Next(template.Variants) : 0;
 			return template.Sprites[start * template.Stride + r.Index];
-		}
-
-		public SheetBuilder GetSheetBuilder(SheetType sheetType)
-		{
-			return sheetBuilders[sheetType];
 		}
 
 		public void Dispose()

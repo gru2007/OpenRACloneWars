@@ -12,20 +12,22 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using OpenRA.FileSystem;
 using OpenRA.Widgets;
 
 namespace OpenRA
 {
 	public class WidgetLoader
 	{
-		readonly Dictionary<string, MiniYamlNode> widgets = [];
+		readonly Dictionary<string, MiniYamlNode> widgets = new();
+		readonly ModData modData;
 
-		public WidgetLoader(Manifest manifest, IReadOnlyFileSystem fileSystem)
+		public WidgetLoader(ModData modData)
 		{
+			this.modData = modData;
+
 			var stringPool = new HashSet<string>(); // Reuse common strings in YAML
-			foreach (var file in manifest.ChromeLayout.Select(
-				a => MiniYaml.FromStream(fileSystem.Open(a), a, stringPool: stringPool)))
+			foreach (var file in modData.Manifest.ChromeLayout.Select(
+				a => MiniYaml.FromStream(modData.DefaultFileSystem.Open(a), a, stringPool: stringPool)))
 				foreach (var w in file)
 				{
 					var key = w.Key[(w.Key.IndexOf('@') + 1)..];
@@ -45,16 +47,19 @@ namespace OpenRA
 
 		public Widget LoadWidget(WidgetArgs args, Widget parent, MiniYamlNode node)
 		{
+			if (!args.ContainsKey("modData"))
+				args = new WidgetArgs(args) { { "modData", modData } };
+
 			var widget = NewWidget(node.Key, args);
 
 			parent?.AddChild(widget);
 
 			if (node.Key.Contains('@'))
-				FieldLoader.LoadFieldOrProperty(widget, "Id", node.Key.Split('@')[1]);
+				FieldLoader.LoadField(widget, "Id", node.Key.Split('@')[1]);
 
 			foreach (var child in node.Value.Nodes)
 				if (child.Key != "Children")
-					FieldLoader.LoadFieldOrProperty(widget, child.Key, child.Value.Value);
+					FieldLoader.LoadField(widget, child.Key, child.Value.Value);
 
 			widget.Initialize(args);
 

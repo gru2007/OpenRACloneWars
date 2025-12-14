@@ -11,7 +11,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -176,7 +175,7 @@ namespace OpenRA.Traits
 	[RequireExplicitImplementation]
 	public interface IStoresResourcesInfo : ITraitInfoInterface
 	{
-		ImmutableArray<string> ResourceTypes { get; }
+		string[] ResourceTypes { get; }
 	}
 
 	public interface IStoresResources
@@ -506,12 +505,12 @@ namespace OpenRA.Traits
 
 	public interface IControlGroupsInfo : ITraitInfoInterface
 	{
-		ImmutableArray<string> Groups { get; }
+		string[] Groups { get; }
 	}
 
 	public interface IControlGroups
 	{
-		ImmutableArray<string> Groups { get; }
+		string[] Groups { get; }
 
 		void SelectControlGroup(int group);
 		void CreateControlGroup(int group);
@@ -629,7 +628,16 @@ namespace OpenRA.Traits
 	public interface IObservesVariablesInfo : ITraitInfoInterface { }
 
 	public delegate void VariableObserverNotifier(Actor self, IReadOnlyDictionary<string, int> variables);
-	public readonly record struct VariableObserver(VariableObserverNotifier Notifier, IEnumerable<string> Variables);
+	public struct VariableObserver
+	{
+		public VariableObserverNotifier Notifier;
+		public IEnumerable<string> Variables;
+		public VariableObserver(VariableObserverNotifier notifier, IEnumerable<string> variables)
+		{
+			Notifier = notifier;
+			Variables = variables;
+		}
+	}
 
 	public interface IObservesVariables
 	{
@@ -650,14 +658,5 @@ namespace OpenRA.Traits
 	{
 		bool CrushableBy(Actor self, Actor crusher, BitSet<CrushClass> crushClasses);
 		LongBitSet<PlayerBitMask> CrushableBy(Actor self, BitSet<CrushClass> crushClasses);
-	}
-
-	public interface IMapGeneratorInfo : ITraitInfoInterface
-	{
-		string Type { get; }
-		string Name { get; }
-		string MapTitle { get; }
-
-		Map Generate(ModData modData, MapGenerationArgs args);
 	}
 }

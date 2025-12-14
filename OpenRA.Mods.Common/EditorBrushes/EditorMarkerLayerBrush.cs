@@ -9,9 +9,7 @@
  */
 #endregion
 
-using System.Collections.Frozen;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 using OpenRA.Graphics;
 using OpenRA.Mods.Common.Traits;
@@ -28,9 +26,8 @@ namespace OpenRA.Mods.Common.Widgets
 		readonly MarkerLayerOverlay markerLayerOverlay;
 		readonly EditorViewportControllerWidget editorWidget;
 
-		readonly List<PaintMarkerTile> paintTiles = [];
+		PaintMarkerTileEditorAction action;
 		bool painting;
-		CPos cell;
 
 		public EditorMarkerLayerBrush(EditorViewportControllerWidget editorWidget, int? id, WorldRenderer wr)
 		{
@@ -42,11 +39,11 @@ namespace OpenRA.Mods.Common.Widgets
 			markerLayerOverlay = world.WorldActor.Trait<MarkerLayerOverlay>();
 
 			Template = id;
+			action = new PaintMarkerTileEditorAction(Template, markerLayerOverlay);
 		}
 
 		public bool HandleMouseInput(MouseInput mi)
 		{
-			// Exclusively uses left and right mouse buttons, but nothing else.
 			if (mi.Button != MouseButton.Left && mi.Button != MouseButton.Right)
 				return false;
 
@@ -61,71 +58,30 @@ namespace OpenRA.Mods.Common.Widgets
 				return false;
 			}
 
-			if (mi.Button != MouseButton.Left)
-				return true;
-
-			if (mi.Event == MouseInputEvent.Up)
+			if (mi.Button == MouseButton.Left && mi.Event != MouseInputEvent.Up)
 			{
-				UpdatePreview();
-				if (paintTiles.Count != 0)
-				{
-					editorActionManager.Add(new PaintMarkerTileEditorAction(Template, paintTiles.ToImmutableArray(), markerLayerOverlay));
-					paintTiles.Clear();
-					UpdatePreview(true);
-				}
-
-				painting = false;
-			}
-			else
-			{
+				action.Add(worldRenderer.Viewport.ViewToWorld(mi.Location));
 				painting = true;
-				UpdatePreview();
+			}
+			else if (painting && mi.Button == MouseButton.Left && mi.Event == MouseInputEvent.Up)
+			{
+				if (action.DidPaintTiles)
+					editorActionManager.Add(action);
+
+				action = new PaintMarkerTileEditorAction(Template, markerLayerOverlay);
+				painting = false;
 			}
 
 			return true;
 		}
 
-		void UpdatePreview(bool forceRefresh = false)
-		{
-			var currentCell = worldRenderer.Viewport.ViewToWorld(Viewport.LastMousePos);
-			if (!forceRefresh && cell == currentCell)
-				return;
-
-			cell = currentCell;
-
-			if (!painting)
-			{
-				foreach (var paintTile in paintTiles)
-					markerLayerOverlay.SetTile(paintTile.Cell, paintTile.Previous);
-
-				paintTiles.Clear();
-			}
-
-			foreach (var cell in markerLayerOverlay.CalculateMirrorPositions(cell))
-			{
-				if (paintTiles.Any(t => t.Cell == cell))
-					continue;
-
-				var existing = markerLayerOverlay.CellLayer[cell];
-				if (existing == Template)
-					continue;
-
-				paintTiles.Add(new PaintMarkerTile(cell, existing));
-				markerLayerOverlay.SetTile(cell, Template);
-			}
-		}
-
-		void IEditorBrush.TickRender(WorldRenderer wr, Actor self) { UpdatePreview(); }
+		void IEditorBrush.TickRender(WorldRenderer wr, Actor self) { }
 		IEnumerable<IRenderable> IEditorBrush.RenderAboveShroud(Actor self, WorldRenderer wr) { yield break; }
 		IEnumerable<IRenderable> IEditorBrush.RenderAnnotations(Actor self, WorldRenderer wr) { yield break; }
 
 		public void Tick() { }
 
-		public void Dispose()
-		{
-			foreach (var paintTile in paintTiles)
-				markerLayerOverlay.SetTile(paintTile.Cell, paintTile.Previous);
-		}
+		public void Dispose() { }
 	}
 
 	readonly struct PaintMarkerTile
@@ -140,40 +96,34 @@ namespace OpenRA.Mods.Common.Widgets
 		}
 	}
 
-	sealed class PaintMarkerTileEditorAction : IEditorAction
+	class PaintMarkerTileEditorAction : IEditorAction
 	{
-		[FluentReference("count", "type")]
+		[FluentReference("amount", "type")]
 		const string AddedMarkerTiles = "notification-added-marker-tiles";
 
-		[FluentReference("count")]
+		[FluentReference("amount")]
 		const string RemovedMarkerTiles = "notification-removed-marker-tiles";
 
-		public string Text { get; }
+		public string Text { get; private set; }
 
 		readonly int? type;
 		readonly MarkerLayerOverlay markerLayerOverlay;
 
-		readonly ImmutableArray<PaintMarkerTile> paintTiles = [];
+		readonly List<PaintMarkerTile> paintTiles = new();
+
+		public bool DidPaintTiles => paintTiles.Count > 0;
 
 		public PaintMarkerTileEditorAction(
 			int? type,
-			ImmutableArray<PaintMarkerTile> paintTiles,
 			MarkerLayerOverlay markerLayerOverlay)
 		{
-			this.type = type;
-			this.paintTiles = paintTiles;
 			this.markerLayerOverlay = markerLayerOverlay;
-
-			if (type != null)
-			{
-				var typeLabel = FluentProvider.GetMessage(markerLayerOverlay.Info.Colors.ElementAt(type.Value).Key);
-				Text = FluentProvider.GetMessage(AddedMarkerTiles, "count", paintTiles.Length, "type", typeLabel);
-			}
-			else
-				Text = FluentProvider.GetMessage(RemovedMarkerTiles, "count", paintTiles.Length);
+			this.type = type;
 		}
 
-		public void Execute() { }
+		public void Execute()
+		{
+		}
 
 		public void Do()
 		{
@@ -186,17 +136,35 @@ namespace OpenRA.Mods.Common.Widgets
 			foreach (var paintTile in paintTiles)
 				markerLayerOverlay.SetTile(paintTile.Cell, paintTile.Previous);
 		}
+
+		public void Add(CPos target)
+		{
+			foreach (var cell in markerLayerOverlay.CalculateMirrorPositions(target))
+			{
+				var existing = markerLayerOverlay.CellLayer[cell];
+				if (existing == type)
+					continue;
+
+				paintTiles.Add(new PaintMarkerTile(cell, existing));
+				markerLayerOverlay.SetTile(cell, type);
+			}
+
+			if (type != null)
+				Text = FluentProvider.GetMessage(AddedMarkerTiles, "amount", paintTiles.Count, "type", type);
+			else
+				Text = FluentProvider.GetMessage(RemovedMarkerTiles, "amount", paintTiles.Count);
+		}
 	}
 
-	sealed class ClearSelectedMarkerTilesEditorAction : IEditorAction
+	class ClearSelectedMarkerTilesEditorAction : IEditorAction
 	{
-		[FluentReference("count", "type")]
+		[FluentReference("amount", "type")]
 		const string ClearedSelectedMarkerTiles = "notification-cleared-selected-marker-tiles";
 
 		public string Text { get; }
 
 		readonly MarkerLayerOverlay markerLayerOverlay;
-		readonly ImmutableArray<CPos> tiles;
+		readonly HashSet<CPos> tiles;
 		readonly int tile;
 
 		public ClearSelectedMarkerTilesEditorAction(
@@ -206,9 +174,9 @@ namespace OpenRA.Mods.Common.Widgets
 			this.tile = tile;
 			this.markerLayerOverlay = markerLayerOverlay;
 
-			tiles = markerLayerOverlay.Tiles[tile].ToImmutableArray();
-			var typeLabel = FluentProvider.GetMessage(markerLayerOverlay.Info.Colors.ElementAt(tile).Key);
-			Text = FluentProvider.GetMessage(ClearedSelectedMarkerTiles, "count", tiles.Length, "type", typeLabel);
+			tiles = new HashSet<CPos>(markerLayerOverlay.Tiles[tile]);
+
+			Text = FluentProvider.GetMessage(ClearedSelectedMarkerTiles, "amount", tiles.Count, "type", tile);
 		}
 
 		public void Execute()
@@ -223,28 +191,29 @@ namespace OpenRA.Mods.Common.Widgets
 
 		public void Undo()
 		{
-			markerLayerOverlay.SetSelected(tile, tiles.AsSpan());
+			markerLayerOverlay.SetSelected(tile, tiles);
 		}
 	}
 
-	sealed class ClearAllMarkerTilesEditorAction : IEditorAction
+	class ClearAllMarkerTilesEditorAction : IEditorAction
 	{
-		[FluentReference("count")]
+		[FluentReference("amount")]
 		const string ClearedAllMarkerTiles = "notification-cleared-all-marker-tiles";
 
 		public string Text { get; }
 
 		readonly MarkerLayerOverlay markerLayerOverlay;
-		readonly FrozenDictionary<int, ImmutableArray<CPos>> tiles;
+		readonly Dictionary<int, HashSet<CPos>> tiles;
 
 		public ClearAllMarkerTilesEditorAction(
 			MarkerLayerOverlay markerLayerOverlay)
 		{
 			this.markerLayerOverlay = markerLayerOverlay;
-			tiles = markerLayerOverlay.Tiles.ToFrozenDictionary(t => t.Key, t => t.Value.ToImmutableArray());
-			var allTilesCount = tiles.Values.Sum(x => x.Length);
+			tiles = new Dictionary<int, HashSet<CPos>>(markerLayerOverlay.Tiles);
 
-			Text = FluentProvider.GetMessage(ClearedAllMarkerTiles, "count", allTilesCount);
+			var allTilesCount = tiles.Values.Select(x => x.Count).Sum();
+
+			Text = FluentProvider.GetMessage(ClearedAllMarkerTiles, "amount", allTilesCount);
 		}
 
 		public void Execute()

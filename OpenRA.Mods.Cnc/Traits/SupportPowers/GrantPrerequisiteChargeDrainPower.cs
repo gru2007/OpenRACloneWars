@@ -51,7 +51,7 @@ namespace OpenRA.Mods.Cnc.Traits
 			: base(self, info)
 		{
 			this.info = info;
-			prerequisites = [info.Prerequisite];
+			prerequisites = new[] { info.Prerequisite };
 		}
 
 		protected override void Created(Actor self)

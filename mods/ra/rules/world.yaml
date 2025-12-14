@@ -1,5 +1,6 @@
 ^BaseWorld:
 	Inherits: ^Palettes
+	AlwaysVisible:
 	ActorMap:
 	ScreenMap:
 	Selection:
@@ -164,7 +165,6 @@ World:
 	DebugVisualizationCommands:
 	PathFinderOverlay:
 	HierarchicalPathFinderOverlay:
-	ActorMapOverlay:
 	PlayerCommands:
 	HelpCommand:
 	ScreenShaker:
@@ -299,6 +299,7 @@ World:
 
 EditorWorld:
 	Inherits: ^BaseWorld
+	Inherits@MapGenerators: ^MapGenerators
 	EditorActorLayer:
 	EditorCursorLayer:
 	EditorResourceLayer:
@@ -319,8 +320,3 @@ EditorWorld:
 	BuildableTerrainOverlay:
 		AllowedTerrainTypes: Clear, Road
 	MarkerLayerOverlay:
-	TilingPathTool:
-		DefaultStart: Clear
-		DefaultInner: Beach
-		DefaultEnd: Clear
-	Inherits@MapGenerators: ^MapGenerators

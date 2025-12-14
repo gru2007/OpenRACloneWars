@@ -9,9 +9,8 @@
  */
 #endregion
 
-using System.Collections.Frozen;
+using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using OpenRA.Graphics;
@@ -48,7 +47,7 @@ namespace OpenRA.Mods.Common.Traits
 
 		[SequenceReference(nameof(SmokeImage), allowNullImage: true)]
 		[Desc("Smoke sprite sequences randomly chosen from")]
-		public readonly ImmutableArray<string> SmokeSequences = [];
+		public readonly string[] SmokeSequences = Array.Empty<string>();
 
 		[PaletteReference]
 		public readonly string SmokePalette = "effect";
@@ -57,7 +56,7 @@ namespace OpenRA.Mods.Common.Traits
 		public readonly string Palette = TileSet.TerrainPaletteInternalName;
 
 		[FieldLoader.LoadUsing(nameof(LoadInitialSmudges))]
-		public readonly FrozenDictionary<CPos, MapSmudge> InitialSmudges;
+		public readonly Dictionary<CPos, MapSmudge> InitialSmudges;
 
 		public static object LoadInitialSmudges(MiniYaml yaml)
 		{
@@ -79,7 +78,7 @@ namespace OpenRA.Mods.Common.Traits
 				}
 			}
 
-			return smudges.ToFrozenDictionary();
+			return smudges;
 		}
 
 		public override object Create(ActorInitializer init) { return new SmudgeLayer(init.Self, this); }
@@ -95,9 +94,9 @@ namespace OpenRA.Mods.Common.Traits
 		}
 
 		public readonly SmudgeLayerInfo Info;
-		readonly Dictionary<CPos, Smudge> tiles = [];
-		readonly Dictionary<CPos, Smudge> dirty = [];
-		readonly Dictionary<string, ISpriteSequence> smudges = [];
+		readonly Dictionary<CPos, Smudge> tiles = new();
+		readonly Dictionary<CPos, Smudge> dirty = new();
+		readonly Dictionary<string, ISpriteSequence> smudges = new();
 		readonly World world;
 		readonly bool hasSmoke;
 
@@ -129,7 +128,7 @@ namespace OpenRA.Mods.Common.Traits
 					+ "Try using different smudge types for smudges that use different blend modes.");
 
 			paletteReference = wr.Palette(Info.Palette);
-			render = new TerrainSpriteLayer(w, wr, emptySprite, blendMode, true);
+			render = new TerrainSpriteLayer(w, wr, emptySprite, blendMode, w.Type != WorldType.Editor);
 
 			// Add map smudges
 			foreach (var kv in Info.InitialSmudges)

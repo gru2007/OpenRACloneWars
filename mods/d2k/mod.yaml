@@ -53,7 +53,6 @@ Rules:
 	d2k|rules/starport.yaml
 	d2k|rules/husks.yaml
 	d2k|rules/arrakis.yaml
-	d2k|rules/map-generators.yaml
 
 Sequences:
 	d2k|sequences/aircraft.yaml
@@ -67,6 +66,7 @@ TileSets:
 	d2k|tilesets/arrakis.yaml
 
 MapGrid:
+	TileSize: 32,32
 	Type: Rectangular
 
 Cursors:
@@ -239,9 +239,7 @@ VideoFormats: Vqa
 TerrainFormat: DefaultTerrain
 
 SpriteSequenceFormat: D2kSpriteSequence
-
-RendererConstants:
-	SequenceIndexedSheetSize: 512
+	IndexedSheetSize: 512
 
 AssetBrowser:
 	SpriteExtensions: .shp, .r8, .r16, .tmp, .png

@@ -9,7 +9,7 @@
  */
 #endregion
 
-using System.Collections.Immutable;
+using System;
 using OpenRA.Traits;
 
 namespace OpenRA.Mods.Common.Traits
@@ -23,10 +23,10 @@ namespace OpenRA.Mods.Common.Traits
 		public readonly string Condition = null;
 
 		[Desc("Play a random sound from this list when enabled.")]
-		public readonly ImmutableArray<string> EnabledSounds = [];
+		public readonly string[] EnabledSounds = Array.Empty<string>();
 
 		[Desc("Play a random sound from this list when disabled.")]
-		public readonly ImmutableArray<string> DisabledSounds = [];
+		public readonly string[] DisabledSounds = Array.Empty<string>();
 
 		[Desc("Levels of damage at which to grant the condition.")]
 		public readonly DamageState ValidDamageStates = DamageState.Heavy | DamageState.Critical;

@@ -9,7 +9,7 @@
  */
 #endregion
 
-using System.Collections.Immutable;
+using System;
 using OpenRA.Traits;
 
 namespace OpenRA.Mods.Common.Traits
@@ -24,7 +24,7 @@ namespace OpenRA.Mods.Common.Traits
 
 		[FieldLoader.Require]
 		[Desc("List of required prerequisites.")]
-		public readonly ImmutableArray<string> Prerequisites = [];
+		public readonly string[] Prerequisites = Array.Empty<string>();
 
 		public override object Create(ActorInitializer init) { return new GrantConditionOnPrerequisite(this); }
 	}

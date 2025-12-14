@@ -14,7 +14,7 @@ using NUnit.Framework;
 namespace OpenRA.Test
 {
 	[TestFixture]
-	sealed class CPosTest
+	public class CPosTest
 	{
 		[TestCase(TestName = "Packing x,y and layer into int")]
 		public void PackUnpackBits()
@@ -30,9 +30,9 @@ namespace OpenRA.Test
 					{
 						var cell = new CPos(x, y, layer);
 
-						Assert.That(x, Is.EqualTo(cell.X));
-						Assert.That(y, Is.EqualTo(cell.Y));
-						Assert.That(layer, Is.EqualTo(cell.Layer));
+						Assert.AreEqual(x, cell.X);
+						Assert.AreEqual(y, cell.Y);
+						Assert.AreEqual(layer, cell.Layer);
 					}
 				}
 			}

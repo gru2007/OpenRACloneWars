@@ -10,7 +10,6 @@
 #endregion
 
 using System;
-using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Linq;
 using OpenRA.Mods.Common.Traits.BotModules.Squads;
@@ -25,27 +24,27 @@ namespace OpenRA.Mods.Common.Traits
 	{
 		[ActorReference]
 		[Desc("Actor types that are valid for naval squads.")]
-		public readonly FrozenSet<string> NavalUnitsTypes = FrozenSet<string>.Empty;
+		public readonly HashSet<string> NavalUnitsTypes = new();
 
 		[ActorReference]
 		[Desc("Actor types that are excluded from ground attacks.")]
-		public readonly FrozenSet<string> AirUnitsTypes = FrozenSet<string>.Empty;
+		public readonly HashSet<string> AirUnitsTypes = new();
 
 		[ActorReference]
 		[Desc("Actor types that should generally be excluded from attack squads.")]
-		public readonly FrozenSet<string> ExcludeFromSquadsTypes = FrozenSet<string>.Empty;
+		public readonly HashSet<string> ExcludeFromSquadsTypes = new();
 
 		[ActorReference]
 		[Desc("Actor types that are considered construction yards (base builders).")]
-		public readonly FrozenSet<string> ConstructionYardTypes = FrozenSet<string>.Empty;
+		public readonly HashSet<string> ConstructionYardTypes = new();
 
 		[ActorReference]
 		[Desc("Enemy building types around which to scan for targets for naval squads.")]
-		public readonly FrozenSet<string> NavalProductionTypes = FrozenSet<string>.Empty;
+		public readonly HashSet<string> NavalProductionTypes = new();
 
 		[ActorReference]
 		[Desc("Own actor types that are prioritized when defending.")]
-		public readonly FrozenSet<string> ProtectionTypes = FrozenSet<string>.Empty;
+		public readonly HashSet<string> ProtectionTypes = new();
 
 		[Desc("Target types are used for identifying aircraft.")]
 		public readonly BitSet<TargetableType> AircraftTargetType = new("Air");
@@ -116,34 +115,29 @@ namespace OpenRA.Mods.Common.Traits
 			return randomConstructionYard?.Location ?? initialBaseCenter;
 		}
 
-		const int MaxRespondToAttackCooldown = 30;
-
 		public readonly World World;
 		public readonly Player Player;
 
 		readonly Predicate<Actor> unitCannotBeOrdered;
+		readonly List<Actor> unitsHangingAroundTheBase = new();
 
 		// Units that the bot already knows about. Any unit not on this list needs to be given a role.
-		readonly HashSet<Actor> activeUnits = [];
+		readonly HashSet<Actor> activeUnits = new();
 
-		public List<Squad> Squads = [];
-		readonly Stack<Squad> squadsPendingUpdate = [];
+		public List<Squad> Squads = new();
+		readonly Stack<Squad> squadsPendingUpdate = new();
 		readonly ActorIndex.NamesAndTrait<BuildingInfo> constructionYardBuildings;
 
 		IBot bot;
 		IBotPositionsUpdated[] notifyPositionsUpdated;
 		IBotNotifyIdleBaseUnits[] notifyIdleBaseUnits;
 
-		List<Actor> unitsHangingAroundTheBase = [];
 		CPos initialBaseCenter;
-
-		Actor protectFrom;
 
 		int rushTicks;
 		int assignRolesTicks;
 		int attackForceTicks;
 		int minAttackForceDelayTicks;
-		int respondToAttackCooldown = MaxRespondToAttackCooldown; // prevent too many responses to the same wave of attacks
 
 		public SquadManagerBotModule(Actor self, SquadManagerBotModuleInfo info)
 			: base(info)
@@ -235,8 +229,8 @@ namespace OpenRA.Mods.Common.Traits
 				{
 					var range = ownActorsAndTheirAttackRanges[a].Length;
 					var rangeDiag = Exts.MultiplyBySqrtTwoOverTwo(range);
-					return
-					[
+					return new[]
+					{
 						targetActor.CenterPosition,
 						targetActor.CenterPosition + new WVec(range, 0, 0),
 						targetActor.CenterPosition + new WVec(-range, 0, 0),
@@ -246,7 +240,7 @@ namespace OpenRA.Mods.Common.Traits
 						targetActor.CenterPosition + new WVec(-rangeDiag, rangeDiag, 0),
 						targetActor.CenterPosition + new WVec(-rangeDiag, -rangeDiag, 0),
 						targetActor.CenterPosition + new WVec(rangeDiag, -rangeDiag, 0),
-					];
+					};
 				});
 		}
 
@@ -274,8 +268,8 @@ namespace OpenRA.Mods.Common.Traits
 				{
 					var range = enemiesAndSourceAttackRanges[a].Length;
 					var rangeDiag = Exts.MultiplyBySqrtTwoOverTwo(range);
-					return
-					[
+					return new[]
+					{
 						WVec.Zero,
 						new WVec(range, 0, 0),
 						new WVec(-range, 0, 0),
@@ -285,7 +279,7 @@ namespace OpenRA.Mods.Common.Traits
 						new WVec(-rangeDiag, rangeDiag, 0),
 						new WVec(-rangeDiag, -rangeDiag, 0),
 						new WVec(rangeDiag, -rangeDiag, 0),
-					];
+					};
 				})
 				.Select(x => (x.Actor, x.ReachableOffsets.MinBy(o => o.LengthSquared)));
 		}
@@ -377,9 +371,6 @@ namespace OpenRA.Mods.Common.Traits
 				minAttackForceDelayTicks = Info.MinimumAttackForceDelay;
 				CreateAttackForce(bot);
 			}
-
-			if (respondToAttackCooldown-- == MaxRespondToAttackCooldown)
-				ProtectOwn(bot, protectFrom);
 		}
 
 		void FindNewUnits(IBot bot)
@@ -436,28 +427,24 @@ namespace OpenRA.Mods.Common.Traits
 
 		void TryToRushAttack(IBot bot)
 		{
-			var groundTroopNum = unitsHangingAroundTheBase.Count;
+			var ownUnits = activeUnits
+				.Where(unit =>
+					unit.IsIdle
+					&& unit.Info.HasTraitInfo<AttackBaseInfo>()
+					&& !Info.AirUnitsTypes.Contains(unit.Info.Name)
+					&& !Info.NavalUnitsTypes.Contains(unit.Info.Name)
+					&& !Info.ExcludeFromSquadsTypes.Contains(unit.Info.Name))
+				.ToList();
 
-			foreach (var s in Squads)
-			{
-				if (s.IsValid && s.Type != SquadType.Air && s.Type != SquadType.Naval)
-					groundTroopNum += s.Units.Count;
-			}
-
-			if (groundTroopNum < Info.SquadSize)
-				return;
-
-			var randomAttackableUnit = unitsHangingAroundTheBase.Where(a => a.Info.HasTraitInfo<AttackBaseInfo>()).RandomOrDefault(World.LocalRandom);
-
-			if (randomAttackableUnit == null)
+			if (ownUnits.Count < Info.SquadSize)
 				return;
 
 			var allEnemyBaseBuilder = FindEnemies(
 				constructionYardBuildings.Actors,
-				randomAttackableUnit)
+				ownUnits[0])
 				.ToList();
 
-			if (allEnemyBaseBuilder.Count == 0)
+			if (allEnemyBaseBuilder.Count == 0 || ownUnits.Count < Info.SquadSize)
 				return;
 
 			foreach (var enemyBaseBuilder in allEnemyBaseBuilder)
@@ -469,25 +456,16 @@ namespace OpenRA.Mods.Common.Traits
 							unit.Info.HasTraitInfo<AttackBaseInfo>()
 							&& !Info.AirUnitsTypes.Contains(unit.Info.Name)
 							&& !Info.NavalUnitsTypes.Contains(unit.Info.Name)),
-					randomAttackableUnit)
+					ownUnits[0])
 					.ToList();
 
-				if (AttackOrFleeFuzzy.Rush.CanAttack(unitsHangingAroundTheBase, enemies.ConvertAll(x => x.Actor)))
+				if (AttackOrFleeFuzzy.Rush.CanAttack(ownUnits, enemies.ConvertAll(x => x.Actor)))
 				{
 					var target = enemies.Count > 0 ? enemies.Random(World.LocalRandom) : enemyBaseBuilder;
-					foreach (var s in Squads)
-					{
-						if (s.IsValid)
-							s.SetActorToTarget(target);
-					}
-
 					var rush = GetSquadOfType(SquadType.Rush);
 					rush ??= RegisterNewSquad(bot, SquadType.Rush, target);
 
-					rush.Units.UnionWith(unitsHangingAroundTheBase);
-					unitsHangingAroundTheBase.Clear();
-					foreach (var n in notifyIdleBaseUnits)
-						n.UpdatedIdleBaseUnits(unitsHangingAroundTheBase);
+					rush.Units.UnionWith(ownUnits);
 
 					return;
 				}
@@ -496,47 +474,24 @@ namespace OpenRA.Mods.Common.Traits
 
 		void ProtectOwn(IBot bot, Actor attacker)
 		{
-			if (!IsPreferredEnemyUnit(attacker))
-				return;
-
-			foreach (var s in Squads)
-			{
-				if (s.IsValid && FindEnemies([attacker], s.Units.First()).Any()
-					&& (s.Units.First().Location - attacker.Location).LengthSquared <= Info.ProtectUnitScanRadius * Info.ProtectUnitScanRadius)
-					s.SetActorToTarget((attacker, WVec.Zero));
-			}
-
 			var protectSq = GetSquadOfType(SquadType.Protection);
 			protectSq ??= RegisterNewSquad(bot, SquadType.Protection, (attacker, WVec.Zero));
-
-			var unusedUnits = new List<Actor>();
-			foreach (var a in unitsHangingAroundTheBase)
-			{
-				if (a.Info.HasTraitInfo<AircraftInfo>() && !Info.AirUnitsTypes.Contains(a.Info.Name))
-				{
-					protectSq.Units.Add(a);
-					continue;
-				}
-
-				var mobile = a.TraitOrDefault<Mobile>();
-				if (mobile == null)
-				{
-					unusedUnits.Add(a);
-					continue;
-				}
-
-				if (FindEnemies([attacker], a).Any())
-					protectSq.Units.Add(a);
-				else
-					unusedUnits.Add(a);
-			}
-
-			unitsHangingAroundTheBase = unusedUnits;
-			foreach (var n in notifyIdleBaseUnits)
-				n.UpdatedIdleBaseUnits(unitsHangingAroundTheBase);
+			protectSq.Units.RemoveWhere(unitCannotBeOrdered);
 
 			if (protectSq.IsValid && !protectSq.IsTargetValid(protectSq.CenterUnit()))
 				protectSq.SetActorToTarget((attacker, WVec.Zero));
+
+			if (!protectSq.IsValid)
+			{
+				var ownUnits = World.FindActorsInCircle(World.Map.CenterOfCell(GetRandomBaseCenter()), WDist.FromCells(Info.ProtectUnitScanRadius))
+					.Where(unit =>
+						unit.Owner == Player
+						&& !Info.ProtectionTypes.Contains(unit.Info.Name)
+						&& unit.Info.HasTraitInfo<AttackBaseInfo>())
+					.WithPathTo(World, attacker.CenterPosition);
+
+				protectSq.Units.UnionWith(ownUnits);
+			}
 		}
 
 		void IBotPositionsUpdated.UpdatedBaseCenter(CPos newLocation)
@@ -548,14 +503,16 @@ namespace OpenRA.Mods.Common.Traits
 
 		void IBotRespondToAttack.RespondToAttack(IBot bot, Actor self, AttackInfo e)
 		{
-			if (respondToAttackCooldown > 0 || !Info.ProtectionTypes.Contains(self.Info.Name) || !IsPreferredEnemyUnit(e.Attacker))
+			if (!IsPreferredEnemyUnit(e.Attacker))
 				return;
 
-			respondToAttackCooldown = MaxRespondToAttackCooldown;
-			foreach (var n in notifyPositionsUpdated)
-				n.UpdatedDefenseCenter(e.Attacker.Location);
+			if (Info.ProtectionTypes.Contains(self.Info.Name))
+			{
+				foreach (var n in notifyPositionsUpdated)
+					n.UpdatedDefenseCenter(e.Attacker.Location);
 
-			protectFrom = e.Attacker;
+				ProtectOwn(bot, e.Attacker);
+			}
 		}
 
 		List<MiniYamlNode> IGameSaveTraitData.IssueTraitData(Actor self)
@@ -563,8 +520,8 @@ namespace OpenRA.Mods.Common.Traits
 			if (IsTraitDisabled)
 				return null;
 
-			return
-			[
+			return new List<MiniYamlNode>()
+			{
 				new("Squads", "", Squads.ConvertAll(s => new MiniYamlNode("Squad", s.Serialize()))),
 				new("InitialBaseCenter", FieldSaver.FormatValue(initialBaseCenter)),
 				new("UnitsHangingAroundTheBase", FieldSaver.FormatValue(unitsHangingAroundTheBase
@@ -579,7 +536,7 @@ namespace OpenRA.Mods.Common.Traits
 				new("AssignRolesTicks", FieldSaver.FormatValue(assignRolesTicks)),
 				new("AttackForceTicks", FieldSaver.FormatValue(attackForceTicks)),
 				new("MinAttackForceDelayTicks", FieldSaver.FormatValue(minAttackForceDelayTicks)),
-			];
+			};
 		}
 
 		void IGameSaveTraitData.ResolveTraitData(Actor self, MiniYaml data)
@@ -596,14 +553,14 @@ namespace OpenRA.Mods.Common.Traits
 			{
 				unitsHangingAroundTheBase.Clear();
 				unitsHangingAroundTheBase.AddRange(FieldLoader.GetValue<uint[]>("UnitsHangingAroundTheBase", unitsHangingAroundTheBaseNode.Value)
-					.Select(self.World.GetActorById).Where(a => a != null));
+					.Select(a => self.World.GetActorById(a)).Where(a => a != null));
 			}
 
 			if (nodes.TryGetValue("ActiveUnits", out var activeUnitsNode))
 			{
 				activeUnits.Clear();
 				activeUnits.UnionWith(FieldLoader.GetValue<uint[]>("ActiveUnits", activeUnitsNode.Value)
-					.Select(self.World.GetActorById).Where(a => a != null));
+					.Select(a => self.World.GetActorById(a)).Where(a => a != null));
 			}
 
 			if (nodes.TryGetValue("RushTicks", out var rushTicksNode))

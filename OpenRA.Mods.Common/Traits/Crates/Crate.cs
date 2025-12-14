@@ -9,7 +9,6 @@
  */
 #endregion
 
-using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Linq;
 using OpenRA.Mods.Common.Activities;
@@ -26,7 +25,7 @@ namespace OpenRA.Mods.Common.Traits
 		public readonly int Duration = 0;
 
 		[Desc("Allowed to land on.")]
-		public readonly FrozenSet<string> TerrainTypes = FrozenSet<string>.Empty;
+		public readonly HashSet<string> TerrainTypes = new();
 
 		[Desc("Define actors that can collect crates by setting this into the Crushes field from the Mobile trait.")]
 		public readonly string CrushClass = "crate";
@@ -188,7 +187,7 @@ namespace OpenRA.Mods.Common.Traits
 		}
 
 		public CPos TopLeft => Location;
-		public (CPos, SubCell)[] OccupiedCells() { return [(Location, SubCell.FullCell)]; }
+		public (CPos, SubCell)[] OccupiedCells() { return new[] { (Location, SubCell.FullCell) }; }
 
 		public WPos CenterPosition { get; private set; }
 

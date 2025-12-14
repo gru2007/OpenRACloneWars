@@ -22,12 +22,12 @@ namespace OpenRA.Mods.Common.UpdateRules.Rules
 			"Cloak has gained several new rendering modes\n" +
 			"and its default behaviour has changed from using a palette to native alpha.";
 
-		readonly List<(string, string)> actorsWithDefault = [];
+		readonly List<(string, string)> actorsWithDefault = new();
 		IEnumerable<string> IBeforeUpdateActors.BeforeUpdateActors(ModData modData, List<MiniYamlNodeBuilder> resolvedActors)
 		{
 			foreach (var actor in resolvedActors)
 				foreach (var cloak in actor.ChildrenMatching("Cloak"))
-					if (cloak.HasChild("Palette"))
+					if (cloak.LastChildMatching("Palette", false) == null)
 						actorsWithDefault.Add((actor.Key, cloak.Key));
 
 			yield break;

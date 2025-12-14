@@ -42,8 +42,8 @@ namespace OpenRA.Mods.Common.Widgets
 
 		readonly Dictionary<ProductionQueue, Animation> clocks;
 		readonly Lazy<TooltipContainerWidget> tooltipContainer;
-		readonly List<ProductionIcon> productionIcons = [];
-		readonly List<Rectangle> productionIconsBounds = [];
+		readonly List<ProductionIcon> productionIcons = new();
+		readonly List<Rectangle> productionIconsBounds = new();
 
 		readonly float2 iconSize;
 		int lastIconIdx;
@@ -55,7 +55,7 @@ namespace OpenRA.Mods.Common.Widgets
 		{
 			this.world = world;
 			this.worldRenderer = worldRenderer;
-			clocks = [];
+			clocks = new Dictionary<ProductionQueue, Animation>();
 			GetTooltipIcon = () => TooltipIcon;
 			tooltipContainer = Exts.Lazy(() =>
 				Ui.Root.Get<TooltipContainerWidget>(TooltipContainer));

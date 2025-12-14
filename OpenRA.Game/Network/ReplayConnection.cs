@@ -24,8 +24,8 @@ namespace OpenRA.Network
 			public (int ClientId, byte[] Packet)[] Packets;
 		}
 
-		readonly Queue<Chunk> chunks = [];
-		readonly Queue<(int Frame, int SyncHash, ulong DefeatState)> sync = [];
+		readonly Queue<Chunk> chunks = new();
+		readonly Queue<(int Frame, int SyncHash, ulong DefeatState)> sync = new();
 		readonly int orderLatency;
 
 		public readonly int TickCount;
@@ -87,7 +87,7 @@ namespace OpenRA.Network
 				}
 			}
 
-			var gameSpeeds = Game.ModData.GetOrCreate<GameSpeeds>();
+			var gameSpeeds = Game.ModData.Manifest.Get<GameSpeeds>();
 			var gameSpeedName = LobbyInfo.GlobalSettings.OptionOrDefault("gamespeed", gameSpeeds.DefaultSpeed);
 			orderLatency = gameSpeeds.Speeds[gameSpeedName].OrderLatency;
 		}

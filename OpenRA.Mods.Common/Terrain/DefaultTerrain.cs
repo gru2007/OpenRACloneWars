@@ -9,15 +9,12 @@
  */
 #endregion
 
-using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using OpenRA.FileSystem;
-using OpenRA.Graphics;
 using OpenRA.Mods.Common.MapGenerator;
-using OpenRA.Mods.Common.UtilityCommands;
 using OpenRA.Primitives;
 using OpenRA.Support;
 
@@ -41,9 +38,9 @@ namespace OpenRA.Mods.Common.Terrain
 
 	public class DefaultTerrainTemplateInfo : TerrainTemplateInfo
 	{
-		public readonly ImmutableArray<string> Images;
-		public readonly ImmutableArray<string> DepthImages;
-		public readonly ImmutableArray<int> Frames;
+		public readonly string[] Images;
+		public readonly string[] DepthImages;
+		public readonly int[] Frames;
 		public readonly string Palette;
 
 		public DefaultTerrainTemplateInfo(ITerrainInfo terrainInfo, MiniYaml my)
@@ -69,15 +66,13 @@ namespace OpenRA.Mods.Common.Terrain
 		}
 	}
 
-	public class DefaultTerrain : ITemplatedTerrainInfo, IDumpSheetsTerrainInfo, ITerrainInfoNotifyMapCreated
+	public class DefaultTerrain : ITemplatedTerrainInfo, ITerrainInfoNotifyMapCreated
 	{
-		[FluentReference]
 		public readonly string Name;
 		public readonly string Id;
-		public readonly Size TileSize = new(24, 24);
 		public readonly int SheetSize = 512;
-		public readonly ImmutableArray<Color> HeightDebugColors = [Color.Red];
-		public readonly ImmutableArray<string> EditorTemplateOrder;
+		public readonly Color[] HeightDebugColors = { Color.Red };
+		public readonly string[] EditorTemplateOrder;
 		public readonly bool IgnoreTileSpriteOffsets;
 		public readonly bool EnableDepth = false;
 		public readonly float MinHeightColorBrightness = 1.0f;
@@ -85,13 +80,15 @@ namespace OpenRA.Mods.Common.Terrain
 		public readonly string Palette = TileSet.TerrainPaletteInternalName;
 
 		[FieldLoader.Ignore]
-		public readonly FrozenDictionary<ushort, TerrainTemplateInfo> Templates;
+		public readonly IReadOnlyDictionary<ushort, TerrainTemplateInfo> Templates;
 		[FieldLoader.Ignore]
-		public readonly FrozenDictionary<string, ImmutableArray<MultiBrushInfo>> MultiBrushCollections;
+		public readonly IReadOnlyDictionary<TemplateSegment, TerrainTemplateInfo> SegmentsToTemplates;
+		[FieldLoader.Ignore]
+		public readonly IReadOnlyDictionary<string, IEnumerable<MultiBrushInfo>> MultiBrushCollections;
 
 		[FieldLoader.Ignore]
-		public readonly ImmutableArray<TerrainTypeInfo> TerrainInfo;
-		readonly FrozenDictionary<string, byte> terrainIndexByType;
+		public readonly TerrainTypeInfo[] TerrainInfo;
+		readonly Dictionary<string, byte> terrainIndexByType = new();
 		readonly byte defaultWalkableTerrainIndex;
 
 		public DefaultTerrain(IReadOnlyFileSystem fileSystem, string filepath)
@@ -106,38 +103,40 @@ namespace OpenRA.Mods.Common.Terrain
 			TerrainInfo = yaml["Terrain"].ToDictionary().Values
 				.Select(y => new TerrainTypeInfo(y))
 				.OrderBy(tt => tt.Type)
-				.ToImmutableArray();
+				.ToArray();
 
 			if (TerrainInfo.Length >= byte.MaxValue)
 				throw new YamlException("Too many terrain types.");
 
-			var tiby = new Dictionary<string, byte>(TerrainInfo.Length);
 			for (byte i = 0; i < TerrainInfo.Length; i++)
 			{
 				var tt = TerrainInfo[i].Type;
 
-				if (!tiby.TryAdd(tt, i))
+				if (terrainIndexByType.ContainsKey(tt))
 					throw new YamlException($"Duplicate terrain type '{tt}' in '{filepath}'.");
-			}
 
-			terrainIndexByType = tiby.ToFrozenDictionary();
+				terrainIndexByType.Add(tt, i);
+			}
 
 			defaultWalkableTerrainIndex = GetTerrainIndex("Clear");
 
 			// Templates
 			Templates = yaml["Templates"].ToDictionary().Values
-				.Select(y => (TerrainTemplateInfo)new DefaultTerrainTemplateInfo(this, y))
-				.ToDictionary(t => t.Id)
-				.ToFrozenDictionary();
+				.Select(y => (TerrainTemplateInfo)new DefaultTerrainTemplateInfo(this, y)).ToDictionary(t => t.Id);
+
+			SegmentsToTemplates = ImmutableDictionary.CreateRange(
+				Templates.Values.SelectMany(
+					template => template.Segments.Select(
+						segment => new KeyValuePair<TemplateSegment, TerrainTemplateInfo>(segment, template))));
 
 			MultiBrushCollections =
 				yaml.TryGetValue("MultiBrushCollections", out var collectionDefinitions)
 					? collectionDefinitions.ToDictionary()
-						.Select(kv => new KeyValuePair<string, ImmutableArray<MultiBrushInfo>>(
+						.Select(kv => new KeyValuePair<string, IEnumerable<MultiBrushInfo>>(
 							kv.Key,
 							MultiBrushInfo.ParseCollection(kv.Value)))
-						.ToFrozenDictionary()
-					: FrozenDictionary<string, ImmutableArray<MultiBrushInfo>>.Empty;
+						.ToImmutableDictionary()
+					: ImmutableDictionary<string, IEnumerable<MultiBrushInfo>>.Empty;
 		}
 
 		public TerrainTypeInfo this[byte index] => TerrainInfo[index];
@@ -177,32 +176,19 @@ namespace OpenRA.Mods.Common.Terrain
 		}
 
 		string ITerrainInfo.Id => Id;
-		string ITerrainInfo.Name => Name;
-		Size ITerrainInfo.TileSize => TileSize;
-		ImmutableArray<TerrainTypeInfo> ITerrainInfo.TerrainTypes => TerrainInfo;
+		TerrainTypeInfo[] ITerrainInfo.TerrainTypes => TerrainInfo;
 		TerrainTileInfo ITerrainInfo.GetTerrainInfo(TerrainTile r) { return GetTileInfo(r); }
 		bool ITerrainInfo.TryGetTerrainInfo(TerrainTile r, out TerrainTileInfo info) { return TryGetTileInfo(r, out info); }
-		ImmutableArray<Color> ITerrainInfo.HeightDebugColors => HeightDebugColors;
+		Color[] ITerrainInfo.HeightDebugColors => HeightDebugColors;
 		IEnumerable<Color> ITerrainInfo.RestrictedPlayerColors { get { return TerrainInfo.Where(ti => ti.RestrictPlayerColor).Select(ti => ti.Color); } }
 		float ITerrainInfo.MinHeightColorBrightness => MinHeightColorBrightness;
 		float ITerrainInfo.MaxHeightColorBrightness => MaxHeightColorBrightness;
-
 		TerrainTile ITerrainInfo.DefaultTerrainTile => new(Templates.First().Key, 0);
 
-		ImmutableArray<string> ITemplatedTerrainInfo.EditorTemplateOrder => EditorTemplateOrder;
-		FrozenDictionary<ushort, TerrainTemplateInfo> ITemplatedTerrainInfo.Templates => Templates;
-		FrozenDictionary<string, ImmutableArray<MultiBrushInfo>> ITemplatedTerrainInfo.MultiBrushCollections => MultiBrushCollections;
-
-		void IDumpSheetsTerrainInfo.DumpSheets(string terrainName, ImmutablePalette palette, ref int sheetCount)
-		{
-			var tileCache = new DefaultTileCache(this);
-			var sb = tileCache.GetSheetBuilder(SheetType.Indexed);
-			foreach (var s in sb.AllSheets)
-				DumpSequenceSheetsCommand.CommitSheet(sb, s, terrainName, palette, ref sheetCount);
-
-			foreach (var s in tileCache.GetSheetBuilder(SheetType.BGRA).AllSheets)
-				DumpSequenceSheetsCommand.CommitSheet(null, s, terrainName, palette, ref sheetCount);
-		}
+		string[] ITemplatedTerrainInfo.EditorTemplateOrder => EditorTemplateOrder;
+		IReadOnlyDictionary<ushort, TerrainTemplateInfo> ITemplatedTerrainInfo.Templates => Templates;
+		IReadOnlyDictionary<TemplateSegment, TerrainTemplateInfo> ITemplatedTerrainInfo.SegmentsToTemplates => SegmentsToTemplates;
+		IReadOnlyDictionary<string, IEnumerable<MultiBrushInfo>> ITemplatedTerrainInfo.MultiBrushCollections => MultiBrushCollections;
 
 		void ITerrainInfoNotifyMapCreated.MapCreated(Map map)
 		{

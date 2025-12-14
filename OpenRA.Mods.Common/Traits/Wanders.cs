@@ -9,7 +9,7 @@
  */
 #endregion
 
-using System.Collections.Frozen;
+using System.Collections.Generic;
 using OpenRA.Traits;
 
 namespace OpenRA.Mods.Common.Traits
@@ -29,7 +29,7 @@ namespace OpenRA.Mods.Common.Traits
 		public readonly int MaxMoveDelay = 0;
 
 		[Desc("The terrain types that this actor should avoid wandering on to.")]
-		public readonly FrozenSet<string> AvoidTerrainTypes = FrozenSet<string>.Empty;
+		public readonly HashSet<string> AvoidTerrainTypes = new();
 
 		public override object Create(ActorInitializer init) { return new Wanders(init.Self, this); }
 	}

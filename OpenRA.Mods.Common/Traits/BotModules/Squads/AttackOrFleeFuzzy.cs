@@ -11,6 +11,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using AI.Fuzzy.Library;
 using OpenRA.Mods.Common.Warheads;
 using OpenRA.Traits;
@@ -19,17 +20,17 @@ namespace OpenRA.Mods.Common.Traits.BotModules.Squads
 {
 	sealed class AttackOrFleeFuzzy
 	{
-		static readonly string[] DefaultRulesNormalOwnHealth =
-		[
+		static readonly string[] DefaultRulesNormalOwnHealth = new[]
+		{
 			"if ((OwnHealth is Normal) " +
 			"and ((EnemyHealth is NearDead) or (EnemyHealth is Injured) or (EnemyHealth is Normal)) " +
 			"and ((RelativeAttackPower is Weak) or (RelativeAttackPower is Equal) or (RelativeAttackPower is Strong)) " +
 			"and ((RelativeSpeed is Slow) or (RelativeSpeed is Equal) or (RelativeSpeed is Fast))) " +
 			"then AttackOrFlee is Attack"
-		];
+		};
 
-		static readonly string[] DefaultRulesInjuredOwnHealth =
-		[
+		static readonly string[] DefaultRulesInjuredOwnHealth = new[]
+		{
 			"if ((OwnHealth is Injured) " +
 			"and (EnemyHealth is NearDead) " +
 			"and ((RelativeAttackPower is Weak) or (RelativeAttackPower is Equal) or (RelativeAttackPower is Strong)) " +
@@ -59,10 +60,10 @@ namespace OpenRA.Mods.Common.Traits.BotModules.Squads
 			"and ((RelativeAttackPower is Weak) or (RelativeAttackPower is Equal) or (RelativeAttackPower is Strong)) " +
 			"and (RelativeSpeed is Slow)) " +
 			"then AttackOrFlee is Attack"
-		];
+		};
 
-		static readonly string[] DefaultRulesNearDeadOwnHealth =
-		[
+		static readonly string[] DefaultRulesNearDeadOwnHealth = new[]
+		{
 			"if ((OwnHealth is NearDead) " +
 			"and ((EnemyHealth is NearDead) or (EnemyHealth is Injured)) " +
 			"and ((RelativeAttackPower is Equal) or (RelativeAttackPower is Strong)) " +
@@ -92,11 +93,11 @@ namespace OpenRA.Mods.Common.Traits.BotModules.Squads
 			"and (RelativeAttackPower is Equal) " +
 			"and (RelativeSpeed is Fast) " +
 			"then AttackOrFlee is Flee"
-		];
+		};
 
 		public static readonly AttackOrFleeFuzzy Default = new(null, null, null);
-		public static readonly AttackOrFleeFuzzy Rush = new(
-		[
+		public static readonly AttackOrFleeFuzzy Rush = new(new[]
+		{
 			"if ((OwnHealth is Normal) " +
 			"and ((EnemyHealth is NearDead) or (EnemyHealth is Injured) or (EnemyHealth is Normal)) " +
 			"and (RelativeAttackPower is Strong) " +
@@ -108,7 +109,7 @@ namespace OpenRA.Mods.Common.Traits.BotModules.Squads
 			"and ((RelativeAttackPower is Weak) or (RelativeAttackPower is Equal)) " +
 			"and ((RelativeSpeed is Slow) or (RelativeSpeed is Equal) or (RelativeSpeed is Fast))) " +
 			"then AttackOrFlee is Flee"
-		], null, null);
+		}, null, null);
 
 		readonly MamdaniFuzzySystem fuzzyEngine = new();
 
@@ -226,7 +227,7 @@ namespace OpenRA.Mods.Common.Traits.BotModules.Squads
 
 		static float RelativeSpeed(IReadOnlyCollection<Actor> own, IReadOnlyCollection<Actor> enemy)
 		{
-			return RelativeValue(own, enemy, 100, Average<MobileInfo>, a => a.Info.TraitInfo<MobileInfo>().Speed);
+			return RelativeValue(own, enemy, 100, Average<MobileInfo>, (Actor a) => a.Info.TraitInfo<MobileInfo>().Speed);
 		}
 
 		static float RelativeValue(IReadOnlyCollection<Actor> own, IReadOnlyCollection<Actor> enemy, float normalizeByValue,

@@ -11,7 +11,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 using OpenRA.Graphics;
 using OpenRA.Mods.Common.Traits;
@@ -20,13 +19,26 @@ using OpenRA.Widgets;
 
 namespace OpenRA.Mods.Common.Widgets.Logic
 {
-	[IncludeStaticFluentReferences(typeof(AddActorAction), typeof(CommonSelectorLogic))]
 	public class ActorSelectorLogic : CommonSelectorLogic
 	{
 		[FluentReference("actorType")]
 		const string ActorTypeTooltip = "label-actor-type";
 
-		sealed record ActorSelectorActor(ActorInfo Actor, ImmutableArray<string> Categories, string[] SearchTerms, string Tooltip);
+		sealed class ActorSelectorActor
+		{
+			public readonly ActorInfo Actor;
+			public readonly string[] Categories;
+			public readonly string[] SearchTerms;
+			public readonly string Tooltip;
+
+			public ActorSelectorActor(ActorInfo actor, string[] categories, string[] searchTerms, string tooltip)
+			{
+				Actor = actor;
+				Categories = categories;
+				SearchTerms = searchTerms;
+				Tooltip = tooltip;
+			}
+		}
 
 		readonly DropDownButtonWidget ownersDropDown;
 		readonly Ruleset mapRules;
@@ -117,7 +129,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 
 			allCategories = allActors.SelectMany(ac => ac.Categories)
 				.Distinct()
-				.Order()
+				.OrderBy(x => x)
 				.ToArray();
 
 			foreach (var c in allCategories)
@@ -137,7 +149,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 							s => s.Contains(searchFilter, StringComparison.CurrentCultureIgnoreCase)))
 						.SelectMany(t => t.Categories)
 						.Distinct()
-						.Order());
+						.OrderBy(x => x));
 				else
 					FilteredCategories.AddRange(allCategories);
 
@@ -199,18 +211,11 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 					preview.SetPreview(actor, td);
 
 					// Scale templates to fit within the panel
-					// Preview position is assumed to be a margin
-					var maxPreviewWidth = item.Bounds.Width - 2 * preview.Bounds.X;
-					var maxPreviewHeight = item.Bounds.Height - 2 * preview.Bounds.Y;
-
 					var scale = 1f;
-					if (preview.IdealPreviewSize.X > maxPreviewWidth)
-						scale = maxPreviewWidth / (float)preview.IdealPreviewSize.X;
+					if (scale * preview.IdealPreviewSize.X > ItemTemplate.Bounds.Width)
+						scale = (ItemTemplate.Bounds.Width - Panel.ItemSpacing) / (float)preview.IdealPreviewSize.X;
 
-					if (preview.IdealPreviewSize.Y * scale > maxPreviewHeight)
-						scale = maxPreviewHeight / (float)preview.IdealPreviewSize.Y;
-
-					preview.Scale = scale;
+					preview.GetScale = () => scale;
 					preview.Bounds.Width = (int)(scale * preview.IdealPreviewSize.X);
 					preview.Bounds.Height = (int)(scale * preview.IdealPreviewSize.Y);
 

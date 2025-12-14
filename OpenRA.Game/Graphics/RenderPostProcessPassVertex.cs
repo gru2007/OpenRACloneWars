@@ -14,20 +14,39 @@ using System.Runtime.InteropServices;
 namespace OpenRA.Graphics
 {
 	[StructLayout(LayoutKind.Sequential)]
-	public readonly record struct RenderPostProcessPassVertex(float X, float Y);
+	public readonly struct RenderPostProcessPassVertex
+	{
+		public readonly float X, Y;
+
+		public RenderPostProcessPassVertex(float x, float y)
+		{
+			X = x; Y = y;
+		}
+	}
 
 	[StructLayout(LayoutKind.Sequential)]
-	public readonly record struct RenderPostProcessPassTexturedVertex(float X, float Y, float S, float T);
+	public readonly struct RenderPostProcessPassTexturedVertex
+	{
+		// 3d position
+		public readonly float X, Y;
+		public readonly float S, T;
+
+		public RenderPostProcessPassTexturedVertex(float x, float y, float s, float t)
+		{
+			X = x; Y = y;
+			S = s; T = t;
+		}
+	}
 
 	public sealed class RenderPostProcessPassShaderBindings : ShaderBindings
 	{
 		public RenderPostProcessPassShaderBindings(string name)
 			: base("postprocess", "postprocess_" + name) { }
 
-		public override ShaderVertexAttribute[] Attributes { get; } =
-		[
+		public override ShaderVertexAttribute[] Attributes { get; } = new[]
+		{
 			new ShaderVertexAttribute("aVertexPosition", ShaderVertexAttributeType.Float, 2, 0)
-		];
+		};
 	}
 
 	public sealed class RenderPostProcessPassTexturedShaderBindings : ShaderBindings
@@ -36,10 +55,10 @@ namespace OpenRA.Graphics
 			: base("postprocess_textured", "postprocess_textured_" + name)
 		{ }
 
-		public override ShaderVertexAttribute[] Attributes { get; } =
-		[
+		public override ShaderVertexAttribute[] Attributes { get; } = new[]
+		{
 			new ShaderVertexAttribute("aVertexPosition", ShaderVertexAttributeType.Float, 2, 0),
 			new ShaderVertexAttribute("aVertexTexCoord", ShaderVertexAttributeType.Float, 2, 8),
-		];
+		};
 	}
 }
