@@ -143,6 +143,7 @@ mpspawn:
 	Interactable:
 	EditorOnlyTooltip:
 		Name: actor-mpspawn-name
+	AlwaysVisible:
 	Immobile:
 		OccupiesSpace: false
 	RenderSpritesEditorOnly:
@@ -158,6 +159,7 @@ waypoint:
 	Interactable:
 	EditorOnlyTooltip:
 		Name: actor-waypoint-name
+	AlwaysVisible:
 	Immobile:
 		OccupiesSpace: false
 	RenderSpritesEditorOnly:
@@ -182,6 +184,7 @@ camera:
 	Interactable:
 	EditorOnlyTooltip:
 		Name: actor-camera-name
+	AlwaysVisible:
 	RenderSpritesEditorOnly:
 	WithSpriteBody:
 	BodyOrientation:
@@ -198,6 +201,7 @@ wormspawner:
 	Interactable:
 	EditorOnlyTooltip:
 		Name: actor-wormspawner-name
+	AlwaysVisible:
 	Immobile:
 		OccupiesSpace: false
 	RenderSpritesEditorOnly:
@@ -209,6 +213,7 @@ wormspawner:
 		Categories: System
 
 upgrade.conyard:
+	AlwaysVisible:
 	Interactable:
 	ScriptTriggers:
 	Tooltip:
@@ -233,6 +238,7 @@ upgrade.conyard:
 	ProvidesPrerequisite@upgradename:
 
 upgrade.barracks:
+	AlwaysVisible:
 	Interactable:
 	ScriptTriggers:
 	Tooltip:
@@ -242,7 +248,7 @@ upgrade.barracks:
 		Prerequisites: barracks
 		Queue: Upgrade
 		BuildLimit: 1
-		BuildDuration: 260
+		BuildDuration: 208
 		BuildDurationModifier: 100
 		Description: actor-upgrade-barracks.description
 	Valued:
@@ -257,6 +263,7 @@ upgrade.barracks:
 	ProvidesPrerequisite@upgradename:
 
 upgrade.light:
+	AlwaysVisible:
 	Interactable:
 	ScriptTriggers:
 	Tooltip:
@@ -266,7 +273,7 @@ upgrade.light:
 		Prerequisites: light_factory
 		Queue: Upgrade
 		BuildLimit: 1
-		BuildDuration: 330
+		BuildDuration: 268
 		BuildDurationModifier: 100
 		Description: actor-upgrade-light.description
 	Valued:
@@ -281,6 +288,7 @@ upgrade.light:
 	ProvidesPrerequisite@upgradename:
 
 upgrade.heavy:
+	AlwaysVisible:
 	Interactable:
 	ScriptTriggers:
 	Tooltip:
@@ -290,7 +298,7 @@ upgrade.heavy:
 		Prerequisites: heavy_factory
 		Queue: Upgrade
 		BuildLimit: 1
-		BuildDuration: 600
+		BuildDuration: 468
 		BuildDurationModifier: 100
 		Description: actor-upgrade-heavy.description
 	Valued:
@@ -306,6 +314,7 @@ upgrade.heavy:
 	ProvidesPrerequisite@upgradename:
 
 upgrade.hightech:
+	AlwaysVisible:
 	Interactable:
 	ScriptTriggers:
 	Tooltip:
@@ -325,6 +334,7 @@ upgrade.hightech:
 	ProvidesPrerequisite@upgradename:
 
 deathhand:
+	AlwaysVisible:
 	Interactable:
 	Tooltip:
 		Name: actor-deathhand.name

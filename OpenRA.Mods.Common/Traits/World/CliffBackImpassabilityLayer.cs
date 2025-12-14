@@ -50,7 +50,7 @@ namespace OpenRA.Mods.Common.Traits
 
 				// All the map cells that visually overlap the current cell
 				var testCells = w.Map.ProjectedCellsCovering(uv)
-					.SelectMany(w.Map.Unproject);
+					.SelectMany(puv => w.Map.Unproject(puv));
 				if (testCells.Any(x => x.V >= uv.V + 4))
 					w.Map.CustomTerrain[uv] = tileType;
 			}

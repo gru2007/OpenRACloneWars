@@ -1,5 +1,5 @@
 General:
-	Name: tileset-interior
+	Name: Interior
 	Id: INTERIOR
 	EditorTemplateOrder: Floor, Wall
 	HeightDebugColors: 880000

@@ -58,7 +58,7 @@ namespace OpenRA.Mods.Common.Pathfinder
 		public sealed class PooledCellInfoLayer : IDisposable
 		{
 			CellInfoLayerPool layerPool;
-			List<CellLayer<CellInfo>> layers = [];
+			List<CellLayer<CellInfo>> layers = new();
 
 			public PooledCellInfoLayer(CellInfoLayerPool layerPool)
 			{

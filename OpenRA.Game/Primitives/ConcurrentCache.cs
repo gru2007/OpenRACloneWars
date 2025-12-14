@@ -22,7 +22,8 @@ namespace OpenRA.Primitives
 
 		public ConcurrentCache(Func<T, U> loader, IEqualityComparer<T> c)
 		{
-			ArgumentNullException.ThrowIfNull(loader);
+			if (loader == null)
+				throw new ArgumentNullException(nameof(loader));
 
 			this.loader = loader;
 			cache = new ConcurrentDictionary<T, U>(c);

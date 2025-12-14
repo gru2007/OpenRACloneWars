@@ -9,9 +9,7 @@
  */
 #endregion
 
-using System.Collections.Frozen;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 using OpenRA.Graphics;
 using OpenRA.Mods.Common.Graphics;
@@ -20,6 +18,9 @@ namespace OpenRA.Mods.Cnc.Graphics
 {
 	public class ClassicTilesetSpecificSpriteSequenceLoader : ClassicSpriteSequenceLoader
 	{
+		public ClassicTilesetSpecificSpriteSequenceLoader(ModData modData)
+			: base(modData) { }
+
 		public override ClassicTilesetSpecificSpriteSequence CreateSequence(
 			ModData modData, string tileset, SpriteCache cache, string image, string sequence, MiniYaml data, MiniYaml defaults)
 		{
@@ -32,15 +33,15 @@ namespace OpenRA.Mods.Cnc.Graphics
 	public class ClassicTilesetSpecificSpriteSequence : ClassicSpriteSequence
 	{
 		[Desc("Dictionary of <tileset name>: filename to override the Filename key.")]
-		static readonly SpriteSequenceField<FrozenDictionary<string, string>> TilesetFilenames = new(nameof(TilesetFilenames), null);
+		static readonly SpriteSequenceField<Dictionary<string, string>> TilesetFilenames = new(nameof(TilesetFilenames), null);
 
 		[Desc("Dictionary of <tileset name>: <filename pattern> to override the FilenamePattern key.")]
-		static readonly SpriteSequenceField<FrozenDictionary<string, string>> TilesetFilenamesPattern = new(nameof(TilesetFilenamesPattern), null);
+		static readonly SpriteSequenceField<Dictionary<string, string>> TilesetFilenamesPattern = new(nameof(TilesetFilenamesPattern), null);
 
 		public ClassicTilesetSpecificSpriteSequence(SpriteCache cache, ISpriteSequenceLoader loader, string image, string sequence, MiniYaml data, MiniYaml defaults)
 			: base(cache, loader, image, sequence, data, defaults) { }
 
-		protected override IEnumerable<ReservationInfo> ParseFilenames(ModData modData, string tileset, ImmutableArray<int> frames, MiniYaml data, MiniYaml defaults)
+		protected override IEnumerable<ReservationInfo> ParseFilenames(ModData modData, string tileset, int[] frames, MiniYaml data, MiniYaml defaults)
 		{
 			var tilesetFilenamesPatternNode = data.NodeWithKeyOrDefault(TilesetFilenamesPattern.Key) ?? defaults.NodeWithKeyOrDefault(TilesetFilenamesPattern.Key);
 			if (tilesetFilenamesPatternNode != null)
@@ -63,14 +64,14 @@ namespace OpenRA.Mods.Cnc.Graphics
 				if (tilesetNode != null)
 				{
 					var loadFrames = CalculateFrameIndices(start, length, stride ?? length ?? 0, facings, frames, transpose, reverseFacings, shadowStart);
-					return [new ReservationInfo(tilesetNode.Value.Value, loadFrames, frames, tilesetNode.Location)];
+					return new[] { new ReservationInfo(tilesetNode.Value.Value, loadFrames, frames, tilesetNode.Location) };
 				}
 			}
 
 			return base.ParseFilenames(modData, tileset, frames, data, defaults);
 		}
 
-		protected override IEnumerable<ReservationInfo> ParseCombineFilenames(ModData modData, string tileset, ImmutableArray<int> frames, MiniYaml data)
+		protected override IEnumerable<ReservationInfo> ParseCombineFilenames(ModData modData, string tileset, int[] frames, MiniYaml data)
 		{
 			var node = data.NodeWithKeyOrDefault(TilesetFilenames.Key);
 			if (node != null)
@@ -82,10 +83,10 @@ namespace OpenRA.Mods.Cnc.Graphics
 					{
 						var subStart = LoadField("Start", 0, data);
 						var subLength = LoadField("Length", 1, data);
-						frames = Exts.MakeArray(subLength, i => subStart + i).ToImmutableArray();
+						frames = Exts.MakeArray(subLength, i => subStart + i);
 					}
 
-					return [new ReservationInfo(tilesetNode.Value.Value, frames, frames, tilesetNode.Location)];
+					return new[] { new ReservationInfo(tilesetNode.Value.Value, frames, frames, tilesetNode.Location) };
 				}
 			}
 

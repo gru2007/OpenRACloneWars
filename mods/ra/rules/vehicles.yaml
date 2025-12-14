@@ -505,7 +505,6 @@ APC:
 
 MNLY:
 	Inherits: ^TrackedVehicle
-	Inherits@GAINSEXPERIENCE: ^GainsExperience
 	Inherits@selection: ^SelectableSupportUnit
 	Buildable:
 		Queue: Vehicle

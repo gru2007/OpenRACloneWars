@@ -86,7 +86,7 @@ namespace OpenRA.Mods.Common.Traits
 			var autoSaveDirectoryInfo = new DirectoryInfo(saveFolderPath);
 
 			if (!autoSaveDirectoryInfo.Exists)
-				return [];
+				return Array.Empty<FileInfo>();
 
 			return autoSaveDirectoryInfo.EnumerateFiles($"{AutoSavePattern}*{SaveFileExtension}");
 		}

@@ -23,9 +23,15 @@ namespace OpenRA.Mods.Common.Traits
 	public sealed class LocomotorReferenceAttribute : Attribute { }
 
 	[AttributeUsage(AttributeTargets.Field)]
-	public sealed class NotificationReferenceAttribute(string type = null, string typeFromField = null) : Attribute
+	public sealed class NotificationReferenceAttribute : Attribute
 	{
-		public readonly string NotificationTypeFieldName = typeFromField;
-		public readonly string NotificationType = type;
+		public readonly string NotificationTypeFieldName = null;
+		public readonly string NotificationType = null;
+
+		public NotificationReferenceAttribute(string type = null, string typeFromField = null)
+		{
+			NotificationType = type;
+			NotificationTypeFieldName = typeFromField;
+		}
 	}
 }

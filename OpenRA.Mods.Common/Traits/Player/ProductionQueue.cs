@@ -10,7 +10,6 @@
 #endregion
 
 using System;
-using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Linq;
 using OpenRA.Primitives;
@@ -34,7 +33,7 @@ namespace OpenRA.Mods.Common.Traits
 		public readonly string Group = null;
 
 		[Desc("Only enable this queue for certain factions.")]
-		public readonly FrozenSet<string> Factions = FrozenSet<string>.Empty;
+		public readonly HashSet<string> Factions = new();
 
 		[Desc("Should the prerequisite remain enabled if the owner changes?")]
 		public readonly bool Sticky = true;
@@ -138,15 +137,15 @@ namespace OpenRA.Mods.Common.Traits
 		public readonly ProductionQueueInfo Info;
 
 		// A list of things we could possibly build
-		protected readonly Dictionary<ActorInfo, ProductionState> Producible = [];
-		protected readonly List<ProductionItem> Queue = [];
+		protected readonly Dictionary<ActorInfo, ProductionState> Producible = new();
+		protected readonly List<ProductionItem> Queue = new();
 		readonly IEnumerable<ActorInfo> allProducibles;
 		readonly IEnumerable<ActorInfo> buildableProducibles;
 
 		protected Production[] productionTraits;
 
 		// Will change if the owner changes
-		protected PowerManager playerPower;
+		PowerManager playerPower;
 		protected PlayerResources playerResources;
 		protected DeveloperMode developerMode;
 		protected TechTree techTree;
@@ -192,11 +191,11 @@ namespace OpenRA.Mods.Common.Traits
 			{
 				if (item.ResourcesPaid > 0)
 				{
-					playerResources.RefundResources(item.ResourcesPaid);
+					playerResources.GiveResources(item.ResourcesPaid);
 					item.RemainingCost += item.ResourcesPaid;
 				}
 
-				playerResources.RefundCash(item.TotalCost - item.RemainingCost);
+				playerResources.GiveCash(item.TotalCost - item.RemainingCost);
 			}
 
 			Queue.Clear();
@@ -298,7 +297,7 @@ namespace OpenRA.Mods.Common.Traits
 		public virtual IEnumerable<ActorInfo> AllItems()
 		{
 			if (productionTraits.Length > 0 && productionTraits.All(p => p.IsTraitDisabled))
-				return [];
+				return Enumerable.Empty<ActorInfo>();
 			if (developerMode.AllTech)
 				return Producible.Keys;
 
@@ -308,9 +307,9 @@ namespace OpenRA.Mods.Common.Traits
 		public virtual IEnumerable<ActorInfo> BuildableItems()
 		{
 			if (productionTraits.Length > 0 && productionTraits.All(p => p.IsTraitDisabled))
-				return [];
+				return Enumerable.Empty<ActorInfo>();
 			if (!Enabled)
-				return [];
+				return Enumerable.Empty<ActorInfo>();
 			if (!Info.PayUpFront && developerMode.AllTech)
 				return Producible.Keys;
 			if (Info.PayUpFront && developerMode.AllTech)
@@ -375,29 +374,21 @@ namespace OpenRA.Mods.Common.Traits
 
 			// EndProduction removes the item from the queue, so we enumerate
 			// by index in reverse to avoid issues with index reassignment
-			var cancelledAnItem = false;
 			for (var i = Queue.Count - 1; i >= 0; i--)
 			{
 				if (buildableNames.Contains(Queue[i].Item))
 					continue;
 
-				// Refund spent resources
+				// Refund spended resources
 				if (Queue[i].ResourcesPaid > 0)
 				{
-					playerResources.RefundResources(Queue[i].ResourcesPaid);
+					playerResources.GiveResources(Queue[i].ResourcesPaid);
 					Queue[i].RemainingCost += Queue[i].ResourcesPaid;
 				}
 
 				// Refund what's been paid so far
-				playerResources.RefundCash(Queue[i].TotalCost - Queue[i].RemainingCost);
+				playerResources.GiveCash(Queue[i].TotalCost - Queue[i].RemainingCost);
 				EndProduction(Queue[i]);
-				cancelledAnItem = true;
-			}
-
-			if (cancelledAnItem)
-			{
-				Game.Sound.PlayNotification(Actor.World.Map.Rules, Actor.Owner, "Speech", Info.CancelledAudio, Actor.Owner.Faction.InternalName);
-				TextNotificationsManager.AddTransientLine(Actor.Owner, Info.CancelledTextNotification);
 			}
 		}
 
@@ -444,7 +435,7 @@ namespace OpenRA.Mods.Common.Traits
 			return true;
 		}
 
-		public virtual void ResolveOrder(Actor self, Order order)
+		public void ResolveOrder(Actor self, Order order)
 		{
 			if (!Enabled)
 				return;
@@ -497,10 +488,7 @@ namespace OpenRA.Mods.Common.Traits
 						{
 							// Make sure the item hasn't been invalidated between the ProductionItem ticking and this FrameEndTask running
 							if (!Queue.Any(i => i.Done && i.Item == unit.Name))
-							{
-								hasPlayedSound = false;
 								return;
-							}
 
 							var isBuilding = unit.HasTraitInfo<BuildingInfo>();
 							if (isBuilding && !hasPlayedSound)
@@ -593,11 +581,11 @@ namespace OpenRA.Mods.Common.Traits
 					// Refund what has been paid
 					if (item.ResourcesPaid > 0)
 					{
-						playerResources.RefundResources(item.ResourcesPaid);
+						playerResources.GiveResources(item.ResourcesPaid);
 						item.RemainingCost += item.ResourcesPaid;
 					}
 
-					playerResources.RefundCash(item.TotalCost - item.RemainingCost);
+					playerResources.GiveCash(item.TotalCost - item.RemainingCost);
 					EndProduction(item);
 				}
 
@@ -650,11 +638,11 @@ namespace OpenRA.Mods.Common.Traits
 				// Refund what has been paid
 				if (queued[i].ResourcesPaid > 0)
 				{
-					playerResources.RefundResources(queued[i].ResourcesPaid);
+					playerResources.GiveResources(queued[i].ResourcesPaid);
 					queued[i].RemainingCost += queued[i].ResourcesPaid;
 				}
 
-				playerResources.RefundCash(queued[i].TotalCost - queued[i].RemainingCost);
+				playerResources.GiveCash(queued[i].TotalCost - queued[i].RemainingCost);
 				EndProduction(queued[i]);
 			}
 		}

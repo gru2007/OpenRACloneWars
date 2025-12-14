@@ -9,8 +9,8 @@
  */
 #endregion
 
+using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 using OpenRA.Effects;
 using OpenRA.Primitives;
@@ -22,10 +22,10 @@ namespace OpenRA.Mods.Common.Traits
 	public class BridgeHutInfo : TraitInfo, IDemolishableInfo
 	{
 		[Desc("Bridge types to act on")]
-		public readonly ImmutableArray<string> Types = ["GroundLevelBridge"];
+		public readonly string[] Types = { "GroundLevelBridge" };
 
 		[Desc("Offsets to look for adjacent bridges to act on")]
-		public readonly ImmutableArray<CVec> NeighbourOffsets = [];
+		public readonly CVec[] NeighbourOffsets = Array.Empty<CVec>();
 
 		[Desc("Delay between each segment repair step")]
 		public readonly int RepairPropagationDelay = 20;
@@ -47,11 +47,11 @@ namespace OpenRA.Mods.Common.Traits
 		readonly BridgeLayer bridgeLayer;
 
 		// Fixed at map load
-		readonly List<CPos[]> segmentLocations = [];
+		readonly List<CPos[]> segmentLocations = new();
 
 		// Changes as segments are killed and repaired
-		readonly Dictionary<CPos, IBridgeSegment> segments = [];
-		readonly HashSet<CPos> dirtyLocations = [];
+		readonly Dictionary<CPos, IBridgeSegment> segments = new();
+		readonly HashSet<CPos> dirtyLocations = new();
 
 		// Enabled during a repair action
 		int repairStep;

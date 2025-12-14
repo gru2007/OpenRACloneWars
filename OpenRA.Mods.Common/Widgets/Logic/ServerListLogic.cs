@@ -14,7 +14,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using BeaconLib;
-using OpenRA.Graphics;
 using OpenRA.Network;
 using OpenRA.Primitives;
 using OpenRA.Server;
@@ -49,9 +48,6 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 
 		[FluentReference("bots")]
 		const string BotsLabel = "label-bots-count";
-
-		[FluentReference]
-		const string BotPlayer = "label-bot-player";
 
 		[FluentReference("spectators")]
 		const string SpectatorsLabel = "label-spectators-count";
@@ -178,7 +174,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 			serverShuttingDown = FluentProvider.GetMessage(ServerShuttingDown);
 			unknownServerState = FluentProvider.GetMessage(UnknownServerState);
 
-			services = modData.GetOrCreate<WebServices>();
+			services = modData.Manifest.Get<WebServices>();
 
 			incompatibleVersionColor = ChromeMetrics.Get<Color>("IncompatibleVersionColor");
 			incompatibleGameColor = ChromeMetrics.Get<Color>("IncompatibleGameColor");
@@ -248,7 +244,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 				// HACK: MULTIPLAYER_FILTER_PANEL doesn't follow our normal procedure for dropdown creation
 				// but we still need to be able to set the dropdown width based on the parent
 				// The yaml should use PARENT_WIDTH instead of DROPDOWN_WIDTH
-				var filtersPanel = Ui.LoadWidget("MULTIPLAYER_FILTER_PANEL", filtersButton, []);
+				var filtersPanel = Ui.LoadWidget("MULTIPLAYER_FILTER_PANEL", filtersButton, new WidgetArgs());
 				filtersButton.Children.Remove(filtersPanel);
 
 				var showWaitingCheckbox = filtersPanel.GetOrNull<CheckboxWidget>("WAITING_FOR_PLAYERS");
@@ -335,12 +331,12 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 			if (mapTitle != null)
 			{
 				var font = Game.Renderer.Fonts[mapTitle.Font];
-				var title = new CachedTransform<string, string>(t =>
+				var title = new CachedTransform<MapPreview, string>(m =>
 				{
-					var truncated = WidgetUtils.TruncateText(t, mapTitle.Bounds.Width, font);
+					var truncated = WidgetUtils.TruncateText(m.Title, mapTitle.Bounds.Width, font);
 
-					if (t != truncated)
-						mapTitle.GetTooltipText = () => t;
+					if (m.Title != truncated)
+						mapTitle.GetTooltipText = () => m.Title;
 					else
 						mapTitle.GetTooltipText = null;
 
@@ -358,7 +354,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 					if (currentMap.Class == MapClassification.Unknown)
 						return mapClassificationUnknown;
 
-					return title.Update(currentMap.Title);
+					return title.Update(currentMap);
 				};
 			}
 
@@ -398,14 +394,14 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 			clientContainer = widget.GetOrNull("CLIENT_LIST_CONTAINER");
 			if (clientContainer != null)
 			{
-				clientList = Ui.LoadWidget("MULTIPLAYER_CLIENT_LIST", clientContainer, []) as ScrollPanelWidget;
+				clientList = Ui.LoadWidget("MULTIPLAYER_CLIENT_LIST", clientContainer, new WidgetArgs()) as ScrollPanelWidget;
 				clientList.IsVisible = () => currentServer != null && currentServer.Clients.Length > 0;
 				clientHeader = clientList.Get<ScrollItemWidget>("HEADER");
 				clientTemplate = clientList.Get<ScrollItemWidget>("TEMPLATE");
 				clientList.RemoveChildren();
 			}
 
-			lanGameLocations = [];
+			lanGameLocations = new List<BeaconLocation>();
 			try
 			{
 				lanGameProbe = new Probe("OpenRALANGame");
@@ -461,7 +457,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 					var result = await httpResponseMessage.Content.ReadAsStreamAsync();
 
 					var yaml = MiniYaml.FromStream(result, queryURL);
-					games = [];
+					games = new List<GameServer>();
 					foreach (var node in yaml)
 					{
 						try
@@ -492,7 +488,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 							continue;
 
 						var game = new MiniYamlBuilder(MiniYaml.FromString(
-							bl.Data, $"BeaconLocation_{bl.Address}_{bl.LastAdvertised:s}", stringPool: stringPool).First().Value);
+							bl.Data, $"BeaconLocation_{bl.Address}_{bl.LastAdvertised:s}", stringPool: stringPool)[0].Value);
 						var idNode = game.NodeWithKeyOrDefault("Id");
 
 						// Skip beacons created by this instance and replace Id by expected int value
@@ -608,21 +604,14 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 				foreach (var option in kv.Value)
 				{
 					var o = option;
-					var playerName = new CachedTransform<(MapStatus, int, SpriteFont), string>(s =>
-					{
-						var name = o.IsBot
-							? currentMap.TryGetMessage(o.Name, out var msg) ? msg : FluentProvider.GetMessage(BotPlayer)
-							: o.Name;
-
-						return WidgetUtils.TruncateText(name, s.Item2, s.Item3);
-					});
 
 					var item = ScrollItemWidget.Setup(clientTemplate, () => false, () => { });
 					if (!o.IsSpectator && server.Mod == modData.Manifest.Id)
 					{
 						var label = item.Get<LabelWidget>("LABEL");
 						var font = Game.Renderer.Fonts[label.Font];
-						label.GetText = () => playerName.Update((currentMap.Status, label.Bounds.Width, font));
+						var name = WidgetUtils.TruncateText(o.Name, label.Bounds.Width, font);
+						label.GetText = () => name;
 						label.GetColor = () => o.Color;
 
 						var flag = item.Get<ImageWidget>("FLAG");
@@ -634,10 +623,11 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 					{
 						var label = item.Get<LabelWidget>("NOFLAG_LABEL");
 						var font = Game.Renderer.Fonts[label.Font];
+						var name = WidgetUtils.TruncateText(o.Name, label.Bounds.Width, font);
 
 						// Force spectator color to prevent spoofing by the server
 						var color = o.IsSpectator ? Color.White : o.Color;
-						label.GetText = () => playerName.Update((currentMap.Status, label.Bounds.Width, font));
+						label.GetText = () => name;
 						label.GetColor = () => color;
 					}
 
@@ -771,22 +761,14 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 
 							if (game.Clients.Length > 0)
 							{
-								var preview = modData.MapCache[game.Map];
-								var tooltip = new CachedTransform<MapStatus, string>(s =>
-								{
-									var displayClients = game.Clients.Select(c => c.IsBot
-										? preview.TryGetMessage(c.Name, out var msg) ? msg : FluentProvider.GetMessage(BotPlayer)
-										: c.Name);
+								var displayClients = game.Clients.Select(c => c.Name);
+								if (game.Clients.Length > 10)
+									displayClients = displayClients
+										.Take(9)
+										.Append(FluentProvider.GetMessage(OtherPlayers, "players", game.Clients.Length - 9));
 
-									if (game.Clients.Length > 10)
-										displayClients = displayClients
-											.Take(9)
-											.Append(FluentProvider.GetMessage(OtherPlayers, "players", game.Clients.Length - 9));
-
-									return displayClients.JoinWith("\n");
-								});
-
-								players.GetTooltipText = () => tooltip.Update(preview.Status);
+								var tooltip = displayClients.JoinWith("\n");
+								players.GetTooltipText = () => tooltip;
 							}
 							else
 								players.GetTooltipText = null;

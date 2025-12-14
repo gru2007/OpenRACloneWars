@@ -10,9 +10,7 @@
 #endregion
 
 using System;
-using System.Collections.Frozen;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 using OpenRA.Mods.Common.Activities;
 using OpenRA.Mods.Common.Orders;
@@ -28,10 +26,10 @@ namespace OpenRA.Mods.Common.Traits
 		public readonly int MaxWeight = 0;
 
 		[Desc("`Passenger.CargoType`s that can be loaded into this actor.")]
-		public readonly FrozenSet<string> Types = FrozenSet<string>.Empty;
+		public readonly HashSet<string> Types = new();
 
 		[Desc("A list of actor types that are initially spawned into this actor.")]
-		public readonly ImmutableArray<string> InitialUnits = [];
+		public readonly string[] InitialUnits = Array.Empty<string>();
 
 		[Desc("When this actor is sold should all of its passengers be unloaded?")]
 		public readonly bool EjectOnSell = true;
@@ -40,7 +38,7 @@ namespace OpenRA.Mods.Common.Traits
 		public readonly bool EjectOnDeath = false;
 
 		[Desc("Terrain types that this actor is allowed to eject actors onto. Leave empty for all terrain types.")]
-		public readonly FrozenSet<string> UnloadTerrainTypes = FrozenSet<string>.Empty;
+		public readonly HashSet<string> UnloadTerrainTypes = new();
 
 		[VoiceReference]
 		[Desc("Voice to play when ordered to unload the passengers.")]
@@ -60,9 +58,6 @@ namespace OpenRA.Mods.Common.Traits
 
 		[Desc("Delay (in ticks) before continuing after unloading a passenger.")]
 		public readonly int AfterUnloadDelay = 25;
-
-		[Desc("Delay (in ticks) before each passenger is unloaded.")]
-		public readonly int BetweenUnloadDelay = 0;
 
 		[CursorReference]
 		[Desc("Cursor to display when able to unload the passengers.")]
@@ -84,7 +79,7 @@ namespace OpenRA.Mods.Common.Traits
 		[ActorReference(dictionaryReference: LintDictionaryReference.Keys)]
 		[Desc("Conditions to grant when specified actors are loaded inside the transport.",
 			"A dictionary of [actor name]: [condition].")]
-		public readonly FrozenDictionary<string, string> PassengerConditions = FrozenDictionary<string, string>.Empty;
+		public readonly Dictionary<string, string> PassengerConditions = new();
 
 		[GrantedConditionReference]
 		public IEnumerable<string> LinterPassengerConditions => PassengerConditions.Values;
@@ -97,9 +92,9 @@ namespace OpenRA.Mods.Common.Traits
 		INotifyCreated, INotifyKilled, ITransformActorInitModifier
 	{
 		readonly Actor self;
-		readonly List<Actor> cargo = [];
-		readonly HashSet<Actor> reserves = [];
-		readonly Dictionary<string, Stack<int>> passengerTokens = [];
+		readonly List<Actor> cargo = new();
+		readonly HashSet<Actor> reserves = new();
+		readonly Dictionary<string, Stack<int>> passengerTokens = new();
 		readonly Lazy<IFacing> facing;
 		readonly bool checkTerrainType;
 
@@ -107,7 +102,7 @@ namespace OpenRA.Mods.Common.Traits
 		int reservedWeight = 0;
 		Aircraft aircraft;
 		int loadingToken = Actor.InvalidConditionToken;
-		readonly Stack<int> loadedTokens = [];
+		readonly Stack<int> loadedTokens = new();
 		bool takeOffAfterLoad;
 		bool initialised;
 
@@ -128,31 +123,31 @@ namespace OpenRA.Mods.Common.Traits
 			if (runtimeCargoInit != null)
 			{
 				cargo = runtimeCargoInit.Value.ToList();
-				totalWeight = cargo.Sum(GetWeight);
+				totalWeight = cargo.Sum(c => GetWeight(c));
 			}
 			else if (cargoInit != null)
 			{
 				foreach (var u in cargoInit.Value)
 				{
 					var unit = self.World.CreateActor(false, u.ToLowerInvariant(),
-						[new OwnerInit(self.Owner)]);
+						new TypeDictionary { new OwnerInit(self.Owner) });
 
 					cargo.Add(unit);
 				}
 
-				totalWeight = cargo.Sum(GetWeight);
+				totalWeight = cargo.Sum(c => GetWeight(c));
 			}
 			else
 			{
 				foreach (var u in info.InitialUnits)
 				{
 					var unit = self.World.CreateActor(false, u.ToLowerInvariant(),
-						[new OwnerInit(self.Owner)]);
+						new TypeDictionary { new OwnerInit(self.Owner) });
 
 					cargo.Add(unit);
 				}
 
-				totalWeight = cargo.Sum(GetWeight);
+				totalWeight = cargo.Sum(c => GetWeight(c));
 			}
 
 			facing = Exts.Lazy(self.TraitOrDefault<IFacing>);
@@ -336,11 +331,11 @@ namespace OpenRA.Mods.Common.Traits
 		public bool HasSpace(int weight) { return totalWeight + reservedWeight + weight <= Info.MaxWeight; }
 		public bool IsEmpty() { return cargo.Count == 0; }
 
-		public Actor Peek() { return cargo[^1]; }
+		public Actor Peek() { return cargo.Last(); }
 
 		public Actor Unload(Actor self, Actor passenger = null)
 		{
-			passenger ??= cargo[^1];
+			passenger ??= cargo.Last();
 			if (!cargo.Remove(passenger))
 				throw new ArgumentException("Attempted to unload an actor that is not a passenger.");
 

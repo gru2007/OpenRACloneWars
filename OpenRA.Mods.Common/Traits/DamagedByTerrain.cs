@@ -9,7 +9,8 @@
  */
 #endregion
 
-using System.Collections.Immutable;
+using System;
+using System.Linq;
 using OpenRA.Primitives;
 using OpenRA.Traits;
 
@@ -30,7 +31,7 @@ namespace OpenRA.Mods.Common.Traits
 
 		[FieldLoader.Require]
 		[Desc("Terrain types where the actor will take damage.")]
-		public readonly ImmutableArray<string> Terrain = [];
+		public readonly string[] Terrain = Array.Empty<string>();
 
 		public override object Create(ActorInitializer init) { return new DamagedByTerrain(this); }
 	}

@@ -9,7 +9,6 @@
  */
 #endregion
 
-using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Linq;
 using OpenRA.Mods.Common.Activities;
@@ -27,7 +26,7 @@ namespace OpenRA.Mods.Common.Traits
 
 		[ActorReference]
 		[FieldLoader.Require]
-		public readonly FrozenSet<string> DockActors = FrozenSet<string>.Empty;
+		public readonly HashSet<string> DockActors = new();
 
 		[VoiceReference]
 		public readonly string Voice = "Action";

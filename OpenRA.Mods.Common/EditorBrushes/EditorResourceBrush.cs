@@ -30,7 +30,7 @@ namespace OpenRA.Mods.Common.Widgets
 		bool resourceAdded;
 
 		CPos cell;
-		readonly List<IRenderable> preview = [];
+		readonly List<IRenderable> preview = new();
 		readonly IResourceRenderer[] resourceRenderers;
 
 		public EditorResourceBrush(EditorViewportControllerWidget editorWidget, string resourceType, WorldRenderer wr)
@@ -45,6 +45,8 @@ namespace OpenRA.Mods.Common.Widgets
 			resourceRenderers = world.WorldActor.TraitsImplementing<IResourceRenderer>().ToArray();
 			cell = wr.Viewport.ViewToWorld(wr.Viewport.WorldToViewPx(Viewport.LastMousePos));
 			UpdatePreview();
+
+			action = new AddResourcesEditorAction(resourceType, resourceLayer);
 		}
 
 		public bool HandleMouseInput(MouseInput mi)
@@ -68,14 +70,13 @@ namespace OpenRA.Mods.Common.Widgets
 
 			if (mi.Button == MouseButton.Left && mi.Event != MouseInputEvent.Up && resourceLayer.CanAddResource(ResourceType, cell))
 			{
-				action ??= new AddResourcesEditorAction(ResourceType, resourceLayer);
-				action.Add(new CellResource(cell, resourceLayer.GetResource(cell)));
+				action.Add(new CellResource(cell, resourceLayer.GetResource(cell), ResourceType));
 				resourceAdded = true;
 			}
 			else if (resourceAdded && mi.Button == MouseButton.Left && mi.Event == MouseInputEvent.Up)
 			{
 				editorActionManager.Add(action);
-				action = null;
+				action = new AddResourcesEditorAction(ResourceType, resourceLayer);
 				resourceAdded = false;
 			}
 
@@ -100,7 +101,7 @@ namespace OpenRA.Mods.Common.Widgets
 			}
 		}
 
-		IEnumerable<IRenderable> IEditorBrush.RenderAboveShroud(Actor self, WorldRenderer wr) { return action == null ? preview : null; }
+		IEnumerable<IRenderable> IEditorBrush.RenderAboveShroud(Actor self, WorldRenderer wr) { return preview; }
 		IEnumerable<IRenderable> IEditorBrush.RenderAnnotations(Actor self, WorldRenderer wr) { yield break; }
 
 		public void Tick() { }
@@ -108,18 +109,30 @@ namespace OpenRA.Mods.Common.Widgets
 		public void Dispose() { }
 	}
 
-	readonly record struct CellResource(CPos Cell, ResourceLayerContents OldResourceTile);
+	readonly struct CellResource
+	{
+		public readonly CPos Cell;
+		public readonly ResourceLayerContents OldResourceTile;
+		public readonly string NewResourceType;
+
+		public CellResource(CPos cell, ResourceLayerContents oldResourceTile, string newResourceType)
+		{
+			Cell = cell;
+			OldResourceTile = oldResourceTile;
+			NewResourceType = newResourceType;
+		}
+	}
 
 	sealed class AddResourcesEditorAction : IEditorAction
 	{
-		[FluentReference("count", "type")]
+		[FluentReference("amount", "type")]
 		const string AddedResource = "notification-added-resource";
 
 		public string Text { get; private set; }
 
 		readonly IResourceLayer resourceLayer;
 		readonly string resourceType;
-		readonly List<CellResource> cellResources = [];
+		readonly List<CellResource> cellResources = new();
 
 		public AddResourcesEditorAction(string resourceType, IResourceLayer resourceLayer)
 		{
@@ -129,33 +142,33 @@ namespace OpenRA.Mods.Common.Widgets
 
 		public void Execute()
 		{
-			cellResources.TrimExcess();
 		}
 
 		public void Do()
 		{
 			foreach (var resourceCell in cellResources)
-				resourceLayer.AddResource(resourceType, resourceCell.Cell, resourceLayer.GetMaxDensity(resourceType));
+			{
+				resourceLayer.ClearResources(resourceCell.Cell);
+				resourceLayer.AddResource(resourceCell.NewResourceType, resourceCell.Cell, resourceLayer.GetMaxDensity(resourceCell.NewResourceType));
+			}
 		}
 
 		public void Undo()
 		{
 			foreach (var resourceCell in cellResources)
 			{
-				// If resources match, simulate a replace command.
-				if (resourceCell.OldResourceTile.Type == resourceType || resourceCell.OldResourceTile.Type == null)
-					resourceLayer.ClearResources(resourceCell.Cell);
-
-				if (resourceCell.OldResourceTile.Type == resourceType || resourceCell.OldResourceTile.Type != null)
+				resourceLayer.ClearResources(resourceCell.Cell);
+				if (resourceCell.OldResourceTile.Type != null)
 					resourceLayer.AddResource(resourceCell.OldResourceTile.Type, resourceCell.Cell, resourceCell.OldResourceTile.Density);
 			}
 		}
 
 		public void Add(CellResource resourceCell)
 		{
-			resourceLayer.AddResource(resourceType, resourceCell.Cell, resourceLayer.GetMaxDensity(resourceType));
+			resourceLayer.ClearResources(resourceCell.Cell);
+			resourceLayer.AddResource(resourceCell.NewResourceType, resourceCell.Cell, resourceLayer.GetMaxDensity(resourceCell.NewResourceType));
 			cellResources.Add(resourceCell);
-			Text = FluentProvider.GetMessage(AddedResource, "count", cellResources.Count, "type", resourceType);
+			Text = FluentProvider.GetMessage(AddedResource, "amount", cellResources.Count, "type", resourceType);
 		}
 	}
 }

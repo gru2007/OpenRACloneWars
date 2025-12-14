@@ -14,7 +14,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using OpenRA.FileSystem;
 using OpenRA.Network;
 using OpenRA.Widgets;
 
@@ -64,7 +63,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 		readonly Widget panel;
 		readonly ScrollPanelWidget gameList;
 		readonly TextFieldWidget saveTextField;
-		readonly List<string> games = [];
+		readonly List<string> games = new();
 		readonly Action onStart;
 		readonly Action onExit;
 		readonly ModData modData;
@@ -119,8 +118,8 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 				saveWidgets.IsVisible = () => true;
 
 				saveTextField = saveWidgets.Get<TextFieldWidget>("SAVE_TEXTFIELD");
-				saveTextField.OnEnterKey = saveButton.HandleKeyPress;
-				saveTextField.OnEscKey = cancelButton.HandleKeyPress;
+				saveTextField.OnEnterKey = input => saveButton.HandleKeyPress(input);
+				saveTextField.OnEscKey = input => cancelButton.HandleKeyPress(input);
 			}
 			else
 			{
@@ -174,7 +173,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 				ConfirmationDialogs.ButtonPrompt(modData,
 					title: DeleteSaveTitle,
 					text: DeleteSavePrompt,
-					textArguments: ["save", Path.GetFileNameWithoutExtension(selectedSave)],
+					textArguments: new object[] { "save", Path.GetFileNameWithoutExtension(selectedSave) },
 					onConfirm: () =>
 					{
 						Delete(selectedSave);
@@ -198,7 +197,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 				ConfirmationDialogs.ButtonPrompt(modData,
 					title: DeleteAllSavesTitle,
 					text: DeleteAllSavesPrompt,
-					textArguments: ["count", games.Count],
+					textArguments: new object[] { "count", games.Count },
 					onConfirm: () =>
 					{
 						foreach (var s in games.ToList())
@@ -227,7 +226,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 			}
 
 			var savePaths = Directory.GetFiles(baseSavePath, "*.orasav", SearchOption.AllDirectories)
-				.OrderByDescending(File.GetLastWriteTime)
+				.OrderByDescending(p => File.GetLastWriteTime(p))
 				.ToList();
 
 			foreach (var savePath in savePaths)
@@ -337,15 +336,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 
 			// Parse the save to find the map UID
 			var save = new GameSave(selectedSave);
-
-			var map = Game.ModData.MapCache[save.GlobalSettings.Map];
-			if (map.Status != MapStatus.Available && save.MapData != null)
-			{
-				// Add to the MapCache so the server will accept the map
-				var package = ZipFileLoader.ReadWriteZipFile.FromBase64String(save.MapData);
-				map.UpdateFromMap(package, MapClassification.Generated);
-			}
-
+			var map = modData.MapCache[save.GlobalSettings.Map];
 			if (map.Status != MapStatus.Available)
 				return;
 
@@ -382,7 +373,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 				ConfirmationDialogs.ButtonPrompt(modData,
 					title: OverwriteSaveTitle,
 					text: OverwriteSavePrompt,
-					textArguments: ["file", saveTextField.Text],
+					textArguments: new object[] { "file", saveTextField.Text },
 					onConfirm: Inner,
 					confirmText: OverwriteSaveAccept,
 					onCancel: () => { });

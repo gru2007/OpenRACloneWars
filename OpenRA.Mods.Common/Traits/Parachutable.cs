@@ -9,7 +9,6 @@
  */
 #endregion
 
-using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Linq;
 using OpenRA.Mods.Common.Effects;
@@ -45,7 +44,7 @@ namespace OpenRA.Mods.Common.Traits
 		public readonly string WaterCorpsePalette = "effect";
 
 		[Desc("Terrain types on which to display WaterCorpseSequence.")]
-		public readonly FrozenSet<string> WaterTerrainTypes = new HashSet<string> { "Water" }.ToFrozenSet();
+		public readonly HashSet<string> WaterTerrainTypes = new() { "Water" };
 
 		public readonly string WaterImpactSound = null;
 

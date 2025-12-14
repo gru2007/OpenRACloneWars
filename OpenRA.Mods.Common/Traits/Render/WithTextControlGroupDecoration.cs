@@ -10,6 +10,7 @@
 #endregion
 
 using System.Collections.Generic;
+using System.Linq;
 using OpenRA.Graphics;
 using OpenRA.Mods.Common.Graphics;
 using OpenRA.Primitives;
@@ -36,7 +37,7 @@ namespace OpenRA.Mods.Common.Traits.Render
 
 		void IRulesetLoaded<ActorInfo>.RulesetLoaded(Ruleset rules, ActorInfo info)
 		{
-			if (!Game.ModData.GetOrCreate<Fonts>().FontList.ContainsKey(Font))
+			if (!Game.ModData.Manifest.Get<Fonts>().FontList.ContainsKey(Font))
 				throw new YamlException($"Font '{Font}' is not listed in the mod.yaml's Fonts section");
 		}
 
@@ -62,14 +63,14 @@ namespace OpenRA.Mods.Common.Traits.Render
 		{
 			var group = self.World.ControlGroups.GetControlGroupForActor(self);
 			if (group == null)
-				return [];
+				return Enumerable.Empty<IRenderable>();
 
 			var text = label.Update(group.Value);
 			var screenPos = container.GetDecorationOrigin(self, wr, info.Position, info.Margin);
-			return
-			[
+			return new IRenderable[]
+			{
 				new UITextRenderable(font, self.CenterPosition, screenPos, 0, info.UsePlayerColor ? self.OwnerColor() : info.Color, text)
-			];
+			};
 		}
 	}
 }

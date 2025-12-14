@@ -9,7 +9,7 @@
  */
 #endregion
 
-using System.Collections.Frozen;
+using System.Collections.Generic;
 
 namespace OpenRA.Mods.Common.Traits
 {
@@ -17,7 +17,7 @@ namespace OpenRA.Mods.Common.Traits
 	{
 		[FieldLoader.Require]
 		[Desc("Replacement types this Replaceable actor accepts.")]
-		public readonly FrozenSet<string> Types = FrozenSet<string>.Empty;
+		public readonly HashSet<string> Types = new();
 
 		public override object Create(ActorInitializer init) { return new Replaceable(this); }
 	}

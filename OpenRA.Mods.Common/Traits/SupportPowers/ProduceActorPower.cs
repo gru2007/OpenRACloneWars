@@ -9,7 +9,6 @@
  */
 #endregion
 
-using System.Collections.Immutable;
 using System.Linq;
 using OpenRA.Primitives;
 using OpenRA.Traits;
@@ -22,7 +21,7 @@ namespace OpenRA.Mods.Common.Traits
 		[ActorReference]
 		[FieldLoader.Require]
 		[Desc("Actors to produce.")]
-		public readonly ImmutableArray<string> Actors = default;
+		public readonly string[] Actors = null;
 
 		[FieldLoader.Require]
 		[Desc("Production queue type to use")]

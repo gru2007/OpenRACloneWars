@@ -9,7 +9,7 @@
  */
 #endregion
 
-using OpenRA.FileSystem;
+using System.Collections.Generic;
 using OpenRA.Graphics;
 using OpenRA.Mods.Common.LoadScreens;
 using OpenRA.Mods.Common.Widgets;
@@ -36,11 +36,11 @@ namespace OpenRA.Mods.Cnc
 
 		string message = "";
 
-		public override void Init(Manifest manifest, IReadOnlyFileSystem fileSystem)
+		public override void Init(ModData modData, Dictionary<string, string> info)
 		{
-			base.Init(manifest, fileSystem);
+			base.Init(modData, info);
 
-			versionText = manifest.Metadata.Version;
+			versionText = modData.Manifest.Metadata.Version;
 
 			message = FluentProvider.GetMessage(Loading);
 		}
@@ -52,8 +52,8 @@ namespace OpenRA.Mods.Cnc
 				lastSheet = s;
 				lastDensity = density;
 
-				border =
-				[
+				border = new[]
+				{
 					CreateSprite(s, density, new Rectangle(129, 129, 32, 32)),
 					CreateSprite(s, density, new Rectangle(161, 129, 62, 32)),
 					CreateSprite(s, density, new Rectangle(223, 129, 32, 32)),
@@ -63,7 +63,7 @@ namespace OpenRA.Mods.Cnc
 					CreateSprite(s, density, new Rectangle(129, 223, 32, 32)),
 					CreateSprite(s, density, new Rectangle(161, 223, 62, 32)),
 					CreateSprite(s, density, new Rectangle(223, 223, 32, 32))
-				];
+				};
 
 				nodLogo = CreateSprite(s, density, new Rectangle(0, 256, 256, 256));
 				gdiLogo = CreateSprite(s, density, new Rectangle(256, 256, 256, 256));

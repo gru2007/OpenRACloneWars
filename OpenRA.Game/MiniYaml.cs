@@ -59,10 +59,16 @@ namespace OpenRA
 
 	public sealed class MiniYamlNode
 	{
-		public readonly struct SourceLocation(string name, int line)
+		public readonly struct SourceLocation
 		{
-			public readonly string Name = name;
-			public readonly int Line = line;
+			public readonly string Name;
+			public readonly int Line;
+
+			public SourceLocation(string name, int line)
+			{
+				Name = name;
+				Line = line;
+			}
 
 			public override string ToString() { return $"{Name}:{Line}"; }
 		}
@@ -93,7 +99,7 @@ namespace OpenRA
 		}
 
 		public MiniYamlNode(string k, string v, string c = null)
-			: this(k, new MiniYaml(v, []), c) { }
+			: this(k, new MiniYaml(v, Enumerable.Empty<MiniYamlNode>()), c) { }
 
 		public MiniYamlNode(string k, string v, IEnumerable<MiniYamlNode> n)
 			: this(k, new MiniYaml(v, n), null) { }
@@ -109,7 +115,7 @@ namespace OpenRA
 		const int SpacesPerLevel = 4;
 		static readonly Func<string, string> StringIdentity = s => s;
 		static readonly Func<MiniYaml, MiniYaml> MiniYamlIdentity = my => my;
-		static readonly Dictionary<string, MiniYamlNode> ConflictScratch = [];
+		static readonly Dictionary<string, MiniYamlNode> ConflictScratch = new();
 
 		public readonly string Value;
 		public readonly ImmutableArray<MiniYamlNode> Nodes;
@@ -190,22 +196,21 @@ namespace OpenRA
 		}
 
 		public MiniYaml(string value)
-			: this(value, []) { }
+			: this(value, Enumerable.Empty<MiniYamlNode>()) { }
 
 		public MiniYaml(string value, IEnumerable<MiniYamlNode> nodes)
 		{
 			Value = value;
-			Nodes = nodes.ToImmutableArray();
+			Nodes = ImmutableArray.CreateRange(nodes);
 		}
 
-		static IEnumerable<MiniYamlNode> FromLines(
-			IEnumerable<ReadOnlyMemory<char>> lines, string name, bool discardCommentsAndWhitespace, HashSet<string> stringPool)
+		static List<MiniYamlNode> FromLines(IEnumerable<ReadOnlyMemory<char>> lines, string name, bool discardCommentsAndWhitespace, HashSet<string> stringPool)
 		{
 			// YAML config often contains repeated strings for key, values, comments.
 			// Pool these strings so we only need one copy of each unique string.
 			// This saves on long-term memory usage as parsed values can often live a long time.
 			// A caller can also provide a pool as input, allowing de-duplication across multiple parses.
-			stringPool ??= [];
+			stringPool ??= new HashSet<string>();
 
 			var result = new List<List<MiniYamlNode>>
 			{
@@ -336,25 +341,18 @@ namespace OpenRA
 
 					parsedLines.Add((level, keyString, valueString, commentString, location));
 				}
-
-				foreach (var topLevelNode in result[0])
-					yield return topLevelNode;
-				result[0].Clear();
 			}
 
 			if (parsedLines.Count > 0)
-			{
 				BuildCompletedSubNode(0);
-				foreach (var topLevelNode in result[0])
-					yield return topLevelNode;
-				result[0].Clear();
-			}
+
+			return result[0];
 
 			void BuildCompletedSubNode(int level)
 			{
 				var lastLevel = parsedLines[^1].Level;
 				while (lastLevel >= result.Count)
-					result.Add([]);
+					result.Add(new List<MiniYamlNode>());
 
 				while (parsedLines.Count > 0 && parsedLines[^1].Level >= level)
 				{
@@ -383,30 +381,29 @@ namespace OpenRA
 			}
 		}
 
-		public static IEnumerable<MiniYamlNode> FromFile(string path, bool discardCommentsAndWhitespace = true, HashSet<string> stringPool = null)
+		public static List<MiniYamlNode> FromFile(string path, bool discardCommentsAndWhitespace = true, HashSet<string> stringPool = null)
 		{
 			return FromStream(File.OpenRead(path), path, discardCommentsAndWhitespace, stringPool);
 		}
 
-		public static IEnumerable<MiniYamlNode> FromStream(Stream s, string name, bool discardCommentsAndWhitespace = true, HashSet<string> stringPool = null)
+		public static List<MiniYamlNode> FromStream(Stream s, string name, bool discardCommentsAndWhitespace = true, HashSet<string> stringPool = null)
 		{
 			return FromLines(s.ReadAllLinesAsMemory(), name, discardCommentsAndWhitespace, stringPool);
 		}
 
-		public static IEnumerable<MiniYamlNode> FromString(string text, string name, bool discardCommentsAndWhitespace = true, HashSet<string> stringPool = null)
+		public static List<MiniYamlNode> FromString(string text, string name, bool discardCommentsAndWhitespace = true, HashSet<string> stringPool = null)
 		{
-			return FromLines(text.Split(["\r\n", "\n"], StringSplitOptions.None).Select(s => s.AsMemory()), name, discardCommentsAndWhitespace, stringPool);
+			return FromLines(text.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None).Select(s => s.AsMemory()), name, discardCommentsAndWhitespace, stringPool);
 		}
 
-		public static List<MiniYamlNode> Merge(IEnumerable<IEnumerable<MiniYamlNode>> sources)
+		public static List<MiniYamlNode> Merge(IEnumerable<IReadOnlyCollection<MiniYamlNode>> sources)
 		{
 			var sourcesList = sources.ToList();
 			if (sourcesList.Count == 0)
-				return [];
+				return new List<MiniYamlNode>();
 
 			var tree = sourcesList
 				.Where(s => s != null)
-				.Select(s => s as IReadOnlyCollection<MiniYamlNode> ?? s.ToList())
 				.Select(MergeSelfPartial)
 				.Aggregate(MergePartial)
 				.Where(n => n.Key != null)
@@ -506,9 +503,6 @@ namespace OpenRA
 			var ret = new List<MiniYamlNode>(existingNodes.Count);
 			foreach (var n in existingNodes)
 			{
-				if (n.Key == null)
-					continue;
-
 				if (keys.Add(n.Key))
 					ret.Add(n);
 				else
@@ -523,59 +517,16 @@ namespace OpenRA
 			return ret;
 		}
 
-		static IReadOnlyList<MiniYamlNode> WeakResolveRemovals(IReadOnlyList<MiniYamlNode> nodes)
-		{
-			if (nodes == null || nodes.Count == 0)
-				return nodes;
-
-			List<MiniYamlNode> ret = null;
-			for (var i = 0; i < nodes.Count; i++)
-			{
-				var node = nodes[i];
-				if (node.Key == null)
-					continue;
-
-				if (node.Key.StartsWith('-'))
-				{
-					if (ret == null)
-					{
-						ret ??= new List<MiniYamlNode>(nodes.Count);
-						ret.AddRange(nodes.Take(i));
-					}
-
-					// Apply the removal node - but "weakly" - don't throw if there is no prior node to remove.
-					var removed = node.Key[1..];
-					ret.RemoveAll(r => r.Key == removed);
-				}
-				else
-				{
-					ret?.Add(node);
-				}
-			}
-
-			return ret ?? nodes;
-		}
-
 		static MiniYaml MergePartial(MiniYaml existingNodes, MiniYaml overrideNodes)
 		{
-			var resolvedExistingNodes = WeakResolveRemovals(existingNodes?.Nodes);
-			var resolvedOverrideNodes = WeakResolveRemovals(overrideNodes?.Nodes);
-
 			lock (ConflictScratch)
 			{
-				try
-				{
-					// PERF: Reuse ConflictScratch for all conflict checks to avoid allocations.
-					resolvedExistingNodes?.IntoDictionaryWithConflictLog(
-						n => n.Key, n => n, "MiniYaml.Merge", ConflictScratch, k => k, n => $"{n.Key} (at {n.Location})");
-					resolvedOverrideNodes?.IntoDictionaryWithConflictLog(
-						n => n.Key, n => n, "MiniYaml.Merge", ConflictScratch, k => k, n => $"{n.Key} (at {n.Location})");
-					ConflictScratch.Clear();
-				}
-				catch (ArgumentException ex)
-				{
-					throw new YamlException(ex.Message);
-				}
+				// PERF: Reuse ConflictScratch for all conflict checks to avoid allocations.
+				existingNodes?.Nodes.IntoDictionaryWithConflictLog(
+					n => n.Key, n => n, "MiniYaml.Merge", ConflictScratch, k => k, n => $"{n.Key} (at {n.Location})");
+				overrideNodes?.Nodes.IntoDictionaryWithConflictLog(
+					n => n.Key, n => n, "MiniYaml.Merge", ConflictScratch, k => k, n => $"{n.Key} (at {n.Location})");
+				ConflictScratch.Clear();
 			}
 
 			if (existingNodes == null)
@@ -605,9 +556,6 @@ namespace OpenRA
 
 			void MergeNode(MiniYamlNode node)
 			{
-				if (node.Key == null)
-					return;
-
 				// Append Removal nodes to the result.
 				// Therefore: we know the remainder of the method deals with a plain node.
 				if (node.Key.StartsWith('-'))
@@ -678,12 +626,12 @@ namespace OpenRA
 		{
 			if (mapRules != null && mapRules.Value != null)
 			{
-				var mapFiles = FieldLoader.GetValue<ImmutableArray<string>>("value", mapRules.Value);
-				files = files.Concat(mapFiles);
+				var mapFiles = FieldLoader.GetValue<string[]>("value", mapRules.Value);
+				files = files.Append(mapFiles);
 			}
 
 			var stringPool = new HashSet<string>(); // Reuse common strings in YAML
-			var yaml = files.Select(s => FromStream(fileSystem.Open(s), s, stringPool: stringPool));
+			IEnumerable<IReadOnlyCollection<MiniYamlNode>> yaml = files.Select(s => FromStream(fileSystem.Open(s), s, stringPool: stringPool));
 			if (mapRules != null && mapRules.Nodes.Length > 0)
 				yaml = yaml.Append(mapRules.Nodes);
 
@@ -748,7 +696,7 @@ namespace OpenRA
 		public MiniYamlBuilder(string value, List<MiniYamlNode> nodes)
 		{
 			Value = value;
-			Nodes = nodes == null ? [] : nodes.ConvertAll(x => new MiniYamlNodeBuilder(x));
+			Nodes = nodes == null ? new List<MiniYamlNodeBuilder>() : nodes.ConvertAll(x => new MiniYamlNodeBuilder(x));
 		}
 
 		public MiniYaml Build()
@@ -776,6 +724,7 @@ namespace OpenRA
 		}
 	}
 
+	[Serializable]
 	public class YamlException : Exception
 	{
 		public YamlException(string s)

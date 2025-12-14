@@ -56,7 +56,7 @@ namespace OpenRA.Mods.Common.Traits
 		public ProximityCapturableBaseInfo Info;
 		public Actor Self;
 
-		readonly List<Actor> actorsInRange = [];
+		readonly List<Actor> actorsInRange = new();
 		protected int trigger;
 		WPos prevPosition;
 		bool skipTriggerUpdate;
@@ -202,9 +202,9 @@ namespace OpenRA.Mods.Common.Traits
 		IEnumerable<IRenderable> IRenderAnnotations.RenderAnnotations(Actor self, WorldRenderer wr)
 		{
 			if (!self.IsInWorld || !Info.DrawDecoration)
-				return [];
+				return Enumerable.Empty<IRenderable>();
 
-			return [GetRenderable(self, wr)];
+			return new[] { GetRenderable(self, wr) };
 		}
 
 		bool IRenderAnnotations.SpatiallyPartitionable { get { return false; } }

@@ -10,8 +10,7 @@
 #endregion
 
 using System;
-using System.Collections.Frozen;
-using System.Collections.Immutable;
+using System.Collections.Generic;
 using System.Linq;
 using OpenRA.GameRules;
 using OpenRA.Mods.Common.Traits;
@@ -23,10 +22,10 @@ namespace OpenRA.Mods.Common.Warheads
 	public class LeaveSmudgeWarhead : Warhead
 	{
 		[Desc("Size of the area. A smudge will be created in each tile.", "Provide 2 values for a ring effect (outer/inner).")]
-		public readonly ImmutableArray<int> Size = [0, 0];
+		public readonly int[] Size = { 0, 0 };
 
 		[Desc("Type of smudge to apply to terrain.")]
-		public readonly FrozenSet<string> SmudgeType = FrozenSet<string>.Empty;
+		public readonly HashSet<string> SmudgeType = new();
 
 		[Desc("Percentage chance the smudge is created.")]
 		public readonly int Chance = 100;

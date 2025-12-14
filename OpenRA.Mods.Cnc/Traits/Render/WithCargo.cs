@@ -9,9 +9,7 @@
  */
 #endregion
 
-using System.Collections.Frozen;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 using OpenRA.Graphics;
 using OpenRA.Mods.Common;
@@ -26,10 +24,10 @@ namespace OpenRA.Mods.Cnc.Traits.Render
 	public class WithCargoInfo : TraitInfo, Requires<CargoInfo>, Requires<BodyOrientationInfo>
 	{
 		[Desc("Cargo position relative to turret or body in (forward, right, up) triples. The default offset should be in the middle of the list.")]
-		public readonly ImmutableArray<WVec> LocalOffset = [WVec.Zero];
+		public readonly WVec[] LocalOffset = { WVec.Zero };
 
 		[Desc("Passenger CargoType to display.")]
-		public readonly FrozenSet<string> DisplayTypes = FrozenSet<string>.Empty;
+		public readonly HashSet<string> DisplayTypes = new();
 
 		public override object Create(ActorInitializer init) { return new WithCargo(init.Self, this); }
 	}
@@ -42,7 +40,7 @@ namespace OpenRA.Mods.Cnc.Traits.Render
 		readonly IFacing facing;
 		WAngle cachedFacing;
 
-		readonly Dictionary<Actor, IActorPreview[]> previews = [];
+		readonly Dictionary<Actor, IActorPreview[]> previews = new();
 
 		public WithCargo(Actor self, WithCargoInfo info)
 		{

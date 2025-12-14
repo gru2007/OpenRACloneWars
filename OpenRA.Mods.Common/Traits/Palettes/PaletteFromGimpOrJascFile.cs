@@ -10,7 +10,6 @@
 #endregion
 
 using System;
-using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.IO;
 using OpenRA.FileSystem;
@@ -31,10 +30,10 @@ namespace OpenRA.Mods.Common.Traits
 
 		[Desc("Defines for which tileset IDs this palette should be loaded.",
 			"If none specified, it applies to all tileset IDs not explicitly excluded.")]
-		public readonly FrozenSet<string> Tilesets = FrozenSet<string>.Empty;
+		public readonly HashSet<string> Tilesets = new();
 
 		[Desc("Don't load palette for these tileset IDs.")]
-		public readonly FrozenSet<string> ExcludeTilesets = FrozenSet<string>.Empty;
+		public readonly HashSet<string> ExcludeTilesets = new();
 
 		[FieldLoader.Require]
 		[Desc("Name of the file to load.")]

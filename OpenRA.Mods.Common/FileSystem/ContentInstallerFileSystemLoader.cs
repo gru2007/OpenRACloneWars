@@ -10,7 +10,6 @@
 #endregion
 
 using System.Collections.Generic;
-using System.Collections.Immutable;
 
 namespace OpenRA.Mods.Common.FileSystem
 {
@@ -21,51 +20,17 @@ namespace OpenRA.Mods.Common.FileSystem
 		[Desc("Mod to use for content installation.")]
 		public readonly string ContentInstallerMod = null;
 
+		[FieldLoader.Require]
 		[Desc("A list of mod-provided packages. Anything required to display the initial load screen must be listed here.")]
-		[FieldLoader.LoadUsing(nameof(LoadSystemPackages))]
-		public readonly ImmutableArray<KeyValuePair<string, string>> SystemPackages = default;
+		public readonly Dictionary<string, string> SystemPackages = null;
 
 		[Desc("A list of user-installed packages. If missing (and not marked as optional), these will trigger the content installer.")]
-		[FieldLoader.LoadUsing(nameof(LoadContentPackages))]
-		public readonly ImmutableArray<KeyValuePair<string, string>> ContentPackages = default;
+		public readonly Dictionary<string, string> ContentPackages = null;
 
 		[Desc("Files that aren't mounted as packages, but still need to trigger the content installer if missing.")]
-		[FieldLoader.LoadUsing(nameof(LoadRequiredContentFiles))]
-		public readonly ImmutableArray<KeyValuePair<string, string>> RequiredContentFiles = default;
+		public readonly Dictionary<string, string> RequiredContentFiles = null;
 
 		bool isContentAvailable = true;
-
-		static object LoadSystemPackages(MiniYaml yaml)
-		{
-			return LoadPackages(yaml, nameof(SystemPackages), true);
-		}
-
-		static object LoadContentPackages(MiniYaml yaml)
-		{
-			return LoadPackages(yaml, nameof(ContentPackages), false);
-		}
-
-		static object LoadRequiredContentFiles(MiniYaml yaml)
-		{
-			return LoadPackages(yaml, nameof(RequiredContentFiles), false);
-		}
-
-		static object LoadPackages(MiniYaml yaml, string key, bool required)
-		{
-			var packageNode = yaml.NodeWithKeyOrDefault(key);
-			if (packageNode == null)
-			{
-				if (required)
-					throw new FieldLoader.MissingFieldsException([key]);
-				return default(ImmutableArray<KeyValuePair<string, string>>);
-			}
-
-			var packages = new List<KeyValuePair<string, string>>(packageNode.Value.Nodes.Length);
-			foreach (var node in packageNode.Value.Nodes)
-				packages.Add(KeyValuePair.Create(node.Key, node.Value.Value));
-
-			return packages.ToImmutableArray();
-		}
 
 		public void Mount(OpenRA.FileSystem.FileSystem fileSystem, ObjectCreator objectCreator)
 		{
@@ -95,18 +60,10 @@ namespace OpenRA.Mods.Common.FileSystem
 
 		bool IFileSystemExternalContent.InstallContentIfRequired(ModData modData)
 		{
-			if (!isContentAvailable && Game.Mods.TryGetValue(ContentInstallerMod, out var mod))
-				Game.InitializeMod(mod, new Arguments());
+			if (!isContentAvailable)
+				Game.InitializeMod(ContentInstallerMod, new Arguments());
 
 			return !isContentAvailable;
-		}
-
-		void IFileSystemExternalContent.ManageContent(ModData modData)
-		{
-			// Switching mods changes the world state (by disposing it),
-			// so we can't do this inside the input handler.
-			if (Game.Mods.TryGetValue(ContentInstallerMod, out var mod))
-				Game.RunAfterTick(() => Game.InitializeMod(mod, new Arguments()));
 		}
 	}
 }

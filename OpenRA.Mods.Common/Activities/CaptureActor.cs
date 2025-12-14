@@ -152,7 +152,7 @@ namespace OpenRA.Mods.Common.Activities
 
 		void CancelCapture()
 		{
-			manager.CancelCapture(enterActor, enterCaptureManager);
+			manager.CancelCapture(enterCaptureManager);
 		}
 	}
 }

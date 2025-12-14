@@ -11,6 +11,7 @@ FileSystem: DefaultFileSystem
 		$ra-content: racontent
 
 Rules:
+	content|rules.yaml
 
 Cursors:
 	content|cursors.yaml

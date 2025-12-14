@@ -84,7 +84,7 @@ namespace OpenRA.Mods.Cnc.Traits
 		readonly WithBuildingBibInfo info;
 		readonly RenderSprites rs;
 		readonly BuildingInfo bi;
-		readonly List<AnimationWithOffset> anims = [];
+		readonly List<AnimationWithOffset> anims = new();
 
 		public WithBuildingBib(Actor self, WithBuildingBibInfo info)
 		{

@@ -10,7 +10,6 @@
 #endregion
 
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 using OpenRA.Traits;
 
@@ -22,7 +21,7 @@ namespace OpenRA.Mods.Common.Traits
 	{
 		[Desc("Tells the AI how to use its support powers.")]
 		[FieldLoader.LoadUsing(nameof(LoadDecisions))]
-		public readonly ImmutableArray<SupportPowerDecision> Decisions = [];
+		public readonly List<SupportPowerDecision> Decisions = new();
 
 		static object LoadDecisions(MiniYaml yaml)
 		{
@@ -32,7 +31,7 @@ namespace OpenRA.Mods.Common.Traits
 				foreach (var d in decisions.Value.Nodes)
 					ret.Add(new SupportPowerDecision(d.Value));
 
-			return ret.ToImmutableArray();
+			return ret;
 		}
 
 		public override object Create(ActorInitializer init) { return new SupportPowerBotModule(init.Self, this); }
@@ -42,9 +41,9 @@ namespace OpenRA.Mods.Common.Traits
 	{
 		readonly World world;
 		readonly Player player;
-		readonly Dictionary<SupportPowerInstance, int> waitingPowers = [];
-		readonly Dictionary<string, SupportPowerDecision> powerDecisions = [];
-		readonly List<SupportPowerInstance> stalePowers = [];
+		readonly Dictionary<SupportPowerInstance, int> waitingPowers = new();
+		readonly Dictionary<string, SupportPowerDecision> powerDecisions = new();
+		readonly List<SupportPowerInstance> stalePowers = new();
 		SupportPowerManager supportPowerManager;
 
 		public SupportPowerBotModule(Actor self, SupportPowerBotModuleInfo info)
@@ -141,9 +140,9 @@ namespace OpenRA.Mods.Common.Traits
 			var suitableLocations = new List<(MPos UV, int Attractiveness)>();
 			var totalAttractiveness = 0;
 
-			for (var i = 0; i < map.MapSize.Width; i += checkRadius)
+			for (var i = 0; i < map.MapSize.X; i += checkRadius)
 			{
-				for (var j = 0; j < map.MapSize.Height; j += checkRadius)
+				for (var j = 0; j < map.MapSize.Y; j += checkRadius)
 				{
 					var tl = new MPos(i, j);
 					var br = new MPos(i + checkRadius, j + checkRadius);
@@ -154,7 +153,7 @@ namespace OpenRA.Mods.Common.Traits
 					var wbr = world.Map.CenterOfCell(br.ToCPos(map));
 					var targets = world.ActorMap.ActorsInBox(wtl, wbr);
 
-					var frozenTargets = player.FrozenActorLayer != null ? player.FrozenActorLayer.FrozenActorsInRegion(region) : [];
+					var frozenTargets = player.FrozenActorLayer != null ? player.FrozenActorLayer.FrozenActorsInRegion(region) : Enumerable.Empty<FrozenActor>();
 					var consideredAttractiveness = powerDecision.GetAttractiveness(targets, player) + powerDecision.GetAttractiveness(frozenTargets, player);
 					if (consideredAttractiveness < powerDecision.MinimumAttractiveness)
 						continue;
@@ -219,10 +218,10 @@ namespace OpenRA.Mods.Common.Traits
 				.Select(kv => new MiniYamlNode(kv.Key.Key, FieldSaver.FormatValue(kv.Value)))
 				.ToList();
 
-			return
-			[
+			return new List<MiniYamlNode>()
+			{
 				new("WaitingPowers", "", waitingPowersNodes)
-			];
+			};
 		}
 
 		void IGameSaveTraitData.ResolveTraitData(Actor self, MiniYaml data)

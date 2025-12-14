@@ -25,20 +25,14 @@ namespace OpenRA.FileFormats
 {
 	public class Png
 	{
-		public enum Compression : byte
-		{
-			BEST_COMPRESSION = Deflater.BEST_COMPRESSION,
-			BEST_SPEED = Deflater.BEST_SPEED,
-		}
-
-		static readonly byte[] Signature = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+		static readonly byte[] Signature = { 0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a };
 
 		public int Width { get; }
 		public int Height { get; }
 		public Color[] Palette { get; }
 		public byte[] Data { get; }
 		public SpriteFrameType Type { get; }
-		public Dictionary<string, string> EmbeddedData = [];
+		public Dictionary<string, string> EmbeddedData = new();
 
 		public int PixelStride => Type == SpriteFrameType.Indexed8 ? 1 : Type == SpriteFrameType.Rgb24 ? 3 : 4;
 
@@ -262,27 +256,14 @@ namespace OpenRA.FileFormats
 					// Convert to big endian
 					Data = new byte[data.Length];
 					var stride = PixelStride;
-					var elements = width * height * stride;
-					var src = data.AsSpan();
-					var dst = Data.AsSpan();
-					if (type == SpriteFrameType.Bgra32)
+					for (var i = 0; i < width * height; i++)
 					{
-						for (var i = 0; i < elements; i += 4)
-						{
-							dst[i + 0] = src[i + 2];
-							dst[i + 1] = src[i + 1];
-							dst[i + 2] = src[i + 0];
-							dst[i + 3] = src[i + 3];
-						}
-					}
-					else
-					{
-						for (var i = 0; i < elements; i += 3)
-						{
-							dst[i + 0] = src[i + 2];
-							dst[i + 1] = src[i + 1];
-							dst[i + 2] = src[i + 0];
-						}
+						Data[stride * i] = data[stride * i + 2];
+						Data[stride * i + 1] = data[stride * i + 1];
+						Data[stride * i + 2] = data[stride * i + 0];
+
+						if (type == SpriteFrameType.Bgra32)
+							Data[stride * i + 3] = data[stride * i + 3];
 					}
 
 					break;
@@ -322,7 +303,7 @@ namespace OpenRA.FileFormats
 			throw new InvalidDataException("Unknown pixel format");
 		}
 
-		static void WritePngChunk(MemoryStream output, string type, MemoryStream input)
+		static void WritePngChunk(Stream output, string type, Stream input)
 		{
 			input.Position = 0;
 
@@ -339,7 +320,7 @@ namespace OpenRA.FileFormats
 			output.Write(IPAddress.NetworkToHostOrder((int)crc32.Value));
 		}
 
-		public byte[] Save(Compression compression = Compression.BEST_COMPRESSION)
+		public byte[] Save()
 		{
 			using (var output = new MemoryStream())
 			{
@@ -391,7 +372,7 @@ namespace OpenRA.FileFormats
 
 				using (var data = new MemoryStream())
 				{
-					using (var compressed = new DeflaterOutputStream(data, new Deflater((int)compression)))
+					using (var compressed = new DeflaterOutputStream(data, new Deflater(Deflater.BEST_COMPRESSION)))
 					{
 						var rowStride = Width * PixelStride;
 						for (var y = 0; y < Height; y++)
@@ -423,9 +404,9 @@ namespace OpenRA.FileFormats
 			}
 		}
 
-		public void Save(string path, Compression compression = Compression.BEST_COMPRESSION)
+		public void Save(string path)
 		{
-			File.WriteAllBytes(path, Save(compression));
+			File.WriteAllBytes(path, Save());
 		}
 	}
 }

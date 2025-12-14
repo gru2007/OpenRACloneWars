@@ -10,7 +10,6 @@
 #endregion
 
 using System;
-using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Linq;
 using OpenRA.Mods.Common.Orders;
@@ -88,7 +87,7 @@ namespace OpenRA.Mods.Cnc.Traits
 		[ActorReference(dictionaryReference: LintDictionaryReference.Keys)]
 		[Desc("Conditions to grant when disguised as specified actor.",
 			"A dictionary of [actor id]: [condition].")]
-		public readonly FrozenDictionary<string, string> DisguisedAsConditions = FrozenDictionary<string, string>.Empty;
+		public readonly Dictionary<string, string> DisguisedAsConditions = new();
 
 		[CursorReference]
 		[Desc("Cursor to display when hovering over a valid actor to disguise as.")]
@@ -172,39 +171,19 @@ namespace OpenRA.Mods.Cnc.Traits
 				var targetDisguise = target.TraitOrDefault<Disguise>();
 				if (targetDisguise != null && targetDisguise.Disguised)
 				{
-					// Don't disguise as yourself
-					if (targetDisguise.AsActor.Name == self.Info.Name && targetDisguise.AsPlayer == self.Owner)
-					{
-						AsTooltipInfo = null;
-						AsPlayer = null;
-						AsActor = self.Info;
-					}
-					else
-					{
-						AsPlayer = targetDisguise.AsPlayer;
-						AsActor = targetDisguise.AsActor;
-						AsTooltipInfo = targetDisguise.AsTooltipInfo;
-					}
+					AsPlayer = targetDisguise.AsPlayer;
+					AsActor = targetDisguise.AsActor;
+					AsTooltipInfo = targetDisguise.AsTooltipInfo;
 				}
 				else
 				{
-					// Don't disguise as yourself
-					if (target.Info.Name == self.Info.Name && target.Owner == self.Owner)
-					{
-						AsTooltipInfo = null;
-						AsPlayer = null;
-						AsActor = self.Info;
-					}
-					else
-					{
-						var tooltip = target.TraitsImplementing<ITooltip>().FirstEnabledTraitOrDefault();
-						if (tooltip == null)
-							throw new ArgumentException("Missing tooltip or invalid target.", nameof(target));
+					var tooltip = target.TraitsImplementing<ITooltip>().FirstEnabledTraitOrDefault();
+					if (tooltip == null)
+						throw new ArgumentException("Missing tooltip or invalid target.", nameof(target));
 
-						AsPlayer = tooltip.Owner;
-						AsActor = target.Info;
-						AsTooltipInfo = tooltip.TooltipInfo;
-					}
+					AsPlayer = tooltip.Owner;
+					AsActor = target.Info;
+					AsTooltipInfo = tooltip.TooltipInfo;
 				}
 			}
 			else

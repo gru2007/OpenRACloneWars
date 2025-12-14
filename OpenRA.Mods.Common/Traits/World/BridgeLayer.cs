@@ -9,7 +9,6 @@
  */
 #endregion
 
-using System.Collections.Immutable;
 using OpenRA.Primitives;
 using OpenRA.Traits;
 
@@ -22,7 +21,7 @@ namespace OpenRA.Mods.Common.Traits
 
 		string Type { get; }
 		DamageState DamageState { get; }
-		ImmutableArray<CVec> NeighbourOffsets { get; }
+		CVec[] NeighbourOffsets { get; }
 		bool Valid { get; }
 		CPos Location { get; }
 	}

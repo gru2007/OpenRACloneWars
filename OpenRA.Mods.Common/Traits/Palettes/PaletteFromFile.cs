@@ -11,7 +11,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using OpenRA.FileSystem;
 using OpenRA.Graphics;
 using OpenRA.Traits;
@@ -35,10 +34,10 @@ namespace OpenRA.Mods.Common.Traits
 		public readonly string Filename = null;
 
 		[Desc("Map listed indices to transparent. Ignores previous color.")]
-		public readonly ImmutableArray<int> TransparentIndex = [0];
+		public readonly int[] TransparentIndex = { 0 };
 
 		[Desc("Map listed indices to shadow. Ignores previous color.")]
-		public readonly ImmutableArray<int> ShadowIndex = [];
+		public readonly int[] ShadowIndex = Array.Empty<int>();
 
 		public readonly bool AllowModifiers = true;
 

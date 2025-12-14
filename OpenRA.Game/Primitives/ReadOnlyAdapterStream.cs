@@ -27,7 +27,8 @@ namespace OpenRA.Primitives
 
 		protected ReadOnlyAdapterStream(Stream stream)
 		{
-			ArgumentNullException.ThrowIfNull(stream);
+			if (stream == null)
+				throw new ArgumentNullException(nameof(stream));
 			if (!stream.CanRead)
 				throw new ArgumentException("stream must be readable.", nameof(stream));
 

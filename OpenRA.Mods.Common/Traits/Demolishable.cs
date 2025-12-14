@@ -30,16 +30,24 @@ namespace OpenRA.Mods.Common.Traits
 
 	public class Demolishable : ConditionalTrait<DemolishableInfo>, IDemolishable, ITick, INotifyOwnerChanged
 	{
-		sealed class DemolishAction(Actor saboteur, int delay, int token, BitSet<DamageType> damageTypes)
+		sealed class DemolishAction
 		{
-			public readonly Actor Saboteur = saboteur;
-			public readonly int Token = token;
-			public int Delay = delay;
-			public readonly BitSet<DamageType> DamageTypes = damageTypes;
+			public readonly Actor Saboteur;
+			public readonly int Token;
+			public int Delay;
+			public readonly BitSet<DamageType> DamageTypes;
+
+			public DemolishAction(Actor saboteur, int delay, int token, BitSet<DamageType> damageTypes)
+			{
+				Saboteur = saboteur;
+				Delay = delay;
+				Token = token;
+				DamageTypes = damageTypes;
+			}
 		}
 
-		readonly List<DemolishAction> actions = [];
-		readonly List<DemolishAction> removeActions = [];
+		readonly List<DemolishAction> actions = new();
+		readonly List<DemolishAction> removeActions = new();
 		IDamageModifier[] damageModifiers;
 
 		public Demolishable(DemolishableInfo info)

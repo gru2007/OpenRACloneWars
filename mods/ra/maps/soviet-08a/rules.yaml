@@ -38,6 +38,7 @@ SCRIPTEDDROP:
 	ParatroopersPower:
 		DisplayBeacon: False
 		DropItems: E1,E1,E4,E4,E4
+	AlwaysVisible:
 
 AFLD:
 	AirstrikePower@parabombs:

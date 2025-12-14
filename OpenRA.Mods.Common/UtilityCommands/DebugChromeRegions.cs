@@ -12,7 +12,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using OpenRA.Graphics;
 using OpenRA.Primitives;
 
@@ -68,7 +67,7 @@ namespace OpenRA.Mods.Common.UtilityCommands
 					}
 				}
 
-				foreach (var kv in c.Value.Regions.OrderBy(kvp => kvp.Key))
+				foreach (var kv in c.Value.Regions)
 				{
 					var r = kv.Value;
 					regions.Add($"[\"{c.Key}.{kv.Key}\",{r.X},{r.Y},{r.Width},{r.Height}]");
@@ -80,12 +79,12 @@ namespace OpenRA.Mods.Common.UtilityCommands
 				Convert.ToBase64String(modData.ModFiles.Open(image).ReadAllBytes()),
 				"[" + regions.JoinWith(",") + "]");
 			var outputPath = Path.ChangeExtension(image, ".html");
-			File.WriteAllLines(outputPath, [output]);
+			File.WriteAllLines(outputPath, new[] { output });
 			Console.WriteLine("Saved {0}", outputPath);
 		}
 
 		static readonly string[] HtmlTemplate =
-		[
+		{
 			"<!DOCTYPE html>",
 			"<html>",
 			"<head>",
@@ -138,6 +137,6 @@ namespace OpenRA.Mods.Common.UtilityCommands
 			"</script>",
 			"</body>",
 			"</html>",
-		];
+		};
 	}
 }

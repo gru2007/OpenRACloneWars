@@ -59,10 +59,6 @@ namespace OpenRA.Mods.Cnc.UtilityCommands
 			Game.ModData = utility.ModData;
 
 			var filename = args[1];
-			var author = args.Length > 2
-				? args[2]
-				: "Westwood Studios";
-
 			var file = new IniFile(File.Open(args[1], FileMode.Open));
 			var basic = file.GetSection("Basic");
 			var mapSection = file.GetSection("Map");
@@ -76,10 +72,10 @@ namespace OpenRA.Mods.Cnc.UtilityCommands
 			var usedAreaSize = new Size(iniSize[2], 2 * iniSize[3]);
 			var mapCanvasSize = new Size(usedAreaSize.Width + Cordon.Left + Cordon.Right, usedAreaSize.Height + Cordon.Top + Cordon.Bottom);
 
-			var map = new Map(Game.ModData, terrainInfo, mapCanvasSize)
+			var map = new Map(Game.ModData, terrainInfo, mapCanvasSize.Width, mapCanvasSize.Height)
 			{
 				Title = basic.GetValue("Name", Path.GetFileNameWithoutExtension(filename)),
-				Author = author,
+				Author = "Westwood Studios",
 				RequiresMod = utility.ModData.Manifest.Id
 			};
 
@@ -356,13 +352,13 @@ namespace OpenRA.Mods.Cnc.UtilityCommands
 
 			if (lightingNodes.Count > 0)
 			{
-				map.RuleDefinitions = map.RuleDefinitions.WithNodesAppended(
-				[
-					new MiniYamlNode("^BaseWorld", new MiniYaml("",
-					[
+				map.RuleDefinitions = map.RuleDefinitions.WithNodesAppended(new[]
+				{
+					new MiniYamlNode("^BaseWorld", new MiniYaml("", new[]
+					{
 						new MiniYamlNode("TerrainLighting", new MiniYaml("", lightingNodes))
-					]))
-				]);
+					}))
+				});
 			}
 		}
 
@@ -400,10 +396,10 @@ namespace OpenRA.Mods.Cnc.UtilityCommands
 
 				if (lightingNodes.Count > 0)
 				{
-					nodes.Add(new MiniYamlNode(lamp, new MiniYaml("",
-					[
+					nodes.Add(new MiniYamlNode(lamp, new MiniYaml("", new[]
+					{
 						new MiniYamlNode("TerrainLightSource", new MiniYaml("", lightingNodes))
-					])));
+					})));
 				}
 			}
 

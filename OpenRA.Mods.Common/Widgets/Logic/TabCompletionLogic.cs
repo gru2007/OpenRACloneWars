@@ -18,7 +18,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 {
 	public class TabCompletionLogic : ChromeLogic
 	{
-		IList<string> candidates = [];
+		IList<string> candidates = new List<string>();
 		int currentCandidateIndex = 0;
 		string lastCompleted;
 		string prefix;

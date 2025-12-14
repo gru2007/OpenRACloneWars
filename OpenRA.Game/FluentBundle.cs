@@ -11,7 +11,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Globalization;
 using System.IO;
 using Linguini.Bundle;
@@ -49,58 +48,23 @@ namespace OpenRA
 		}
 	}
 
-	[AttributeUsage(AttributeTargets.Class)]
-	public sealed class IncludeStaticFluentReferencesAttribute : Attribute
-	{
-		public readonly Type[] Types;
-
-		public IncludeStaticFluentReferencesAttribute(params Type[] types)
-		{
-			Types = types;
-		}
-	}
-
-	[AttributeUsage(AttributeTargets.Class)]
-	public sealed class IncludeChromeLogicArgsFluentReferencesAttribute : Attribute
-	{
-		public readonly string[] MethodNames;
-
-		public IncludeChromeLogicArgsFluentReferencesAttribute(params string[] methodNames)
-		{
-			MethodNames = methodNames;
-		}
-	}
-
-	[AttributeUsage(AttributeTargets.Field)]
-	public sealed class IncludeFluentReferencesAttribute : Attribute
-	{
-		public readonly LintDictionaryReference DictionaryReference;
-
-		public IncludeFluentReferencesAttribute() { }
-
-		public IncludeFluentReferencesAttribute(LintDictionaryReference dictionaryReference = LintDictionaryReference.None)
-		{
-			DictionaryReference = dictionaryReference;
-		}
-	}
-
 	public class FluentBundle
 	{
 		readonly Linguini.Bundle.FluentBundle bundle;
 
-		public FluentBundle(string culture, ImmutableArray<string> paths, IReadOnlyFileSystem fileSystem)
+		public FluentBundle(string culture, string[] paths, IReadOnlyFileSystem fileSystem)
 			: this(culture, paths, fileSystem, error => Log.Write("debug", error.Message)) { }
 
-		public FluentBundle(string culture, ImmutableArray<string> paths, IReadOnlyFileSystem fileSystem, string text)
+		public FluentBundle(string culture, string[] paths, IReadOnlyFileSystem fileSystem, string text)
 			: this(culture, paths, fileSystem, text, error => Log.Write("debug", error.Message)) { }
 
-		public FluentBundle(string culture, ImmutableArray<string> paths, IReadOnlyFileSystem fileSystem, Action<ParseError> onError)
+		public FluentBundle(string culture, string[] paths, IReadOnlyFileSystem fileSystem, Action<ParseError> onError)
 			: this(culture, paths, fileSystem, null, onError) { }
 
 		public FluentBundle(string culture, string text, Action<ParseError> onError)
-			: this(culture, default, null, text, onError) { }
+			: this(culture, null, null, text, onError) { }
 
-		public FluentBundle(string culture, ImmutableArray<string> paths, IReadOnlyFileSystem fileSystem, string text, Action<ParseError> onError)
+		public FluentBundle(string culture, string[] paths, IReadOnlyFileSystem fileSystem, string text, Action<ParseError> onError)
 		{
 			bundle = LinguiniBuilder.Builder()
 				.CultureInfo(new CultureInfo(culture))
@@ -147,7 +111,8 @@ namespace OpenRA
 
 		public bool TryGetMessage(string key, out string value, object[] args = null)
 		{
-			ArgumentNullException.ThrowIfNull(key);
+			if (key == null)
+				throw new ArgumentNullException(nameof(key));
 
 			try
 			{
@@ -164,7 +129,7 @@ namespace OpenRA
 						throw new ArgumentException("Expected a comma separated list of name, value arguments " +
 							"but the number of arguments is not a multiple of two", nameof(args));
 
-					fluentArgs = [];
+					fluentArgs = new Dictionary<string, IFluentType>();
 					for (var i = 0; i < args.Length; i += 2)
 					{
 						var argKey = args[i] as string;

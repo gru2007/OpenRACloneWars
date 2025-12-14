@@ -11,42 +11,40 @@
 
 using System;
 using System.Net.Http.Headers;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 using OpenRA.Support;
 
 namespace OpenRA.Mods.Common
 {
 	public class ItchIntegration : IGlobalModData
 	{
-		sealed class User
+		class User
 		{
-			[JsonPropertyName("url")]
+			[JsonProperty("url")]
 			public string Url { get; set; }
 
-			[JsonPropertyName("gamer")]
+			[JsonProperty("gamer")]
 			public bool Gamer { get; set; }
 
-			[JsonPropertyName("id")]
+			[JsonProperty("id")]
 			public int Id { get; set; }
 
-			[JsonPropertyName("press_user")]
+			[JsonProperty("press_user")]
 			public bool PressUser { get; set; }
 
-			[JsonPropertyName("developer")]
+			[JsonProperty("developer")]
 			public bool Developer { get; set; }
 
-			[JsonPropertyName("username")]
+			[JsonProperty("username")]
 			public string Username { get; set; }
 
-			[JsonPropertyName("display_name")]
+			[JsonProperty("display_name")]
 			public string DisplayName { get; set; }
 		}
 
-		sealed class Root
+		class Root
 		{
-			[JsonPropertyName("user")]
 			public User User { get; set; }
 		}
 
@@ -66,7 +64,7 @@ namespace OpenRA.Mods.Common
 						var httpResponseMessage = await client.GetAsync("https://itch.io/api/1/jwt/me");
 						httpResponseMessage.EnsureSuccessStatusCode();
 						var result = await httpResponseMessage.Content.ReadAsStringAsync();
-						user = JsonSerializer.Deserialize<Root>(result)?.User;
+						user = JsonConvert.DeserializeObject<Root>(result).User;
 					}
 					catch (Exception e)
 					{
@@ -75,16 +73,16 @@ namespace OpenRA.Mods.Common
 					}
 				}
 
+				var name = "";
 				if (user != null)
 				{
-					string name;
 					if (string.IsNullOrEmpty(user.DisplayName))
 						name = user.Username;
 					else
 						name = user.DisplayName;
-
-					Game.RunAfterTick(() => callback?.Invoke(name));
 				}
+
+				Game.RunAfterTick(() => callback?.Invoke(name));
 			});
 		}
 	}

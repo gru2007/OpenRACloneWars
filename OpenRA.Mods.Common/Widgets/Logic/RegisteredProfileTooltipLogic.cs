@@ -34,7 +34,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 		[ObjectCreator.UseCtor]
 		public RegisteredProfileTooltipLogic(Widget widget, WorldRenderer worldRenderer, ModData modData, Session.Client client)
 		{
-			playerDatabase = modData.GetOrCreate<PlayerDatabase>();
+			playerDatabase = modData.Manifest.Get<PlayerDatabase>();
 
 			var header = widget.Get("HEADER");
 			var badgeContainer = widget.Get("BADGES_CONTAINER");

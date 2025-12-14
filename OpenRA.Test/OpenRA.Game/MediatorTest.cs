@@ -15,7 +15,7 @@ using OpenRA.Widgets;
 namespace OpenRA.Test
 {
 	[TestFixture]
-	sealed class MediatorTest
+	public class MediatorTest
 	{
 		[TestCase(TestName = "Mediator test")]
 		public void Test()
@@ -26,11 +26,11 @@ namespace OpenRA.Test
 
 			mediator.Send(new TestNotificaton());
 
-			Assert.That(testHandler.WasNotified, Is.True);
+			Assert.IsTrue(testHandler.WasNotified);
 		}
 	}
 
-	sealed class TestHandler : INotificationHandler<TestNotificaton>
+	public class TestHandler : INotificationHandler<TestNotificaton>
 	{
 		public bool WasNotified { get; set; }
 
@@ -40,5 +40,5 @@ namespace OpenRA.Test
 		}
 	}
 
-	sealed class TestNotificaton { }
+	public class TestNotificaton { }
 }

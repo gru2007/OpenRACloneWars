@@ -9,7 +9,7 @@
  */
 #endregion
 
-using System.Collections.Frozen;
+using System.Collections.Generic;
 using System.Linq;
 using OpenRA.Mods.Common.Traits;
 using OpenRA.Traits;
@@ -23,7 +23,7 @@ namespace OpenRA.Mods.Cnc.Traits
 
 		[ActorReference]
 		[Desc("Actor types that should be treated as veins for adjacency.")]
-		public readonly FrozenSet<string> VeinholeActors = FrozenSet<string>.Empty;
+		public readonly HashSet<string> VeinholeActors = new();
 
 		public override object Create(ActorInitializer init) { return new TSEditorResourceLayer(init.Self, this); }
 	}

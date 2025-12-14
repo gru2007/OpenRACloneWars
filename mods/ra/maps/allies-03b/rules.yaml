@@ -61,6 +61,7 @@ CAMERA.VeryLarge:
 		Range: 40c0
 
 CAMERA.Jeep:
+	AlwaysVisible:
 	Mobile:
 		Locomotor: immobile
 	RevealsShroud:

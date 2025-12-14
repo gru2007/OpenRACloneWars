@@ -75,8 +75,8 @@ namespace OpenRA.Mods.Common.Widgets
 			radarTerrainLayers = world.WorldActor.TraitsImplementing<IRadarTerrainLayer>().ToArray();
 			isRectangularIsometric = world.Map.Grid.Type == MapGridType.RectangularIsometric;
 			cellWidth = isRectangularIsometric ? 2 : 1;
-			previewWidth = world.Map.MapSize.Width;
-			previewHeight = world.Map.MapSize.Height;
+			previewWidth = world.Map.MapSize.X;
+			previewHeight = world.Map.MapSize.Y;
 			if (isRectangularIsometric)
 				previewWidth = 2 * previewWidth - 1;
 		}
@@ -285,12 +285,10 @@ namespace OpenRA.Mods.Common.Widgets
 			if (world == null || !hasRadar)
 				return null;
 
-			var worldPos = MinimapPixelToWorldCoords(pos).ToInt2();
-			var wpos = new WPos(worldPos.X, worldPos.Y, 0);
-			var cell = world.Map.CellContaining(wpos);
-
-			var worldPixel = worldRenderer.ScreenPxPosition(wpos);
+			var cell = MinimapPixelToCell(pos);
+			var worldPixel = worldRenderer.ScreenPxPosition(world.Map.CenterOfCell(cell));
 			var location = worldRenderer.Viewport.WorldToViewPx(worldPixel);
+
 			var mi = new MouseInput
 			{
 				Location = location,
@@ -302,7 +300,7 @@ namespace OpenRA.Mods.Common.Widgets
 			if (cursor == null)
 				return worldDefaultCursor;
 
-			return Game.ModData.Cursors.ContainsKey(cursor + "-minimap") ? cursor + "-minimap" : cursor;
+			return Game.ModData.CursorProvider.HasCursorSequence(cursor + "-minimap") ? cursor + "-minimap" : cursor;
 		}
 
 		public override bool HandleMouseInput(MouseInput mi)
@@ -313,32 +311,33 @@ namespace OpenRA.Mods.Common.Widgets
 			if (!hasRadar)
 				return true;
 
-			var worldCoords = MinimapPixelToWorldCoords(mi.Location);
+			var cell = MinimapPixelToCell(mi.Location);
+			var pos = world.Map.CenterOfCell(cell);
 			if ((mi.Event == MouseInputEvent.Down || mi.Event == MouseInputEvent.Move)
 				&& mi.Button == Game.Settings.Game.MouseButtonPreference.Cancel)
 			{
-				worldRenderer.Viewport.Center(worldCoords);
+				worldRenderer.Viewport.Center(pos);
 			}
 
-			if (mi.Event == MouseInputEvent.Down && mi.Button == Game.Settings.Game.MouseButtonPreference.Action && WorldInteractionController != null)
+			if (mi.Event == MouseInputEvent.Down && mi.Button == Game.Settings.Game.MouseButtonPreference.Action)
 			{
-				var worldPos = worldCoords.ToInt2();
-				var wpos = new WPos(worldPos.X, worldPos.Y, 0);
-
 				// fake a mousedown/mouseup here
-				var location = worldRenderer.Viewport.WorldToViewPx(worldRenderer.ScreenPxPosition(wpos));
+				var location = worldRenderer.Viewport.WorldToViewPx(worldRenderer.ScreenPxPosition(pos));
 				var fakemi = new MouseInput
 				{
 					Event = MouseInputEvent.Down,
 					Button = Game.Settings.Game.MouseButtonPreference.Action,
 					Modifiers = mi.Modifiers,
-					Location = location,
+					Location = location
 				};
 
-				var controller = Ui.Root.Get<WorldInteractionControllerWidget>(WorldInteractionController);
-				controller.HandleMouseInput(fakemi);
-				fakemi.Event = MouseInputEvent.Up;
-				controller.HandleMouseInput(fakemi);
+				if (WorldInteractionController != null)
+				{
+					var controller = Ui.Root.Get<WorldInteractionControllerWidget>(WorldInteractionController);
+					controller.HandleMouseInput(fakemi);
+					fakemi.Event = MouseInputEvent.Up;
+					controller.HandleMouseInput(fakemi);
+				}
 			}
 
 			return true;
@@ -478,21 +477,11 @@ namespace OpenRA.Mods.Common.Widgets
 			return new int2(mapRect.X + dx, mapRect.Y + dy);
 		}
 
-		float2 MinimapPixelToWorldCoords(int2 pixel)
+		CPos MinimapPixelToCell(int2 p)
 		{
-			var u = (pixel.X - mapRect.X) / (previewScale * cellWidth) + world.Map.Bounds.Left;
-			var v = (pixel.Y - mapRect.Y) / previewScale + world.Map.Bounds.Top;
-
-			if (world.Map.Grid.Type == MapGridType.Rectangular)
-			{
-				return new float2(1024 * u + 512, 1024 * v + 512);
-			}
-			else
-			{
-				var y = v / 2.0f - u;
-				var x = v - y;
-				return new float2(724 * (x - y), 724 * (x + y));
-			}
+			var u = (int)((p.X - mapRect.X) / (previewScale * cellWidth)) + world.Map.Bounds.Left;
+			var v = (int)((p.Y - mapRect.Y) / previewScale) + world.Map.Bounds.Top;
+			return new MPos(u, v).ToCPos(world.Map);
 		}
 
 		public override void Removed()

@@ -12,7 +12,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Text;
 
 namespace OpenRA.Support
@@ -20,7 +19,7 @@ namespace OpenRA.Support
 	public class HttpQueryBuilder : IEnumerable<KeyValuePair<string, string>>
 	{
 		readonly string url;
-		readonly List<KeyValuePair<string, string>> parameters = [];
+		readonly List<KeyValuePair<string, string>> parameters = new();
 
 		public HttpQueryBuilder(string url)
 		{
@@ -41,7 +40,7 @@ namespace OpenRA.Support
 			builder.Append('?');
 
 			foreach (var parameter in parameters)
-				builder.Append(CultureInfo.InvariantCulture, $"{parameter.Key}={parameter.Value}&");
+				builder.Append($"{parameter.Key}={parameter.Value}&");
 
 			return builder.ToString();
 		}

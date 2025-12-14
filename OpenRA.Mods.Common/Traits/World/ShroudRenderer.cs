@@ -11,7 +11,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using OpenRA.Graphics;
@@ -25,10 +24,10 @@ namespace OpenRA.Mods.Common.Traits
 	{
 		public readonly string Sequence = "shroud";
 		[SequenceReference(nameof(Sequence))]
-		public readonly ImmutableArray<string> ShroudVariants = ["shroud"];
+		public readonly string[] ShroudVariants = { "shroud" };
 
 		[SequenceReference(nameof(Sequence))]
-		public readonly ImmutableArray<string> FogVariants = ["fog"];
+		public readonly string[] FogVariants = { "fog" };
 
 		[PaletteReference]
 		public readonly string ShroudPalette = "shroud";
@@ -38,7 +37,7 @@ namespace OpenRA.Mods.Common.Traits
 
 		[Desc("Bitfield of shroud directions for each frame. Lower four bits are",
 			"corners clockwise from TL; upper four are edges clockwise from top")]
-		public readonly ImmutableArray<int> Index = [12, 9, 8, 3, 1, 6, 4, 2, 13, 11, 7, 14];
+		public readonly int[] Index = { 12, 9, 8, 3, 1, 6, 4, 2, 13, 11, 7, 14 };
 
 		[Desc("Use the upper four bits when calculating frame")]
 		public readonly bool UseExtendedIndex = false;
@@ -95,10 +94,16 @@ namespace OpenRA.Mods.Common.Traits
 			BottomLeft
 		}
 
-		readonly struct TileInfo(in float3 screenPosition, byte variant)
+		readonly struct TileInfo
 		{
-			public readonly float3 ScreenPosition = screenPosition;
-			public readonly byte Variant = variant;
+			public readonly float3 ScreenPosition;
+			public readonly byte Variant;
+
+			public TileInfo(in float3 screenPosition, byte variant)
+			{
+				ScreenPosition = screenPosition;
+				Variant = variant;
+			}
 		}
 
 		readonly ShroudRendererInfo info;
@@ -298,7 +303,7 @@ namespace OpenRA.Mods.Common.Traits
 
 				if (newShroud != null)
 				{
-					cellVisibility = newShroud.GetVisibility;
+					cellVisibility = puv => newShroud.GetVisibility(puv);
 					newShroud.OnShroudChanged += UpdateShroudCell;
 				}
 				else
@@ -315,7 +320,7 @@ namespace OpenRA.Mods.Common.Traits
 			cellsDirty.Clear(true);
 			anyCellDirty = true;
 			var tl = new PPos(0, 0);
-			var br = new PPos(map.MapSize.Width - 1, map.MapSize.Height - 1);
+			var br = new PPos(map.MapSize.X - 1, map.MapSize.Y - 1);
 			UpdateShroud(new ProjectedCellRegion(map, tl, br));
 		}
 

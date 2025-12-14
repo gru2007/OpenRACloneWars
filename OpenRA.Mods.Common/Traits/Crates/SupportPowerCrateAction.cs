@@ -9,6 +9,7 @@
  */
 #endregion
 
+using OpenRA.Primitives;
 using OpenRA.Traits;
 
 namespace OpenRA.Mods.Common.Traits
@@ -37,10 +38,10 @@ namespace OpenRA.Mods.Common.Traits
 		// We want neither of these properties for crate power proxies.
 		public override void Activate(Actor collector)
 		{
-			collector.World.AddFrameEndTask(w => w.CreateActor(info.Proxy,
-			[
+			collector.World.AddFrameEndTask(w => w.CreateActor(info.Proxy, new TypeDictionary
+			{
 				new OwnerInit(collector.Owner)
-			]));
+			}));
 
 			base.Activate(collector);
 		}

@@ -83,9 +83,18 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 			var contentButton = mainMenu.GetOrNull<ButtonWidget>("CONTENT_BUTTON");
 			if (contentButton != null)
 			{
-				var contentInstaller = modData.FileSystemLoader as IFileSystemExternalContent;
+				var contentInstaller = modData.FileSystemLoader as ContentInstallerFileSystemLoader;
 				contentButton.Disabled = contentInstaller == null;
-				contentButton.OnClick = () => contentInstaller?.ManageContent(modData);
+				contentButton.OnClick = () =>
+				{
+					// Switching mods changes the world state (by disposing it),
+					// so we can't do this inside the input handler.
+					Game.RunAfterTick(() =>
+					{
+						if (contentInstaller != null)
+							Game.InitializeMod(contentInstaller.ContentInstallerMod, new Arguments());
+					});
+				};
 			}
 
 			mainMenu.Get<ButtonWidget>("SETTINGS_BUTTON").OnClick = () =>
@@ -202,12 +211,10 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 				Game.OpenWindow("MAPCHOOSER_PANEL", new WidgetArgs()
 				{
 					{ "initialMap", null },
-					{ "initialGeneratedMap", (MapGenerationArgs)null },
 					{ "remoteMapPool", null },
 					{ "initialTab", MapClassification.User },
 					{ "onExit", () => SwitchMenu(MenuType.MapEditor) },
 					{ "onSelect", onSelect },
-					{ "onSelectGenerated", null },
 					{ "filter", MapVisibility.Lobby | MapVisibility.Shellmap | MapVisibility.MissionSelector },
 				});
 			};
@@ -221,7 +228,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 			{
 				newsBG.IsVisible = () => Game.Settings.Game.FetchNews && menuType != MenuType.None && menuType != MenuType.StartupPrompts;
 
-				newsPanel = Ui.LoadWidget<ScrollPanelWidget>("NEWS_PANEL", null, []);
+				newsPanel = Ui.LoadWidget<ScrollPanelWidget>("NEWS_PANEL", null, new WidgetArgs());
 				newsTemplate = newsPanel.Get("NEWS_ITEM_TEMPLATE");
 				newsPanel.RemoveChild(newsTemplate);
 				maxNewsHeight = newsPanel.Bounds.Height;
@@ -233,7 +240,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 			Game.OnRemoteDirectConnect += OnRemoteDirectConnect;
 
 			// Check for updates in the background
-			var webServices = modData.GetOrCreate<WebServices>();
+			var webServices = modData.Manifest.Get<WebServices>();
 			if (Game.Settings.Debug.CheckVersion)
 				webServices.CheckModVersion();
 

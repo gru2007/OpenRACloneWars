@@ -11,7 +11,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 using OpenRA.Graphics;
 using OpenRA.Mods.Common.Scripting;
@@ -143,7 +142,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 		readonly Widget buttonContainer;
 		readonly ButtonWidget buttonTemplate;
 		readonly int2 buttonStride;
-		readonly List<ButtonWidget> buttons = [];
+		readonly List<ButtonWidget> buttons = new();
 
 		readonly ModData modData;
 		readonly Action onExit;
@@ -201,7 +200,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 
 			if (logicArgs.TryGetValue("Buttons", out var buttonsNode))
 			{
-				var buttonIds = FieldLoader.GetValue<ImmutableArray<string>>("Buttons", buttonsNode.Value);
+				var buttonIds = FieldLoader.GetValue<string[]>("Buttons", buttonsNode.Value);
 				foreach (var button in buttonIds)
 					if (buttonHandlers.TryGetValue(button, out var createHandler))
 						createHandler();
@@ -264,7 +263,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 				Game.RunAfterDelay(exitDelay, () =>
 				{
 					if (Game.IsCurrentWorld(world))
-						mpe.Fade(mpe.Info.GameExitEffect);
+						mpe.Fade(MenuPostProcessEffect.EffectType.Black);
 				});
 				exitDelay += 40 * mpe.Info.FadeLength;
 			}
@@ -289,7 +288,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 		void CloseMenu()
 		{
 			Ui.CloseWindow();
-			mpe?.Fade(mpe.Info.Effect);
+			mpe?.Fade(MenuPostProcessEffect.EffectType.None);
 			onExit();
 			Ui.ResetTooltips();
 		}
@@ -351,7 +350,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 				if (mpe != null)
 				{
 					if (Game.IsCurrentWorld(world))
-						mpe.Fade(mpe.Info.GameExitEffect);
+						mpe.Fade(MenuPostProcessEffect.EffectType.Black);
 					exitDelay += 40 * mpe.Info.FadeLength;
 				}
 
@@ -495,7 +494,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 					ConfirmationDialogs.ButtonPrompt(modData,
 						title: ErrorMaxPlayerTitle,
 						text: ErrorMaxPlayerPrompt,
-						textArguments: ["players", playerCount, "max", MapPlayers.MaximumPlayerCount],
+						textArguments: new object[] { "players", playerCount, "max", MapPlayers.MaximumPlayerCount },
 						onConfirm: ShowMenu,
 						confirmText: ErrorMaxPlayerAccept);
 
@@ -520,9 +519,8 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 				return;
 
 			var actionManager = world.WorldActor.Trait<EditorActionManager>();
-			var button = AddButton("PLAY_MAP", "Play Map");
-			button.IsDisabled = () => leaving || string.IsNullOrEmpty(world.Map.Package.Name);
-			button.OnClick = () =>
+			AddButton("PLAY_MAP", "Play Map")
+				.OnClick = () =>
 				{
 					hideMenu = true;
 					var uid = modData.MapCache.GetUpdatedMap(world.Map.Uid);
@@ -546,7 +544,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 						Ui.ResetTooltips();
 						void CloseMenu()
 						{
-							mpe?.Fade(mpe.Info.Effect);
+							mpe?.Fade(MenuPostProcessEffect.EffectType.None);
 							onExit();
 						}
 
@@ -620,13 +618,8 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 
 		void ExitEditor(EditorActionManager actionManager, Action onSuccess)
 		{
-			var deletedOrUnavailable = false;
-			if (!string.IsNullOrEmpty(world.Map.Package.Name))
-			{
-				var map = modData.MapCache.GetUpdatedMap(world.Map.Uid);
-				deletedOrUnavailable = map == null || modData.MapCache[map].Status != MapStatus.Available;
-			}
-
+			var map = modData.MapCache.GetUpdatedMap(world.Map.Uid);
+			var deletedOrUnavailable = map == null || modData.MapCache[map].Status != MapStatus.Available;
 			if (actionManager.HasUnsavedItems() || deletedOrUnavailable)
 			{
 				hideMenu = true;

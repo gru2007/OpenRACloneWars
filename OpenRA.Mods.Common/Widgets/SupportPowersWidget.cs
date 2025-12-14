@@ -56,7 +56,7 @@ namespace OpenRA.Mods.Common.Widgets
 
 		Animation icon;
 		Animation clock;
-		Dictionary<Rectangle, SupportPowerIcon> icons = [];
+		Dictionary<Rectangle, SupportPowerIcon> icons = new();
 
 		public SupportPowerIcon TooltipIcon { get; private set; }
 		public Func<SupportPowerIcon> GetTooltipIcon;
@@ -82,7 +82,7 @@ namespace OpenRA.Mods.Common.Widgets
 				count = FieldLoader.GetValue<int>("HotkeyCount", countNode.Value.Value);
 
 			if (count == 0)
-				return [];
+				return Array.Empty<string>();
 
 			if (string.IsNullOrEmpty(prefix))
 				emitError($"{widgetNode.Location} must define HotkeyPrefix if HotkeyCount > 0.");
@@ -132,7 +132,7 @@ namespace OpenRA.Mods.Common.Widgets
 
 		public void RefreshIcons()
 		{
-			icons = [];
+			icons = new Dictionary<Rectangle, SupportPowerIcon>();
 			var powers = spm.Powers.Values.Where(p => !p.Disabled)
 				.OrderBy(p => p.Info.SupportPowerPaletteOrder);
 

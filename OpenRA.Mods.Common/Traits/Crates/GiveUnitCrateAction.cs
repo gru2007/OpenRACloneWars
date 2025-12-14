@@ -9,10 +9,10 @@
  */
 #endregion
 
-using System.Collections.Frozen;
+using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
+using OpenRA.Primitives;
 using OpenRA.Traits;
 
 namespace OpenRA.Mods.Common.Traits
@@ -23,10 +23,10 @@ namespace OpenRA.Mods.Common.Traits
 		[ActorReference]
 		[FieldLoader.Require]
 		[Desc("The list of units to spawn.")]
-		public readonly ImmutableArray<string> Units = [];
+		public readonly string[] Units = Array.Empty<string>();
 
 		[Desc("Factions that are allowed to trigger this action.")]
-		public readonly FrozenSet<string> ValidFactions = FrozenSet<string>.Empty;
+		public readonly HashSet<string> ValidFactions = new();
 
 		[Desc("Override the owner of the newly spawned unit: e.g. Creeps or Neutral")]
 		public readonly string Owner = null;
@@ -89,11 +89,11 @@ namespace OpenRA.Mods.Common.Traits
 					var location = ChooseEmptyCellNear(collector, unit, pathFinder, locomotorsByName);
 					if (location != null)
 					{
-						var actor = w.CreateActor(unit,
-						[
+						var actor = w.CreateActor(unit, new TypeDictionary
+						{
 							new LocationInit(location.Value),
 							new OwnerInit(info.Owner ?? collector.Owner.InternalName)
-						]);
+						});
 
 						// Set the subcell and make sure to crush actors beneath.
 						var positionable = actor.OccupiesSpace as IPositionable;

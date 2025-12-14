@@ -20,24 +20,26 @@ namespace OpenRA
 	public sealed class MapDirectoryTracker : IDisposable
 	{
 		readonly FileSystemWatcher watcher;
+		readonly MapGrid mapGrid;
 		readonly IReadOnlyPackage package;
 		readonly MapClassification classification;
 
 		enum MapAction { Add, Delete, Update }
-		readonly Dictionary<string, MapAction> mapActionQueue = [];
+		readonly Dictionary<string, MapAction> mapActionQueue = new();
 
 		bool dirty = false;
 
-		public MapDirectoryTracker(IReadOnlyPackage package, MapClassification classification)
+		public MapDirectoryTracker(MapGrid mapGrid, IReadOnlyPackage package, MapClassification classification)
 		{
+			this.mapGrid = mapGrid;
 			this.package = package;
 			this.classification = classification;
 
 			watcher = new FileSystemWatcher(package.Name);
-			watcher.Changed += (_, e) => AddMapAction(MapAction.Update, e.FullPath);
-			watcher.Created += (_, e) => AddMapAction(MapAction.Add, e.FullPath);
-			watcher.Deleted += (_, e) => AddMapAction(MapAction.Delete, e.FullPath);
-			watcher.Renamed += (_, e) => AddMapAction(MapAction.Add, e.FullPath, e.OldFullPath);
+			watcher.Changed += (object sender, FileSystemEventArgs e) => AddMapAction(MapAction.Update, e.FullPath);
+			watcher.Created += (object sender, FileSystemEventArgs e) => AddMapAction(MapAction.Add, e.FullPath);
+			watcher.Deleted += (object sender, FileSystemEventArgs e) => AddMapAction(MapAction.Delete, e.FullPath);
+			watcher.Renamed += (object sender, RenamedEventArgs e) => AddMapAction(MapAction.Add, e.FullPath, e.OldFullPath);
 
 			watcher.IncludeSubdirectories = true;
 			watcher.EnableRaisingEvents = true;
@@ -84,7 +86,7 @@ namespace OpenRA
 				dirty = false;
 				foreach (var mapAction in mapActionQueue)
 				{
-					var map = mapcache.FirstOrDefault(x => x.Path == mapAction.Key && x.Status == MapStatus.Available);
+					var map = mapcache.FirstOrDefault(x => x.PackageName == mapAction.Key && x.Status == MapStatus.Available);
 					if (map != null)
 					{
 						if (mapAction.Value == MapAction.Delete)
@@ -96,7 +98,7 @@ namespace OpenRA
 						{
 							Console.WriteLine(mapAction.Key + " was updated");
 							map.Invalidate();
-							mapcache.LoadMap(mapAction.Key.Replace(package.Name + Path.DirectorySeparatorChar, ""), package, classification, map.Uid);
+							mapcache.LoadMap(mapAction.Key.Replace(package.Name + Path.DirectorySeparatorChar, ""), package, classification, mapGrid, map.Uid);
 						}
 					}
 					else
@@ -104,7 +106,7 @@ namespace OpenRA
 						if (mapAction.Value != MapAction.Delete)
 						{
 							Console.WriteLine(mapAction.Key + " was added");
-							mapcache.LoadMap(mapAction.Key.Replace(package?.Name + Path.DirectorySeparatorChar, ""), package, classification, null);
+							mapcache.LoadMap(mapAction.Key.Replace(package?.Name + Path.DirectorySeparatorChar, ""), package, classification, mapGrid, null);
 						}
 					}
 				}

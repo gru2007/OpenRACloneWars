@@ -169,7 +169,6 @@ LPST:
 		DeploySounds: place2.aud
 		UndeploySounds: clicky1.aud
 		Voice: Move
-		SmartDeploy: true
 	EntersTunnels:
 		RequireForceMoveCondition: !undeployed
 	Repairable:

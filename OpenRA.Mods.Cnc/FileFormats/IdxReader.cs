@@ -35,7 +35,7 @@ namespace OpenRA.Mods.Cnc.FileFormats
 
 			SoundCount = s.ReadInt32();
 
-			Entries = [];
+			Entries = new List<IdxEntry>();
 
 			for (var i = 0; i < SoundCount; i++)
 				Entries.Add(new IdxEntry(s));

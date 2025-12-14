@@ -18,6 +18,8 @@ Player:
 		ConstructionYardTypes: fact
 		RefineryTypes: proc
 		PowerTypes: powr
+		BarracksTypes: tent
+		VehiclesFactoryTypes: weap
 		ProductionTypes: tent, weap
 		SiloTypes: silo
 		BuildingLimits:

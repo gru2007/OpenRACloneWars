@@ -76,7 +76,17 @@ namespace OpenRA.Traits
 		public int RevealedCells { get; private set; }
 
 		enum ShroudCellType : byte { Shroud, Fog, Visible }
-		readonly record struct ShroudSource(SourceType Type, PPos[] ProjectedCells);
+		sealed class ShroudSource
+		{
+			public readonly SourceType Type;
+			public readonly PPos[] ProjectedCells;
+
+			public ShroudSource(SourceType type, PPos[] projectedCells)
+			{
+				Type = type;
+				ProjectedCells = projectedCells;
+			}
+		}
 
 		// Visible is not a super set of Explored. IsExplored may return false even if IsVisible returns true.
 		[Flags]
@@ -86,7 +96,7 @@ namespace OpenRA.Traits
 		readonly Map map;
 
 		// Individual shroud modifier sources (type and area)
-		readonly Dictionary<object, ShroudSource> sources = [];
+		readonly Dictionary<object, ShroudSource> sources = new();
 
 		// Per-cell count of each source type, used to resolve the final cell type
 		readonly ProjectedCellLayer<short> passiveVisibleCount;
@@ -149,7 +159,7 @@ namespace OpenRA.Traits
 
 			ExploreMapEnabled = gs.OptionOrDefault("explored", info.ExploredMapCheckboxEnabled);
 			if (ExploreMapEnabled)
-				ExploreAll();
+				self.World.AddFrameEndTask(w => ExploreAll());
 
 			if (!fogEnabled && ExploreMapEnabled)
 				RevealedCells = map.ProjectedCells.Length;

@@ -19,11 +19,12 @@ namespace OpenRA.Primitives
 	/// </summary>
 	public class ActionQueue
 	{
-		readonly List<DelayedAction> actions = [];
+		readonly List<DelayedAction> actions = new();
 
 		public void Add(Action a, long desiredTime)
 		{
-			ArgumentNullException.ThrowIfNull(a);
+			if (a == null)
+				throw new ArgumentNullException(nameof(a));
 
 			lock (actions)
 			{

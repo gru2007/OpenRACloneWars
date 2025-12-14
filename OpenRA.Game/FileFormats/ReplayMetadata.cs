@@ -27,7 +27,8 @@ namespace OpenRA.FileFormats
 
 		public ReplayMetadata(GameInformation info)
 		{
-			ArgumentNullException.ThrowIfNull(info);
+			if (info == null)
+				throw new ArgumentNullException(nameof(info));
 
 			GameInfo = info;
 		}

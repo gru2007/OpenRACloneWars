@@ -9,9 +9,7 @@
  */
 #endregion
 
-using System.Collections.Frozen;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 using OpenRA.Graphics;
 using OpenRA.Mods.Common.Traits;
@@ -24,16 +22,16 @@ namespace OpenRA.Mods.Cnc.Traits
 	public class TSTiberiumRendererInfo : ResourceRendererInfo
 	{
 		[Desc("Sequences to use for ramp type 1.", "Dictionary of [resource type]: [list of sequences].")]
-		public readonly FrozenDictionary<string, ImmutableArray<string>> Ramp1Sequences = FrozenDictionary<string, ImmutableArray<string>>.Empty;
+		public readonly Dictionary<string, string[]> Ramp1Sequences = new();
 
 		[Desc("Sequences to use for ramp type 2.", "Dictionary of [resource type]: [list of sequences].")]
-		public readonly FrozenDictionary<string, ImmutableArray<string>> Ramp2Sequences = FrozenDictionary<string, ImmutableArray<string>>.Empty;
+		public readonly Dictionary<string, string[]> Ramp2Sequences = new();
 
 		[Desc("Sequences to use for ramp type 3.", "Dictionary of [resource type]: [list of sequences].")]
-		public readonly FrozenDictionary<string, ImmutableArray<string>> Ramp3Sequences = FrozenDictionary<string, ImmutableArray<string>>.Empty;
+		public readonly Dictionary<string, string[]> Ramp3Sequences = new();
 
 		[Desc("Sequences to use for ramp type 4.", "Dictionary of [resource type]: [list of sequences].")]
-		public readonly FrozenDictionary<string, ImmutableArray<string>> Ramp4Sequences = FrozenDictionary<string, ImmutableArray<string>>.Empty;
+		public readonly Dictionary<string, string[]> Ramp4Sequences = new();
 
 		public override object Create(ActorInitializer init) { return new TSTiberiumRenderer(init.Self, this); }
 	}
@@ -42,10 +40,10 @@ namespace OpenRA.Mods.Cnc.Traits
 	{
 		readonly TSTiberiumRendererInfo info;
 		readonly World world;
-		readonly Dictionary<string, Dictionary<string, ISpriteSequence>> ramp1Variants = [];
-		readonly Dictionary<string, Dictionary<string, ISpriteSequence>> ramp2Variants = [];
-		readonly Dictionary<string, Dictionary<string, ISpriteSequence>> ramp3Variants = [];
-		readonly Dictionary<string, Dictionary<string, ISpriteSequence>> ramp4Variants = [];
+		readonly Dictionary<string, Dictionary<string, ISpriteSequence>> ramp1Variants = new();
+		readonly Dictionary<string, Dictionary<string, ISpriteSequence>> ramp2Variants = new();
+		readonly Dictionary<string, Dictionary<string, ISpriteSequence>> ramp3Variants = new();
+		readonly Dictionary<string, Dictionary<string, ISpriteSequence>> ramp4Variants = new();
 
 		public TSTiberiumRenderer(Actor self, TSTiberiumRendererInfo info)
 			: base(self, info)
@@ -54,7 +52,7 @@ namespace OpenRA.Mods.Cnc.Traits
 			world = self.World;
 		}
 
-		void LoadVariants(FrozenDictionary<string, ImmutableArray<string>> rampSequences, Dictionary<string, Dictionary<string, ISpriteSequence>> rampVariants)
+		void LoadVariants(Dictionary<string, string[]> rampSequences, Dictionary<string, Dictionary<string, ISpriteSequence>> rampVariants)
 		{
 			var sequences = world.Map.Sequences;
 			foreach (var kv in rampSequences)

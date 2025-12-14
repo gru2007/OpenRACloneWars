@@ -190,15 +190,24 @@ namespace OpenRA.Mods.Common.Orders
 			return order;
 		}
 
-		protected sealed class UnitOrderResult(Actor actor, IOrderTargeter order, IIssueOrder trait, string cursor, in Target target)
+		protected sealed class UnitOrderResult
 		{
-			public readonly Actor Actor = actor;
-			public readonly IOrderTargeter Order = order;
-			public readonly IIssueOrder Trait = trait;
-			public readonly string Cursor = cursor;
+			public readonly Actor Actor;
+			public readonly IOrderTargeter Order;
+			public readonly IIssueOrder Trait;
+			public readonly string Cursor;
 			public ref readonly Target Target => ref target;
 
-			readonly Target target = target;
+			readonly Target target;
+
+			public UnitOrderResult(Actor actor, IOrderTargeter order, IIssueOrder trait, string cursor, in Target target)
+			{
+				Actor = actor;
+				Order = order;
+				Trait = trait;
+				Cursor = cursor;
+				this.target = target;
+			}
 		}
 
 		public virtual bool ClearSelectionOnLeftClick => true;

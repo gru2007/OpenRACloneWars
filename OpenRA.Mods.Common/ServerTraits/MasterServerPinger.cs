@@ -10,7 +10,6 @@
 #endregion
 
 using System;
-using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Text.RegularExpressions;
@@ -49,26 +48,34 @@ namespace OpenRA.Mods.Common.Server
 		[FluentReference]
 		const string GameOffline = "notification-game-offline";
 
-		static readonly ushort LanAdvertisePort = (ushort)new Random(DateTime.Now.Millisecond).Next(2048, 60000);
-		static readonly FrozenDictionary<int, string> MasterServerErrors = new Dictionary<int, string>
+		static readonly Beacon LanGameBeacon;
+		static readonly Dictionary<int, string> MasterServerErrors = new()
 		{
 			{ 1, NoPortForward },
 			{ 2, BlacklistedTitle }
-		}.ToFrozenDictionary();
+		};
 
-		Beacon lanGameBeacon;
 		long lastPing = 0;
 		long lastChanged = 0;
 		bool isInitialPing = true;
 
 		volatile bool isBusy;
-		readonly Queue<string> masterServerMessages = [];
+		readonly Queue<string> masterServerMessages = new();
+
+		static MasterServerPinger()
+		{
+			try
+			{
+				LanGameBeacon = new Beacon("OpenRALANGame", (ushort)new Random(DateTime.Now.Millisecond).Next(2048, 60000));
+			}
+			catch (Exception ex)
+			{
+				Log.Write("server", "BeaconLib.Beacon: " + ex.Message);
+			}
+		}
 
 		public void Tick(S server)
 		{
-			if (!server.IsMultiplayer)
-				return;
-
 			// Force an update if the last one was too long ago so the advertisement doesn't time out
 			if (Game.RunTime - lastChanged > MasterPingInterval)
 				lastChanged = Game.RunTime;
@@ -76,41 +83,31 @@ namespace OpenRA.Mods.Common.Server
 			// Update the master server and LAN clients if something has changed
 			// Note that isBusy is set while the master server ping is running on a
 			// background thread, and limits LAN pings as well as master server pings for simplicity.
-			if ((server.Settings.AdvertiseOnline || server.Settings.AdvertiseOnLocalNetwork)
-				&& !isBusy && ((lastChanged > lastPing && Game.RunTime - lastPing > RateLimitInterval) || isInitialPing))
+			if (!isBusy && ((lastChanged > lastPing && Game.RunTime - lastPing > RateLimitInterval) || isInitialPing))
 			{
 				var gs = new GameServer(server);
 				if (server.Settings.AdvertiseOnline)
 					UpdateMasterServer(server, gs.ToPOSTData(false));
 
-				if (server.Settings.AdvertiseOnLocalNetwork && lanGameBeacon != null)
-					lanGameBeacon.BeaconData = gs.ToPOSTData(true);
+				if (LanGameBeacon != null)
+					LanGameBeacon.BeaconData = gs.ToPOSTData(true);
 
 				lastPing = Game.RunTime;
 			}
 
-			if (server.Settings.AdvertiseOnline)
-				lock (masterServerMessages)
-					while (masterServerMessages.Count > 0)
-						server.SendFluentMessage(masterServerMessages.Dequeue());
+			lock (masterServerMessages)
+				while (masterServerMessages.Count > 0)
+					server.SendFluentMessage(masterServerMessages.Dequeue());
 		}
 
 		void INotifyServerStart.ServerStarted(S server)
 		{
-			if (server.IsMultiplayer && server.Settings.AdvertiseOnLocalNetwork)
-			{
-				if (lanGameBeacon == null)
-					CreateLanGameBeacon();
-
-				lanGameBeacon?.Start();
-			}
+			if (server.IsMultiplayer && LanGameBeacon != null)
+				LanGameBeacon.Start();
 		}
 
 		void INotifyServerShutdown.ServerShutdown(S server)
 		{
-			if (!server.IsMultiplayer)
-				return;
-
 			if (server.Settings.AdvertiseOnline)
 			{
 				// Announce that the game has ended to remove it from the list.
@@ -118,8 +115,7 @@ namespace OpenRA.Mods.Common.Server
 				UpdateMasterServer(server, gameServer.ToPOSTData(false));
 			}
 
-			lanGameBeacon?.Stop();
-			lanGameBeacon = null;
+			LanGameBeacon?.Stop();
 		}
 
 		public void LobbyInfoSynced(S server)
@@ -134,8 +130,7 @@ namespace OpenRA.Mods.Common.Server
 
 		public void GameEnded(S server)
 		{
-			lanGameBeacon?.Stop();
-			lanGameBeacon = null;
+			LanGameBeacon?.Stop();
 
 			lastChanged = Game.RunTime;
 		}
@@ -148,7 +143,7 @@ namespace OpenRA.Mods.Common.Server
 			{
 				try
 				{
-					var endpoint = server.ModData.GetOrCreate<WebServices>().ServerAdvertise;
+					var endpoint = server.ModData.Manifest.Get<WebServices>().ServerAdvertise;
 
 					var client = HttpClientFactory.Create();
 					var response = await client.PostAsync(endpoint, new StringContent(postData));
@@ -198,20 +193,6 @@ namespace OpenRA.Mods.Common.Server
 
 				isBusy = false;
 			});
-		}
-
-		void CreateLanGameBeacon()
-		{
-			try
-			{
-				lanGameBeacon?.Stop();
-				lanGameBeacon = new Beacon("OpenRALANGame", LanAdvertisePort);
-			}
-			catch (Exception ex)
-			{
-				lanGameBeacon = null;
-				Log.Write("server", "BeaconLib.Beacon: " + ex.Message);
-			}
 		}
 	}
 }

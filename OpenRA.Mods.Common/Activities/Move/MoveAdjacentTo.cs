@@ -112,7 +112,7 @@ namespace OpenRA.Mods.Common.Activities
 			return true;
 		}
 
-		protected readonly List<CPos> SearchCells = [];
+		protected readonly List<CPos> SearchCells = new();
 
 		protected int searchCellsTick = -1;
 

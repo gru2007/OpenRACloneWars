@@ -9,7 +9,7 @@
  */
 #endregion
 
-using System.Collections.Frozen;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace OpenRA.Mods.Common.Traits
@@ -18,11 +18,11 @@ namespace OpenRA.Mods.Common.Traits
 	public class RejectsOrdersInfo : ConditionalTraitInfo
 	{
 		[Desc("Explicit list of rejected orders. Leave empty to reject all minus those listed under Except.")]
-		public readonly FrozenSet<string> Reject = FrozenSet<string>.Empty;
+		public readonly HashSet<string> Reject = new();
 
 		[Desc("List of orders that should *not* be rejected.",
 			"Also overrides other instances of this trait's Reject fields.")]
-		public readonly FrozenSet<string> Except = FrozenSet<string>.Empty;
+		public readonly HashSet<string> Except = new();
 
 		[Desc("Remove current and all queued orders from the actor when this trait is enabled.")]
 		public readonly bool RemoveOrders = false;
@@ -32,8 +32,8 @@ namespace OpenRA.Mods.Common.Traits
 
 	public class RejectsOrders : ConditionalTrait<RejectsOrdersInfo>
 	{
-		public FrozenSet<string> Reject => Info.Reject;
-		public FrozenSet<string> Except => Info.Except;
+		public HashSet<string> Reject => Info.Reject;
+		public HashSet<string> Except => Info.Except;
 
 		public RejectsOrders(RejectsOrdersInfo info)
 			: base(info) { }

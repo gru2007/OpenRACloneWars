@@ -9,8 +9,8 @@
  */
 #endregion
 
-using System.Collections.Frozen;
-using System.Collections.Immutable;
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using OpenRA.Graphics;
 using OpenRA.Primitives;
@@ -31,12 +31,12 @@ namespace OpenRA.Mods.Common.Traits
 		public readonly string BaseName = "player";
 
 		[Desc("Remap these indices to player colors.")]
-		public readonly ImmutableArray<int> RemapIndex = [];
+		public readonly int[] RemapIndex = Array.Empty<int>();
 
 		[Desc("Allow palette modifiers to change the palette.")]
 		public readonly bool AllowModifiers = true;
 
-		public readonly FrozenDictionary<string, ImmutableArray<int>> PlayerIndex;
+		public readonly Dictionary<string, int[]> PlayerIndex;
 
 		public override object Create(ActorInitializer init) { return new IndexedPlayerPalette(this); }
 
@@ -65,7 +65,7 @@ namespace OpenRA.Mods.Common.Traits
 			if (info.PlayerIndex.TryGetValue(playerName, out var remap))
 				pal = new ImmutablePalette(
 					basePalette,
-					new IndexedColorRemap(basePalette, info.RemapIndex.Length == 0 ? Enumerable.Range(0, 256).ToImmutableArray() : info.RemapIndex, remap));
+					new IndexedColorRemap(basePalette, info.RemapIndex.Length == 0 ? Enumerable.Range(0, 256).ToArray() : info.RemapIndex, remap));
 			else
 				pal = new ImmutablePalette(basePalette);
 

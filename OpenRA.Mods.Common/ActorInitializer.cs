@@ -17,26 +17,38 @@ using OpenRA.Traits;
 
 namespace OpenRA.Mods.Common
 {
-	public class FacingInit(WAngle value) : ValueActorInit<WAngle>(value), ISingleInstanceInit
+	public class FacingInit : ValueActorInit<WAngle>, ISingleInstanceInit
 	{
+		public FacingInit(WAngle value)
+			: base(value) { }
 	}
 
-	public class TerrainOrientationInit(WRot value) : ValueActorInit<WRot>(value), ISingleInstanceInit, ISuppressInitExport
+	public class TerrainOrientationInit : ValueActorInit<WRot>, ISingleInstanceInit, ISuppressInitExport
 	{
+		public TerrainOrientationInit(WRot value)
+			: base(value) { }
 	}
 
-	public class CreationActivityDelayInit(int value) : ValueActorInit<int>(value), ISingleInstanceInit
+	public class CreationActivityDelayInit : ValueActorInit<int>, ISingleInstanceInit
 	{
+		public CreationActivityDelayInit(int value)
+			: base(value) { }
 	}
 
-	public class DynamicFacingInit(Func<WAngle> value) : ValueActorInit<Func<WAngle>>(value), ISingleInstanceInit
+	public class DynamicFacingInit : ValueActorInit<Func<WAngle>>, ISingleInstanceInit
 	{
+		public DynamicFacingInit(Func<WAngle> value)
+			: base(value) { }
 	}
 
 	// Cannot use ValueInit because map.yaml is expected to use the numeric value instead of enum name
-	public class SubCellInit(SubCell value) : ActorInit, ISingleInstanceInit
+	public class SubCellInit : ActorInit, ISingleInstanceInit
 	{
-		readonly int value = (int)value;
+		readonly int value;
+		public SubCellInit(SubCell value)
+		{
+			this.value = (int)value;
+		}
 
 		public virtual SubCell Value => (SubCell)value;
 
@@ -58,17 +70,23 @@ namespace OpenRA.Mods.Common
 		}
 	}
 
-	public class CenterPositionInit(WPos value) : ValueActorInit<WPos>(value), ISingleInstanceInit
+	public class CenterPositionInit : ValueActorInit<WPos>, ISingleInstanceInit
 	{
+		public CenterPositionInit(WPos value)
+			: base(value) { }
 	}
 
 	// Allows maps / transformations to specify the faction variant of an actor.
-	public class FactionInit(string value) : ValueActorInit<string>(value), ISingleInstanceInit
+	public class FactionInit : ValueActorInit<string>, ISingleInstanceInit
 	{
+		public FactionInit(string value)
+			: base(value) { }
 	}
 
-	public class EffectiveOwnerInit(Player value) : ValueActorInit<Player>(value)
+	public class EffectiveOwnerInit : ValueActorInit<Player>
 	{
+		public EffectiveOwnerInit(Player value)
+			: base(value) { }
 	}
 
 	sealed class ActorInitLoader : TypeConverter

@@ -69,7 +69,7 @@ namespace OpenRA.Platforms.Default
 			if (devicesPtr == IntPtr.Zero || AL10.alGetError() != AL10.AL_NO_ERROR)
 			{
 				Log.Write("sound", $"Failed to query OpenAL device list using {label}");
-				return [];
+				return Array.Empty<string>();
 			}
 
 			var devices = new List<string>();
@@ -103,7 +103,7 @@ namespace OpenRA.Platforms.Default
 			if (ALC11.alcIsExtensionPresent(IntPtr.Zero, "ALC_ENUMERATION_EXT"))
 				return QueryDevices("ALC_ENUMERATION_EXT", ALC10.ALC_DEVICE_SPECIFIER);
 
-			return [];
+			return Array.Empty<string>();
 		}
 
 		internal static int MakeALFormat(int channels, int bits)

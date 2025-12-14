@@ -29,12 +29,7 @@ namespace OpenRA.Mods.Common.Traits
 				throw new InvalidOperationException($"Actor {ai.Name} is missing sequence to quantize facings from.");
 
 			var rsi = ai.TraitInfo<RenderSpritesInfo>();
-			var image = rsi.GetImage(ai, faction);
-			var facings = sequences.GetSequence(image, Sequence).Facings;
-			if (facings == 0)
-				throw new InvalidOperationException(
-					$"Actor {ai.Name} defines a quantized body orientation with zero facings. Faction: {faction} Image: {image} Sequence: {Sequence}");
-			return facings;
+			return sequences.GetSequence(rsi.GetImage(ai, faction), Sequence).Facings;
 		}
 
 		public override object Create(ActorInitializer init) { return new QuantizeFacingsFromSequence(this); }

@@ -9,7 +9,6 @@
  */
 #endregion
 
-using System.Collections.Frozen;
 using System.Collections.Generic;
 using OpenRA.Graphics;
 using OpenRA.Traits;
@@ -37,7 +36,7 @@ namespace OpenRA.Mods.Common.Traits.Render
 
 		[SequenceReference(nameof(Image), dictionaryReference: LintDictionaryReference.Values)]
 		[Desc("Pip sequence to use for specific passenger actors.")]
-		public readonly FrozenDictionary<string, string> CustomPipSequences = FrozenDictionary<string, string>.Empty;
+		public readonly Dictionary<string, string> CustomPipSequences = new();
 
 		[PaletteReference]
 		public readonly string Palette = "chrome";

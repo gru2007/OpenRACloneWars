@@ -10,7 +10,6 @@
 #endregion
 
 using System;
-using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -27,7 +26,7 @@ namespace OpenRA.Mods.Cnc.UtilityCommands
 		string IUtilityCommand.Name => "--import-td-map";
 		bool IUtilityCommand.ValidateArguments(string[] args) { return ValidateArguments(args); }
 
-		[Desc("FILENAME [AUTHOR]", "Convert a legacy Tiberian Dawn INI/MPR map to the OpenRA format.")]
+		[Desc("FILENAME", "Convert a legacy Tiberian Dawn INI/MPR map to the OpenRA format.")]
 		void IUtilityCommand.Run(Utility utility, string[] args) { Run(utility, args); }
 
 		public override void ValidateMapFormat(int format)
@@ -36,7 +35,7 @@ namespace OpenRA.Mods.Cnc.UtilityCommands
 				Console.WriteLine($"ERROR: Detected NewINIFormat {format}. Are you trying to import a Red Alert map?");
 		}
 
-		static readonly FrozenDictionary<string, (byte Type, byte Index)> OverlayResourceMapping = new Dictionary<string, (byte Type, byte Index)>
+		static readonly Dictionary<string, (byte Type, byte Index)> OverlayResourceMapping = new()
 		{
 			// Tiberium
 			{ "ti1", (1, 0) },
@@ -51,7 +50,7 @@ namespace OpenRA.Mods.Cnc.UtilityCommands
 			{ "ti10", (1, 9) },
 			{ "ti11", (1, 10) },
 			{ "ti12", (1, 11) },
-		}.ToFrozenDictionary();
+		};
 
 		void UnpackTileData(Stream ms)
 		{
@@ -66,9 +65,8 @@ namespace OpenRA.Mods.Cnc.UtilityCommands
 			}
 		}
 
-		static readonly string[] OverlayActors =
-		[
-
+		static readonly string[] OverlayActors = new string[]
+		{
 			// Fences
 			"sbag", "cycl", "brik", "barb", "wood",
 
@@ -77,7 +75,7 @@ namespace OpenRA.Mods.Cnc.UtilityCommands
 
 			// Crates
 			"wcrate", "scrate"
-		];
+		};
 
 		void ReadOverlay(IniFile file)
 		{

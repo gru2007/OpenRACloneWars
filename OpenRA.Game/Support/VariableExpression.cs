@@ -24,7 +24,7 @@ namespace OpenRA.Support
 		public static readonly IReadOnlyDictionary<string, int> NoVariables = new ReadOnlyDictionary<string, int>(new Dictionary<string, int>());
 
 		public readonly string Expression;
-		readonly HashSet<string> variables = [];
+		readonly HashSet<string> variables = new();
 		public IEnumerable<string> Variables => variables;
 
 		enum CharClass { Whitespace, Operator, Mixed, Id, Digit }
@@ -212,9 +212,9 @@ namespace OpenRA.Support
 
 		static IEnumerable<TokenTypeInfo> CreateTokenTypeInfoEnumeration()
 		{
-			for (var tt = TokenType.False; tt <= TokenType.Invalid; tt++)
+			for (var i = 0; i <= (int)TokenType.Invalid; i++)
 			{
-				switch (tt)
+				switch ((TokenType)i)
 				{
 					case TokenType.Invalid:
 						yield return new TokenTypeInfo("(<INVALID>)", Precedence.Invalid);
@@ -287,7 +287,7 @@ namespace OpenRA.Support
 						continue;
 				}
 
-				throw new InvalidProgramException($"CreateTokenTypeInfoEnumeration is missing a TokenTypeInfo entry for TokenType.{tt}");
+				throw new InvalidProgramException($"CreateTokenTypeInfoEnumeration is missing a TokenTypeInfo entry for TokenType.{Enum<TokenType>.GetValues()[i]}");
 			}
 		}
 
@@ -581,8 +581,6 @@ namespace OpenRA.Support
 			Expression = expression;
 		}
 
-		public override string ToString() => Expression;
-
 		Expression Build(ExpressionType resultType)
 		{
 			var tokens = new List<Token>();
@@ -719,8 +717,8 @@ namespace OpenRA.Support
 
 		sealed class AstStack
 		{
-			readonly List<Expression> expressions = [];
-			readonly List<ExpressionType> types = [];
+			readonly List<Expression> expressions = new();
+			readonly List<ExpressionType> types = new();
 
 			public ExpressionType PeekType() { return types[^1]; }
 
@@ -741,8 +739,8 @@ namespace OpenRA.Support
 
 				throw new InvalidProgramException(
 					"Unable to convert " +
-					$"ExpressionType.{fromType} to " +
-					$"ExpressionType.{toType}");
+					$"ExpressionType.{Enum<ExpressionType>.GetValues()[(int)fromType]} to " +
+					$"ExpressionType.{Enum<ExpressionType>.GetValues()[(int)toType]}");
 			}
 
 			public Expression Pop(ExpressionType type)
@@ -941,7 +939,7 @@ namespace OpenRA.Support
 						default:
 							throw new InvalidProgramException(
 								"ConditionExpression.Compiler.Compile() is missing an expression builder for " +
-								$"TokenType.{t.Type}");
+								$"TokenType.{Enum<TokenType>.GetValues()[(int)t.Type]}");
 					}
 				}
 

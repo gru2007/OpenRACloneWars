@@ -10,7 +10,6 @@
 #endregion
 
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using OpenRA.Graphics;
 using OpenRA.Mods.Common.Graphics;
 using OpenRA.Traits;
@@ -29,16 +28,16 @@ namespace OpenRA.Mods.Common.Traits.Render
 
 		[SequenceReference]
 		[Desc("Sequences to use when both neighbours are alive.")]
-		public readonly ImmutableArray<string> Sequences = ["idle"];
+		public readonly string[] Sequences = { "idle" };
 
 		[SequenceReference]
-		public readonly ImmutableArray<string> ADestroyedSequences = ["adestroyed"];
+		public readonly string[] ADestroyedSequences = { "adestroyed" };
 
 		[SequenceReference]
-		public readonly ImmutableArray<string> BDestroyedSequences = ["bdestroyed"];
+		public readonly string[] BDestroyedSequences = { "bdestroyed" };
 
 		[SequenceReference]
-		public readonly ImmutableArray<string> ABDestroyedSequences = ["abdestroyed"];
+		public readonly string[] ABDestroyedSequences = { "abdestroyed" };
 
 		public override object Create(ActorInitializer init) { return new WithBridgeSpriteBody(init, this); }
 

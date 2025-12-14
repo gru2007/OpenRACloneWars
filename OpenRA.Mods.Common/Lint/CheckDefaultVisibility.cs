@@ -40,7 +40,7 @@ namespace OpenRA.Mods.Common.Lint
 					var count = visibilityTypes.Count;
 
 					if (count == 0)
-						continue;
+						emitError($"Actor type `{actorInfo.Key}` does not define a default visibility type.");
 					else if (count > 1)
 						emitError(
 							$"Actor type `{actorInfo.Key}` defines multiple default visibility types: " +

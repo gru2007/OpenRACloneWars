@@ -22,11 +22,9 @@ namespace OpenRA.Mods.Common.Server
 {
 	public class SkirmishLogic : ServerTrait, IClientJoined, INotifySyncLobbyInfo
 	{
-		sealed class SkirmishSlot
+		class SkirmishSlot
 		{
-			static string LoadSlot(MiniYaml yaml) => yaml.Value;
-
-			[FieldLoader.LoadUsing(nameof(LoadSlot))]
+			[FieldLoader.Serialize(FromYamlKey = true)]
 			public readonly string Slot;
 			public readonly Color Color;
 			public readonly string Faction;
@@ -55,12 +53,6 @@ namespace OpenRA.Mods.Common.Server
 				c.SpawnPoint = s.SpawnPoint;
 				c.Team = s.Team;
 				c.Handicap = s.Handicap;
-			}
-
-			public MiniYaml ToYaml()
-			{
-				var yaml = FieldSaver.Save(this);
-				return yaml.WithValue(Slot).WithNodes(yaml.Nodes.RemoveAll(n => n.Key == nameof(Slot)));
 			}
 		}
 
@@ -100,18 +92,12 @@ namespace OpenRA.Mods.Common.Server
 				}
 			}
 
-			var selectableFactions = server.Map.WorldActorInfo.TraitInfos<FactionInfo>()
-				.Where(f => f.Selectable)
-				.Select(f => f.InternalName)
-				.ToList();
-
 			var playerNode = nodes.NodeWithKeyOrDefault("Player");
 			if (playerNode != null)
 			{
 				var client = server.GetClient(conn);
 				SkirmishSlot.DeserializeToClient(playerNode.Value, client);
 				client.Color = LobbyCommands.SanitizePlayerColor(server, client.Color, client.Index);
-				client.Faction = LobbyCommands.SanitizePlayerFaction(server, client.Faction, selectableFactions);
 			}
 
 			var botsNode = nodes.NodeWithKeyOrDefault("Bots");
@@ -142,8 +128,6 @@ namespace OpenRA.Mods.Common.Server
 					if (client.Slot != null && !server.LobbyInfo.Slots[client.Slot].LockColor)
 						client.Color = LobbyCommands.SanitizePlayerColor(server, client.Color, client.Index);
 
-					client.Faction = LobbyCommands.SanitizePlayerFaction(server, client.Faction, selectableFactions);
-
 					server.LobbyInfo.Clients.Add(client);
 					S.SyncClientToPlayerReference(client, server.Map.Players.Players[client.Slot]);
 				}
@@ -164,9 +148,9 @@ namespace OpenRA.Mods.Common.Server
 				new("Map", server.LobbyInfo.GlobalSettings.Map),
 				new("Options", new MiniYaml("", server.LobbyInfo.GlobalSettings.LobbyOptions
 					.Select(kv => new MiniYamlNode(kv.Key, kv.Value.Value)))),
-				new("Player", new SkirmishSlot(playerClient).ToYaml()),
+				new("Player", FieldSaver.Save(new SkirmishSlot(playerClient))),
 				new("Bots", new MiniYaml("", server.LobbyInfo.Clients.Where(c => c.IsBot)
-					.Select(b => new MiniYamlNode(b.Bot, new SkirmishSlot(b).ToYaml()))))
+					.Select(b => new MiniYamlNode(b.Bot, FieldSaver.Save(new SkirmishSlot(b))))))
 			}.WriteToFile(path);
 		}
 

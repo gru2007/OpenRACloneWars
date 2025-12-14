@@ -10,7 +10,6 @@
 #endregion
 
 using System;
-using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Linq;
 using OpenRA.Primitives;
@@ -32,7 +31,7 @@ namespace OpenRA.Mods.Common.Traits
 
 		[ActorReference(typeof(MinelayerInfo))]
 		[Desc("Actors with " + nameof(Minelayer) + "trait.")]
-		public readonly FrozenSet<string> MinelayingActorTypes = default;
+		public readonly HashSet<string> MinelayingActorTypes = default;
 
 		[Desc("Find this amount of suitable actors and lay mine to a location.")]
 		public readonly int MaxPerAssign = 1;
@@ -50,7 +49,7 @@ namespace OpenRA.Mods.Common.Traits
 		public readonly BitSet<TargetableType> AwayFromEnemyTargetTypes = default;
 
 		[Desc("Minefield location check distance to AwayFromAlliedTargettype and AwayFromEnemyTargettype.",
-			"In addition, if any enemy actor within this range and minefield location is not cancelled,",
+			"In addition, if any emeny actor within this range and minefield location is not cancelled,",
 			"minelayer will try lay mines at the 3/4 path to minefield location")]
 		public readonly int AwayFromCellDistance = 9;
 
@@ -88,8 +87,8 @@ namespace OpenRA.Mods.Common.Traits
 			player = self.Owner;
 			unitCannotBeOrdered = a => a == null || a.IsDead || !a.IsInWorld || a.Owner != player;
 			unitCannotBeOrderedOrIsBusy = a => unitCannotBeOrdered(a) || !a.IsIdle;
-			conflictPositionQueue = new CPos?[MaxPositionCacheLength];
-			favoritePositions = new CPos?[MaxPositionCacheLength];
+			conflictPositionQueue = new CPos?[MaxPositionCacheLength] { null, null, null, null, null };
+			favoritePositions = new CPos?[MaxPositionCacheLength] { null, null, null, null, null };
 		}
 
 		protected override void TraitEnabled(Actor self)
@@ -141,7 +140,7 @@ namespace OpenRA.Mods.Common.Traits
 						if (minelayers.Length == 0)
 							return;
 
-						var enemies = world.Actors.Where(IsPreferredEnemyUnit).ToArray();
+						var enemies = world.Actors.Where(a => IsPreferredEnemyUnit(a)).ToArray();
 						if (enemies.Length == 0)
 							return;
 
@@ -150,7 +149,7 @@ namespace OpenRA.Mods.Common.Traits
 						foreach (var minelayer in minelayers)
 						{
 							var cells = pathFinder.FindPathToTargetCell(
-								minelayer.Actor, [minelayer.Actor.Location], enemy.Location, BlockedByActor.Immovable, laneBias: false);
+								minelayer.Actor, new[] { minelayer.Actor.Location }, enemy.Location, BlockedByActor.Immovable, laneBias: false);
 							if (cells != null && cells.Count != 0)
 							{
 								AIUtils.BotDebug($"{player}: try find a location to lay mine.");
@@ -195,7 +194,7 @@ namespace OpenRA.Mods.Common.Traits
 				foreach (var minelayer in minelayers)
 				{
 					var cells = pathFinder.FindPathToTargetCell(
-						minelayer.Actor, [minelayer.Actor.Location], minelayingPosition, BlockedByActor.Immovable, laneBias: false);
+						minelayer.Actor, new[] { minelayer.Actor.Location }, minelayingPosition, BlockedByActor.Immovable, laneBias: false);
 					if (cells != null && cells.Count != 0)
 					{
 						orderedActors.Add(minelayer.Actor);

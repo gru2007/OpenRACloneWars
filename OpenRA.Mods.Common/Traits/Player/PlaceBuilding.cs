@@ -10,6 +10,7 @@
 #endregion
 
 using System.Linq;
+using OpenRA.Primitives;
 using OpenRA.Traits;
 
 namespace OpenRA.Mods.Common.Traits
@@ -120,23 +121,16 @@ namespace OpenRA.Mods.Common.Traits
 				if (os == "LineBuild")
 				{
 					// Build the parent actor first
-					var placed = w.CreateActor(actorInfo.Name,
-					[
+					var placed = w.CreateActor(actorInfo.Name, new TypeDictionary
+					{
 						new LocationInit(targetLocation),
 						new OwnerInit(order.Player),
 						new FactionInit(faction),
 						new PlaceBuildingInit()
-					]);
+					});
 
 					foreach (var s in buildingInfo.BuildSounds)
 						Game.Sound.PlayToPlayer(SoundType.World, order.Player, s, placed.CenterPosition);
-
-					if (producer.Actor != null)
-						foreach (var nbp in producer.Actor.TraitsImplementing<INotifyBuildingPlaced>())
-							nbp.BuildingPlaced(producer.Actor, placed);
-
-					foreach (var nbp in self.TraitsImplementing<INotifyBuildingPlaced>())
-						nbp.BuildingPlaced(self, placed);
 
 					// Build the connection segments
 					var segmentType = actorInfo.TraitInfo<LineBuildInfo>().SegmentType;
@@ -148,8 +142,8 @@ namespace OpenRA.Mods.Common.Traits
 						if (t.Cell == targetLocation)
 							continue;
 
-						var segmentInfo = self.World.Map.Rules.Actors[segmentType];
-						var replaceableSegments = segmentInfo.TraitInfos<ReplacementInfo>()
+						var segment = self.World.Map.Rules.Actors[segmentType];
+						var replaceableSegments = segment.TraitInfos<ReplacementInfo>()
 							.SelectMany(r => r.ReplaceableTypes)
 							.ToHashSet();
 
@@ -158,22 +152,15 @@ namespace OpenRA.Mods.Common.Traits
 								if (a.TraitsImplementing<Replaceable>().Any(r => !r.IsTraitDisabled && r.Info.Types.Overlaps(replaceableSegments)))
 									self.World.Remove(a);
 
-						var segment = w.CreateActor(segmentType,
-						[
+						w.CreateActor(segmentType, new TypeDictionary
+						{
 							new LocationInit(t.Cell),
 							new OwnerInit(order.Player),
 							new FactionInit(faction),
 							new LineBuildDirectionInit(t.Cell.X == targetLocation.X ? LineBuildDirection.Y : LineBuildDirection.X),
-							new LineBuildParentInit([t.Actor, placed]),
+							new LineBuildParentInit(new[] { t.Actor, placed }),
 							new PlaceBuildingInit()
-						]);
-
-						if (producer.Actor != null)
-							foreach (var nbp in producer.Actor.TraitsImplementing<INotifyBuildingPlaced>())
-								nbp.BuildingPlaced(producer.Actor, segment);
-
-						foreach (var nbp in self.TraitsImplementing<INotifyBuildingPlaced>())
-							nbp.BuildingPlaced(self, segment);
+						});
 					}
 				}
 				else if (os == "PlacePlug")
@@ -205,24 +192,21 @@ namespace OpenRA.Mods.Common.Traits
 						|| !buildingInfo.IsCloseEnoughToBase(self.World, order.Player, actorInfo, targetLocation))
 						return;
 
-					var building = w.CreateActor(actorInfo.Name,
-					[
+					var building = w.CreateActor(actorInfo.Name, new TypeDictionary
+					{
 						new LocationInit(targetLocation),
 						new OwnerInit(order.Player),
 						new FactionInit(faction),
 						new PlaceBuildingInit()
-					]);
+					});
 
 					foreach (var s in buildingInfo.BuildSounds)
 						Game.Sound.PlayToPlayer(SoundType.World, order.Player, s, building.CenterPosition);
-
-					if (producer.Actor != null)
-						foreach (var nbp in producer.Actor.TraitsImplementing<INotifyBuildingPlaced>())
-							nbp.BuildingPlaced(producer.Actor, building);
-
-					foreach (var nbp in self.TraitsImplementing<INotifyBuildingPlaced>())
-						nbp.BuildingPlaced(self, building);
 				}
+
+				if (producer.Actor != null)
+					foreach (var nbp in producer.Actor.TraitsImplementing<INotifyBuildingPlaced>())
+						nbp.BuildingPlaced(producer.Actor);
 
 				queue.EndProduction(item);
 

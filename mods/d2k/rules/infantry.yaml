@@ -31,9 +31,9 @@ engineer:
 	Inherits@selection: ^SelectableSupportUnit
 	Buildable:
 		Queue: Infantry
-		BuildPaletteOrder: 80
+		BuildPaletteOrder: 30
 		Prerequisites: upgrade.barracks, ~techlevel.medium
-		BuildDuration: 150
+		BuildDuration: 125
 		BuildDurationModifier: 100
 		Description: actor-engineer.description
 	Valued:
@@ -67,6 +67,7 @@ engineer:
 		Description: actor-engineer.encyclopedia
 		Order: 30
 		Category: Units
+	-RevealOnFire:
 	Voiced:
 		VoiceSet: EngineerVoice
 	-AttackFrontal:
@@ -78,11 +79,11 @@ trooper:
 		Queue: Infantry
 		BuildPaletteOrder: 20
 		Prerequisites: upgrade.barracks, ~techlevel.medium
-		BuildDuration: 124
+		BuildDuration: 85
 		BuildDurationModifier: 100
 		Description: actor-trooper.description
 	Valued:
-		Cost: 100
+		Cost: 90
 	Tooltip:
 		Name: actor-trooper.name
 	UpdatesPlayerStatistics:
@@ -107,9 +108,10 @@ trooper:
 
 thumper:
 	Inherits: ^Infantry
+	-RevealOnFire:
 	Buildable:
 		Queue: Infantry
-		BuildPaletteOrder: 100
+		BuildPaletteOrder: 40
 		Prerequisites: upgrade.barracks, ~techlevel.high
 		BuildDuration: 125
 		BuildDurationModifier: 100
@@ -133,7 +135,6 @@ thumper:
 		UndeployOnMove: true
 		Facing: 512
 		AllowedTerrainTypes: Sand, Spice, Dune, SpiceSand
-		SmartDeploy: true
 	Encyclopedia:
 		Description: actor-thumper.encyclopedia
 		Order: 40
@@ -301,9 +302,6 @@ mpsardaukar:
 
 saboteur:
 	Inherits: ^Infantry
-	Selectable:
-		Priority: 8
-		PriorityModifiers: Ctrl, Alt
 	Buildable:
 		Queue: Infantry
 		BuildPaletteOrder: 100
@@ -316,57 +314,36 @@ saboteur:
 	UpdatesPlayerStatistics:
 		AddToArmyValue: true
 	Health:
-		HP: 5000
+		HP: 4000
 	Encyclopedia:
 		Description: actor-saboteur.encyclopedia
 		Order: 80
 		Category: Units
 	Mobile:
 		Speed: 43
-		PauseOnCondition: triggered
 	Demolition:
-		DetonationDelay: 50
-		Flashes: 3
+		DetonationDelay: 0
+		Flashes: 0
 		EnterBehaviour: Suicide
+	-RevealOnFire:
+	GrantChargedConditionOnToggle:
+		ActivatedCondition: cloaked
+		CanCancelCondition: true
+		ChargeDuration: 1250
+		ChargeThreshhold: 100
+		ConditionDuration: 375
 	Cloak:
-		InitialDelay: 100
-		CloakDelay: 100
+		RequiresCondition: cloaked
+		InitialDelay: 0
+		CloakDelay: 25
 		CloakSound: STEALTH1.WAV
 		UncloakOn: Attack, Unload, Infiltrate, Demolish, Damage, Heal
 		PauseOnCondition: cloak-force-disabled
-		RequiresCondition: !triggered
-	FireWarheadsOnDeath@Selfkill:
-		Weapon: PlasmaSaboteur
-		EmptyWeapon: PlasmaSaboteur
-		RequiresCondition: kamikadze
-	GrantConditionOnDeploy:
-		DeployCursor: c4
-		DeployedCondition: triggered
-		PauseOnCondition: triggered
 	GrantConditionOnDamageState@UNCLOAK:
 		Condition: cloak-force-disabled
 		ValidDamageStates: Critical
-	KillsSelf@SuicideKillCount:
-		Delay: 45
-		RequiresCondition: triggered
-		GrantsCondition: kamikadze
-	TakeCover:
-		RequiresCondition: triggered
 	Voiced:
 		VoiceSet: SaboteurVoice
-	RevealsShroud:
-		Range: 4c768
-	Crushable:
-		WarnProbability: 95
-	WithInfantryBody:
-		RequiresCondition: !triggered
-	WithIdleOverlay:
-		Sequence: active
-		RequiresCondition: triggered
-	WithIdleOverlay@prone:
-		StartSequence: standup
-		Sequence: prone-stand
-		RequiresCondition: triggered
 	-AttackFrontal:
 
 nsfremen:

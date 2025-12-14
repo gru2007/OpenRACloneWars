@@ -10,7 +10,6 @@
 #endregion
 
 using System;
-using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Linq;
 using OpenRA.Primitives;
@@ -18,8 +17,6 @@ using OpenRA.Widgets;
 
 namespace OpenRA.Mods.Common.Widgets.Logic
 {
-	[IncludeChromeLogicArgsFluentReferences(nameof(DynamicFluentReferences))]
-	[IncludeStaticFluentReferences(typeof(KeycodeExts), typeof(ModifiersExts))]
 	public class HotkeysSettingsLogic : ChromeLogic
 	{
 		[FluentReference("key")]
@@ -30,13 +27,6 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 
 		[FluentReference]
 		const string AnyContext = HotkeyDefinition.ContextFluentPrefix + "-any";
-
-		public static IEnumerable<(string Key, FluentReferenceAttribute Reference)> DynamicFluentReferences(Dictionary<string, MiniYaml> logicArgs)
-		{
-			if (logicArgs.TryGetValue("HotkeyGroups", out var hotkeyGroupsYaml))
-				foreach (var node in hotkeyGroupsYaml.Nodes)
-					yield return (node.Key, new FluentReferenceAttribute());
-		}
 
 		readonly ModData modData;
 		readonly Dictionary<string, MiniYaml> logicArgs;
@@ -51,8 +41,8 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 		bool isHotkeyDefault;
 
 		string currentContext = AnyContext;
-		readonly HashSet<string> contexts = [AnyContext];
-		readonly Dictionary<string, FrozenSet<string>> hotkeyGroups = [];
+		readonly HashSet<string> contexts = new() { AnyContext };
+		readonly Dictionary<string, HashSet<string>> hotkeyGroups = new();
 		TextFieldWidget filterInput;
 
 		Widget headerTemplate;
@@ -128,7 +118,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 				contexts.UnionWith(hd.Contexts);
 
 			filterInput = panel.Get<TextFieldWidget>("FILTER_INPUT");
-			filterInput.OnTextEdited = InitHotkeyList;
+			filterInput.OnTextEdited = () => InitHotkeyList();
 			filterInput.OnEscKey = _ =>
 			{
 				if (string.IsNullOrEmpty(filterInput.Text))
@@ -156,7 +146,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 				{
 					var typesNode = hg.Value.NodeWithKeyOrDefault("Types");
 					if (typesNode != null)
-						hotkeyGroups.Add(hg.Key, FieldLoader.GetValue<FrozenSet<string>>("Types", typesNode.Value.Value));
+						hotkeyGroups.Add(hg.Key, FieldLoader.GetValue<HashSet<string>>("Types", typesNode.Value.Value));
 				}
 
 				InitHotkeyRemapDialog(panel);

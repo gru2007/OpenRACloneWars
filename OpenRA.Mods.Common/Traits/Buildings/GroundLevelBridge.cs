@@ -9,8 +9,8 @@
  */
 #endregion
 
+using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using OpenRA.GameRules;
 using OpenRA.Primitives;
 using OpenRA.Traits;
@@ -24,7 +24,7 @@ namespace OpenRA.Mods.Common.Traits
 
 		public readonly string Type = "GroundLevelBridge";
 
-		public readonly ImmutableArray<CVec> NeighbourOffsets = [];
+		public readonly CVec[] NeighbourOffsets = Array.Empty<CVec>();
 
 		[WeaponReference]
 		[Desc("The name of the weapon to use when demolishing the bridge")]
@@ -119,7 +119,7 @@ namespace OpenRA.Mods.Common.Traits
 		string IBridgeSegment.Type => Info.Type;
 		DamageState IBridgeSegment.DamageState => self.GetDamageState();
 		bool IBridgeSegment.Valid => self.IsInWorld;
-		ImmutableArray<CVec> IBridgeSegment.NeighbourOffsets => Info.NeighbourOffsets;
+		CVec[] IBridgeSegment.NeighbourOffsets => Info.NeighbourOffsets;
 		CPos IBridgeSegment.Location => self.Location;
 	}
 }

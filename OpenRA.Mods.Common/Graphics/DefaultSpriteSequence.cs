@@ -11,7 +11,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
@@ -22,13 +21,29 @@ namespace OpenRA.Mods.Common.Graphics
 {
 	public class DefaultSpriteSequenceLoader : ISpriteSequenceLoader
 	{
+		public readonly int BgraSheetSize = 2048;
+		public readonly int IndexedSheetSize = 2048;
+
 		static readonly MiniYaml NoData = new(null);
+
+		public DefaultSpriteSequenceLoader(ModData modData)
+		{
+			var metadata = modData.Manifest.Get<SpriteSequenceFormat>().Metadata;
+			if (metadata.TryGetValue("BgraSheetSize", out var yaml))
+				BgraSheetSize = FieldLoader.GetValue<int>("BgraSheetSize", yaml.Value);
+
+			if (metadata.TryGetValue("IndexedSheetSize", out yaml))
+				IndexedSheetSize = FieldLoader.GetValue<int>("IndexedSheetSize", yaml.Value);
+		}
 
 		public virtual ISpriteSequence CreateSequence(
 			ModData modData, string tileset, SpriteCache cache, string image, string sequence, MiniYaml data, MiniYaml defaults)
 		{
 			return new DefaultSpriteSequence(cache, this, image, sequence, data, defaults);
 		}
+
+		int ISpriteSequenceLoader.BgraSheetSize => BgraSheetSize;
+		int ISpriteSequenceLoader.IndexedSheetSize => IndexedSheetSize;
 
 		IReadOnlyDictionary<string, ISpriteSequence> ISpriteSequenceLoader.ParseSequences(
 			ModData modData, string tileset, SpriteCache cache, MiniYamlNode imageNode)
@@ -59,7 +74,17 @@ namespace OpenRA.Mods.Common.Graphics
 		}
 	}
 
-	public readonly record struct SpriteSequenceField<T>(string Key, T DefaultValue);
+	public struct SpriteSequenceField<T>
+	{
+		public string Key;
+		public T DefaultValue;
+
+		public SpriteSequenceField(string key, T defaultValue)
+		{
+			Key = key;
+			DefaultValue = defaultValue;
+		}
+	}
 
 	[Desc("Generic sprite sequence implementation, mostly unencumbered with game- or artwork-specific logic.")]
 	public class DefaultSpriteSequence : ISpriteSequence
@@ -72,17 +97,20 @@ namespace OpenRA.Mods.Common.Graphics
 			public bool FlipY;
 			public float ZRamp;
 			public BlendMode BlendMode;
-			public ImmutableArray<int> Frames;
+			public int[] Frames;
 		}
 
 		protected readonly struct ReservationInfo
 		{
 			public readonly string Filename;
-			public readonly ImmutableArray<int> LoadFrames;
-			public readonly ImmutableArray<int> Frames;
+			public readonly List<int> LoadFrames;
+			public readonly int[] Frames;
 			public readonly MiniYamlNode.SourceLocation Location;
 
-			public ReservationInfo(string filename, ImmutableArray<int> loadFrames, ImmutableArray<int> frames, MiniYamlNode.SourceLocation location)
+			public ReservationInfo(string filename, int[] loadFrames, int[] frames, MiniYamlNode.SourceLocation location)
+				: this(filename, loadFrames?.ToList(), frames, location) { }
+
+			public ReservationInfo(string filename, List<int> loadFrames, int[] frames, MiniYamlNode.SourceLocation location)
 			{
 				Filename = filename;
 				LoadFrames = loadFrames;
@@ -132,7 +160,7 @@ namespace OpenRA.Mods.Common.Graphics
 		protected static readonly SpriteSequenceField<WDist> ShadowZOffset = new(nameof(ShadowZOffset), new WDist(-5));
 
 		[Desc("The individual frames to play instead of going through them sequentially from the `Start`.")]
-		protected static readonly SpriteSequenceField<ImmutableArray<int>> Frames = new(nameof(Frames), default);
+		protected static readonly SpriteSequenceField<int[]> Frames = new(nameof(Frames), null);
 
 		[Desc("Don't apply terrain lighting or colored overlays.")]
 		protected static readonly SpriteSequenceField<bool> IgnoreWorldTint = new(nameof(IgnoreWorldTint), false);
@@ -163,7 +191,7 @@ namespace OpenRA.Mods.Common.Graphics
 		protected static readonly SpriteSequenceField<MiniYaml> Combine = new(nameof(Combine), null);
 
 		[Desc("Sets transparency - use one value to set for all frames or provide a value for each frame.")]
-		protected static readonly SpriteSequenceField<ImmutableArray<float>> Alpha = new(nameof(Alpha), default);
+		protected static readonly SpriteSequenceField<float[]> Alpha = new(nameof(Alpha), null);
 
 		[Desc("Fade the animation from fully opaque on the first frame to fully transparent after the last frame.")]
 		protected static readonly SpriteSequenceField<bool> AlphaFade = new(nameof(AlphaFade), false);
@@ -178,12 +206,12 @@ namespace OpenRA.Mods.Common.Graphics
 		protected static readonly SpriteSequenceField<float2> DepthSpriteOffset = new(nameof(DepthSpriteOffset), float2.Zero);
 
 		protected static readonly MiniYaml NoData = new(null);
-		protected static readonly ImmutableArray<int> FirstFrame = [0];
+		protected static readonly int[] FirstFrame = { 0 };
 
 		protected readonly ISpriteSequenceLoader Loader;
 
 		protected string image;
-		protected List<SpriteReservation> spritesToLoad = [];
+		protected List<SpriteReservation> spritesToLoad = new();
 		protected Sprite[] sprites;
 		protected Sprite[] shadowSprites;
 		protected bool reverseFacings;
@@ -202,7 +230,7 @@ namespace OpenRA.Mods.Common.Graphics
 		protected int shadowZOffset;
 		protected bool ignoreWorldTint;
 		protected float scale;
-		protected ImmutableArray<float> alpha;
+		protected float[] alpha;
 		protected bool alphaFade;
 		protected Rectangle? bounds;
 
@@ -278,12 +306,12 @@ namespace OpenRA.Mods.Common.Graphics
 			return Rectangle.FromLTRB(left, top, right, bottom);
 		}
 
-		protected static ImmutableArray<int> CalculateFrameIndices(
-			int start, int? length, int stride, int facings, ImmutableArray<int> frames, bool transpose, bool reverseFacings, int shadowStart)
+		protected static List<int> CalculateFrameIndices(
+			int start, int? length, int stride, int facings, int[] frames, bool transpose, bool reverseFacings, int shadowStart)
 		{
 			// Request all frames
 			if (length == null)
-				return default;
+				return null;
 
 			// Only request the subset of frames that we actually need
 			var usedFrames = new List<int>();
@@ -295,7 +323,7 @@ namespace OpenRA.Mods.Common.Graphics
 					var i = transpose ? frame * facings + facingInner :
 						facingInner * stride + frame;
 
-					usedFrames.Add(frames != null ? frames[i] : start + i);
+					usedFrames.Add(frames?[i] ?? start + i);
 				}
 			}
 
@@ -307,10 +335,10 @@ namespace OpenRA.Mods.Common.Graphics
 					usedFrames.Add(usedFrames[i] + shadowOffset);
 			}
 
-			return usedFrames.ToImmutableArray();
+			return usedFrames;
 		}
 
-		protected virtual IEnumerable<ReservationInfo> ParseFilenames(ModData modData, string tileset, ImmutableArray<int> frames, MiniYaml data, MiniYaml defaults)
+		protected virtual IEnumerable<ReservationInfo> ParseFilenames(ModData modData, string tileset, int[] frames, MiniYaml data, MiniYaml defaults)
 		{
 			var filenamePatternNode = data.NodeWithKeyOrDefault(FilenamePattern.Key) ?? defaults.NodeWithKeyOrDefault(FilenamePattern.Key);
 			if (!string.IsNullOrEmpty(filenamePatternNode?.Value.Value))
@@ -326,17 +354,17 @@ namespace OpenRA.Mods.Common.Graphics
 			var filename = LoadField(Filename, data, defaults, out var location);
 
 			var loadFrames = CalculateFrameIndices(start, length, stride ?? length ?? 0, facings, frames, transpose, reverseFacings, shadowStart);
-			return [new ReservationInfo(filename, loadFrames, frames, location)];
+			return new[] { new ReservationInfo(filename, loadFrames, frames, location) };
 		}
 
-		protected virtual IEnumerable<ReservationInfo> ParseCombineFilenames(ModData modData, string tileset, ImmutableArray<int> frames, MiniYaml data)
+		protected virtual IEnumerable<ReservationInfo> ParseCombineFilenames(ModData modData, string tileset, int[] frames, MiniYaml data)
 		{
 			var filename = LoadField(Filename, data, null, out var location);
 			if (frames == null && LoadField<string>(Length.Key, null, data) != "*")
 			{
 				var subStart = LoadField("Start", 0, data);
 				var subLength = LoadField("Length", 1, data);
-				frames = Exts.MakeArray(subLength, i => subStart + i).ToImmutableArray();
+				frames = Exts.MakeArray(subLength, i => subStart + i);
 			}
 
 			yield return new ReservationInfo(filename, frames, frames, location);
@@ -375,7 +403,7 @@ namespace OpenRA.Mods.Common.Graphics
 
 			var depthSprite = LoadField(DepthSprite, data, defaults, out var depthSpriteLocation);
 			if (!string.IsNullOrEmpty(depthSprite))
-				depthSpriteReservation = cache.ReserveSprites(depthSprite, [LoadField(DepthSpriteFrame, data, defaults)], depthSpriteLocation);
+				depthSpriteReservation = cache.ReserveSprites(depthSprite, new[] { LoadField(DepthSpriteFrame, data, defaults) }, depthSpriteLocation);
 
 			depthSpriteOffset = LoadField(DepthSpriteOffset, data, defaults);
 
@@ -504,25 +532,24 @@ namespace OpenRA.Mods.Common.Graphics
 			if (alpha != null)
 			{
 				if (alpha.Length == 1)
-					alpha = Exts.MakeArray(length.Value, _ => alpha[0]).ToImmutableArray();
+					alpha = Exts.MakeArray(length.Value, _ => alpha[0]);
 				else if (alpha.Length != length.Value)
 					throw new YamlException($"Sequence {image}.{Name} must define either 1 or {length.Value} Alpha values.");
 			}
 			else if (alphaFade)
-				alpha = Exts.MakeArray(length.Value, i => float2.Lerp(1f, 0f, i / (length.Value - 1f))).ToImmutableArray();
+				alpha = Exts.MakeArray(length.Value, i => float2.Lerp(1f, 0f, i / (length.Value - 1f)));
 
 			// Reindex sprites to order facings anti-clockwise and remove unused frames
-			var index = CalculateFrameIndices(start, length.Value, stride ?? length.Value, facings, default, transpose, reverseFacings, -1);
+			var index = CalculateFrameIndices(start, length.Value, stride ?? length.Value, facings, null, transpose, reverseFacings, -1);
 			if (reverses)
 			{
-				index = index.AddRange(index.Skip(1).Take(length.Value - 2).Reverse());
-				if (alpha != null)
-					alpha = alpha.AddRange(alpha.Skip(1).Take(length.Value - 2).Reverse());
+				index.AddRange(index.Skip(1).Take(length.Value - 2).Reverse());
+				alpha = alpha?.Concat(alpha.Skip(1).Take(length.Value - 2).Reverse()).ToArray();
 
 				length = 2 * length - 2;
 			}
 
-			if (index.Length == 0)
+			if (index.Count == 0)
 				throw new YamlException($"Sequence {image}.{Name} does not define any frames.");
 
 			var minIndex = index.Min();
@@ -593,7 +620,7 @@ namespace OpenRA.Mods.Common.Graphics
 
 		public virtual float GetAlpha(int frame)
 		{
-			return alpha != null ? alpha[frame] : 1f;
+			return alpha?[frame] ?? 1f;
 		}
 
 		protected virtual float GetScale()

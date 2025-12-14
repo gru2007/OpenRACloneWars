@@ -22,7 +22,7 @@ namespace OpenRA.Mods.Common.Traits
 
 	public class SpawnMapActors : IWorldLoaded
 	{
-		public Dictionary<string, Actor> Actors = [];
+		public Dictionary<string, Actor> Actors = new();
 		public uint LastMapActorID { get; private set; }
 
 		public void WorldLoaded(World world, WorldRenderer wr)
@@ -38,7 +38,10 @@ namespace OpenRA.Mods.Common.Traits
 				// If an actor's doesn't have a valid owner transfer ownership to neutral
 				var ownerInit = actorReference.Get<OwnerInit>();
 				if (!world.Players.Any(p => p.InternalName == ownerInit.InternalName))
-					actorReference.Replace(new OwnerInit(world.WorldActor.Owner));
+				{
+					actorReference.Remove(ownerInit);
+					actorReference.Add(new OwnerInit(world.WorldActor.Owner));
+				}
 
 				actorReference.Add(new SkipMakeAnimsInit());
 				actorReference.Add(new SpawnedByMapInit());

@@ -9,7 +9,7 @@
  */
 #endregion
 
-using System.Collections.Frozen;
+using System.Collections.Generic;
 using System.Linq;
 using OpenRA.Graphics;
 using OpenRA.Traits;
@@ -20,7 +20,7 @@ namespace OpenRA.Mods.Common.Traits
 	public class BuildableTerrainOverlayInfo : TraitInfo
 	{
 		[FieldLoader.Require]
-		public readonly FrozenSet<string> AllowedTerrainTypes = null;
+		public readonly HashSet<string> AllowedTerrainTypes = null;
 
 		[PaletteReference]
 		[Desc("Palette to use for rendering the sprite.")]
@@ -67,7 +67,7 @@ namespace OpenRA.Mods.Common.Traits
 
 		void IWorldLoaded.WorldLoaded(World w, WorldRenderer wr)
 		{
-			render = new TerrainSpriteLayer(w, wr, disabledSprite, BlendMode.Alpha, false);
+			render = new TerrainSpriteLayer(w, wr, disabledSprite, BlendMode.Alpha, wr.World.Type != WorldType.Editor);
 
 			world.Map.Tiles.CellEntryChanged += UpdateTerrainCell;
 			world.Map.CustomTerrain.CellEntryChanged += UpdateTerrainCell;

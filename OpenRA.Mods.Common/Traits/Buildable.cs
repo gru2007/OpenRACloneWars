@@ -9,8 +9,8 @@
  */
 #endregion
 
-using System.Collections.Frozen;
-using System.Collections.Immutable;
+using System;
+using System.Collections.Generic;
 using OpenRA.Traits;
 
 namespace OpenRA.Mods.Common.Traits
@@ -21,10 +21,10 @@ namespace OpenRA.Mods.Common.Traits
 			"This can be prefixed with ! to invert the prerequisite (disabling production if the prerequisite is available)",
 			"and/or ~ to hide the actor from the production palette if the prerequisite is not available.",
 			"Prerequisites are granted by actors with the ProvidesPrerequisite trait.")]
-		public readonly ImmutableArray<string> Prerequisites = [];
+		public readonly string[] Prerequisites = Array.Empty<string>();
 
 		[Desc("Production queue(s) that can produce this.")]
-		public readonly FrozenSet<string> Queue = FrozenSet<string>.Empty;
+		public readonly HashSet<string> Queue = new();
 
 		[Desc("Override the production structure type (from the Production Produces list) that this unit should be built at.")]
 		public readonly string BuildAtProductionType = null;

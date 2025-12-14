@@ -1,6 +1,6 @@
 ^Cannon:
 	ReloadDelay: 50
-	Range: 4c624
+	Range: 4c0
 	Report: MEDTANK1.WAV
 	Projectile: Bullet
 		Speed: 562
@@ -8,8 +8,8 @@
 		InaccuracyType: PerCellIncrement
 		Image: 120mm
 	Warhead@1Dam: SpreadDamage
-		Damage: 2800
-		Spread: 1c0
+		Damage: 2700
+		Spread: 756
 		Falloff: 100, 0
 		Versus:
 			none: 30
@@ -20,7 +20,7 @@
 			invulnerable: 0
 			cy: 20
 			harvester: 50
-		DamageTypes: Prone80Percent, TriggerProne, SmallExplosionDeath
+		DamageTypes: Prone50Percent, TriggerProne, SmallExplosionDeath
 		DamageCalculationType: ClosestTargetablePosition
 	Warhead@2Smu: LeaveSmudge
 		SmudgeType: SandCrater, RockCrater
@@ -34,24 +34,18 @@
 110mm_Gun:
 	Inherits: ^Cannon
 	ReloadDelay: 35
-	Range: 6c0
+	Range: 5c0
 	Report: TURRET1.WAV
 	Projectile: Bullet
-		Speed: 800
+		Speed: 875
 		Blockable: false
 	Warhead@1Dam: SpreadDamage
 		Damage: 2900
-		Versus:
-			none: 65
-			wood: 80
-			heavy: 30
-			harvester: 50
 	Warhead@4Concrete: DamagesConcrete
 		Damage: 2900
 
 80mm_A:
 	Inherits: ^Cannon
-	Range: 5c112
 
 80mm_H:
 	Inherits: ^Cannon
@@ -59,7 +53,7 @@
 
 80mm_O:
 	Inherits: ^Cannon
-	ReloadDelay: 44
+	ReloadDelay: 45
 
 DevBullet:
 	Inherits: ^Cannon
@@ -70,7 +64,7 @@ DevBullet:
 		Image: doubleblastbullet
 	Warhead@1Dam: SpreadDamage
 		Damage: 6500
-		Spread: 1c225
+		Spread: 1c0
 		Versus:
 			none: 65
 			wall: 100
@@ -88,8 +82,8 @@ DevBullet:
 
 155mm:
 	Inherits: ^Cannon
-	ReloadDelay: 105
-	Range: 6c900
+	ReloadDelay: 80
+	Range: 5c512
 	Report: MORTAR1.WAV
 	Projectile: Bullet
 		Speed: 192
@@ -100,10 +94,10 @@ DevBullet:
 		Image: 155mm
 	Warhead@1Dam: SpreadDamage
 		Damage: 4500
-		Spread: 1c800
+		Spread: 2c0
 		Versus:
-			none: 100
-			wall: 70
+			none: 125
+			wall: 100
 			building: 100
 			wood: 70
 			light: 30
@@ -111,7 +105,11 @@ DevBullet:
 			invulnerable: 0
 			cy: 20
 			harvester: 25
-		DamageTypes: Prone80Percent, TriggerProne, ExplosionDeath
+		DamageTypes: Prone50Percent, ExplosionDeath
+	Warhead@proneeffect: TargetDamage
+		DamageTypes: TriggerProne
+		Damage: 1
+		Spread: 1c512
 	Warhead@4Concrete: DamagesConcrete
 		Damage: 5625
 	Warhead@3Eff: CreateEffect

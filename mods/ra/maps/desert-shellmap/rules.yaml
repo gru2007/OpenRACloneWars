@@ -20,10 +20,6 @@ World:
 	LuaScript:
 		Scripts: desert-shellmap.lua
 	-StartGameNotification:
-	CameraOvalMover:
-
-^Palettes:
-	-MenuPostProcessEffect:
 
 ^ExistsInWorld:
 	GivesExperience:

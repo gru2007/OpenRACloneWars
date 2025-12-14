@@ -14,7 +14,7 @@ using System.Collections.Generic;
 
 namespace OpenRA.Primitives
 {
-	/// <summary>Fixed size rotating buffer backed by an array.</summary>
+	/// <summary>Fixed size rorating buffer backed by an array.</summary>
 	public class RingBuffer<T> : ICollection<T>, IEnumerable<T>
 	{
 		readonly IComparer<T> comparer;
@@ -65,7 +65,8 @@ namespace OpenRA.Primitives
 
 		public void CopyTo(T[] array, int arrayIndex)
 		{
-			ArgumentNullException.ThrowIfNull(array);
+			if (array == null)
+				throw new ArgumentNullException(nameof(array));
 
 			if (arrayIndex < 0)
 				throw new ArgumentNullException(nameof(arrayIndex));

@@ -11,9 +11,7 @@
 
 using System;
 using System.Linq;
-using OpenRA.FileSystem;
 using OpenRA.Mods.Common.Terrain;
-using OpenRA.Primitives;
 using OpenRA.Widgets;
 
 namespace OpenRA.Mods.Common.Widgets.Logic
@@ -29,23 +27,21 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 
 			panel.Get<ButtonWidget>("CANCEL_BUTTON").OnClick = () => { Ui.CloseWindow(); onExit(); };
 
-			var selectedTerrain = modData.DefaultTerrainInfo.Values.First();
 			var tilesetDropDown = panel.Get<DropDownButtonWidget>("TILESET");
-			ScrollItemWidget SetupItem(ITerrainInfo option, ScrollItemWidget template)
+			var tilesets = modData.DefaultTerrainInfo.Keys;
+			ScrollItemWidget SetupItem(string option, ScrollItemWidget template)
 			{
 				var item = ScrollItemWidget.Setup(template,
-					() => selectedTerrain == option,
-					() => selectedTerrain = option);
-
-				var itemLabel = FluentProvider.GetMessage(option.Name);
-				item.Get<LabelWidget>("LABEL").GetText = () => itemLabel;
+					() => tilesetDropDown.GetText() == option,
+					() => tilesetDropDown.GetText = () => option);
+				item.Get<LabelWidget>("LABEL").GetText = () => option;
 				return item;
 			}
 
-			var label = new CachedTransform<ITerrainInfo, string>(ti => FluentProvider.GetMessage(ti.Name));
-			tilesetDropDown.GetText = () => label.Update(selectedTerrain);
+			var firstTileset = tilesets.First();
+			tilesetDropDown.GetText = () => firstTileset;
 			tilesetDropDown.OnClick = () =>
-				tilesetDropDown.ShowDropDown("LABEL_DROPDOWN_TEMPLATE", 210, modData.DefaultTerrainInfo.Values, SetupItem);
+				tilesetDropDown.ShowDropDown("LABEL_DROPDOWN_TEMPLATE", 210, tilesets, SetupItem);
 
 			var widthTextField = panel.Get<TextFieldWidget>("WIDTH");
 			var heightTextField = panel.Get<TextFieldWidget>("HEIGHT");
@@ -61,7 +57,8 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 				height = Math.Max(2, height);
 
 				var maxTerrainHeight = world.Map.Grid.MaximumTerrainHeight;
-				var map = new Map(Game.ModData, selectedTerrain, new Size(width + 2, height + maxTerrainHeight + 2));
+				var tileset = modData.DefaultTerrainInfo[tilesetDropDown.GetText()];
+				var map = new Map(Game.ModData, tileset, width + 2, height + maxTerrainHeight + 2);
 
 				var tl = new PPos(1, 1 + maxTerrainHeight);
 				var br = new PPos(width, height + maxTerrainHeight);
@@ -72,12 +69,24 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 				if (map.Rules.TerrainInfo is ITerrainInfoNotifyMapCreated notifyMapCreated)
 					notifyMapCreated.MapCreated(map);
 
-				var package = new ZipFileLoader.ReadWriteZipFile();
-				map.Save(package);
-				map = new Map(modData, package);
-				Game.LoadEditor(map);
-				Ui.CloseWindow();
-				onSelect(map.Uid);
+				Action<string> afterSave = uid =>
+				{
+					map.Dispose();
+					Game.LoadEditor(uid);
+
+					Ui.CloseWindow();
+					onSelect(uid);
+				};
+
+				Ui.OpenWindow("SAVE_MAP_PANEL", new WidgetArgs()
+				{
+					{ "onSave", afterSave },
+					{ "onExit", () => { Ui.CloseWindow(); onExit(); } },
+					{ "map", map },
+					{ "world", world },
+					{ "playerDefinitions", map.PlayerDefinitions },
+					{ "actorDefinitions", map.ActorDefinitions }
+				});
 			};
 		}
 	}

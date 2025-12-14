@@ -11,7 +11,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 using OpenRA.Graphics;
 using OpenRA.Mods.Common.Graphics;
@@ -25,7 +24,7 @@ namespace OpenRA.Mods.Common.HitShapes
 		public WDist OuterRadius { get; private set; }
 
 		[FieldLoader.Require]
-		public readonly ImmutableArray<int2> Points;
+		public readonly int2[] Points;
 
 		[Desc("Defines the top offset relative to the actor's center.")]
 		public readonly int VerticalTopOffset = 0;
@@ -43,7 +42,7 @@ namespace OpenRA.Mods.Common.HitShapes
 
 		public PolygonShape() { }
 
-		public PolygonShape(ImmutableArray<int2> points) { Points = points; }
+		public PolygonShape(int2[] points) { Points = points; }
 
 		public void Initialize()
 		{

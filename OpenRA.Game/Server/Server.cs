@@ -11,7 +11,6 @@
 
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -22,6 +21,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using OpenRA;
 using OpenRA.FileFormats;
 using OpenRA.Network;
 using OpenRA.Primitives;
@@ -45,7 +45,6 @@ namespace OpenRA.Server
 		Dedicated = 3
 	}
 
-	[IncludeStaticFluentReferences(typeof(PlayerMessageTracker), typeof(VoteKickTracker))]
 	public sealed class Server
 	{
 		[FluentReference]
@@ -121,37 +120,36 @@ namespace OpenRA.Server
 		public readonly ServerType Type;
 		public bool IsMultiplayer => Type == ServerType.Dedicated || Type == ServerType.Multiplayer;
 
-		public readonly List<Connection> Conns = [];
+		public readonly List<Connection> Conns = new();
 
 		public Session LobbyInfo;
 		public ServerSettings Settings;
 		public ModData ModData;
-		public List<string> TempBans = [];
-		public string GeneratedMapData;
+		public List<string> TempBans = new();
 
 		// Managed by LobbyCommands
 		public MapPreview Map;
 		public readonly MapStatusCache MapStatusCache;
 		public GameSave GameSave;
-		public FrozenSet<string> MapPool;
+		public HashSet<string> MapPool;
 
 		// Default to the next frame for ServerType.Local - MP servers take the value from the selected GameSpeed.
 		public int OrderLatency = 1;
 
 		readonly int randomSeed;
-		readonly List<TcpListener> listeners = [];
-		readonly TypeDictionary serverTraits = [];
+		readonly List<TcpListener> listeners = new();
+		readonly TypeDictionary serverTraits = new();
 		readonly PlayerDatabase playerDatabase;
 
 		OrderBuffer orderBuffer;
 
 		volatile ServerState internalState = ServerState.WaitingPlayers;
 
-		readonly BlockingCollection<IServerEvent> events = [];
+		readonly BlockingCollection<IServerEvent> events = new();
 
 		ReplayRecorder recorder;
 		GameInformation gameInfo;
-		readonly List<GameInformation.Player> worldPlayers = [];
+		readonly List<GameInformation.Player> worldPlayers = new();
 		readonly Stopwatch pingUpdated = Stopwatch.StartNew();
 
 		public readonly VoteKickTracker VoteKickTracker;
@@ -304,7 +302,7 @@ namespace OpenRA.Server
 
 			ModData = modData;
 
-			playerDatabase = modData.GetOrCreate<PlayerDatabase>();
+			playerDatabase = modData.Manifest.Get<PlayerDatabase>();
 
 			randomSeed = (int)DateTime.Now.ToBinary();
 
@@ -400,7 +398,7 @@ namespace OpenRA.Server
 
 				Conns.Clear();
 			})
-			{ IsBackground = true, Name = "ServerThread" }.Start();
+			{ IsBackground = true }.Start();
 		}
 
 		int nextPlayerIndex;
@@ -583,10 +581,6 @@ namespace OpenRA.Server
 						foreach (var t in serverTraits.WithInterface<IClientJoined>())
 							t.ClientJoined(this, newConn);
 
-						var p = ModData.MapCache[LobbyInfo.GlobalSettings.Map];
-						if (p.Class == MapClassification.Generated && !string.IsNullOrEmpty(GeneratedMapData))
-							SendOrderTo(newConn, "GenerateMap", GeneratedMapData);
-
 						SyncLobbyInfo();
 
 						Log.Write("server", $"{client.Name} ({newConn.EndPoint}) has joined the game.");
@@ -667,9 +661,9 @@ namespace OpenRA.Server
 
 						events.Add(new CallbackEvent(() =>
 						{
-							var notAuthenticated = Type == ServerType.Dedicated && profile == null && (Settings.RequireAuthentication || Settings.ProfileIDWhitelist.Count > 0);
+							var notAuthenticated = Type == ServerType.Dedicated && profile == null && (Settings.RequireAuthentication || Settings.ProfileIDWhitelist.Length > 0);
 							var blacklisted = Type == ServerType.Dedicated && profile != null && Settings.ProfileIDBlacklist.Contains(profile.ProfileID);
-							var notWhitelisted = Type == ServerType.Dedicated && Settings.ProfileIDWhitelist.Count > 0 &&
+							var notWhitelisted = Type == ServerType.Dedicated && Settings.ProfileIDWhitelist.Length > 0 &&
 								(profile == null || !Settings.ProfileIDWhitelist.Contains(profile.ProfileID));
 
 							if (notAuthenticated)
@@ -695,7 +689,7 @@ namespace OpenRA.Server
 				}
 				else
 				{
-					if (Type == ServerType.Dedicated && (Settings.RequireAuthentication || Settings.ProfileIDWhitelist.Count > 0))
+					if (Type == ServerType.Dedicated && (Settings.RequireAuthentication || Settings.ProfileIDWhitelist.Length > 0))
 					{
 						Log.Write("server", $"Rejected connection from {newConn.EndPoint}; Not authenticated.");
 						SendOrderTo(newConn, "ServerError", RequiresAuthentication);
@@ -813,7 +807,7 @@ namespace OpenRA.Server
 			recorder = null;
 		}
 
-		readonly Dictionary<int, byte[]> syncForFrame = [];
+		readonly Dictionary<int, byte[]> syncForFrame = new();
 		int lastDefeatStateFrame;
 		ulong lastDefeatState;
 
@@ -918,7 +912,7 @@ namespace OpenRA.Server
 					frame += OrderLatency;
 					DispatchFrameToClient(conn, conn.PlayerIndex, CreateAckFrame(frame, 1));
 
-					orderBuffer?.AddOrderTimestamp(conn.PlayerIndex);
+					orderBuffer.AddOrderTimestamp(conn.PlayerIndex);
 
 					// Track the last frame for each client so the disconnect handling can write
 					// an EndOfOrders marker with the correct frame number.
@@ -1009,7 +1003,7 @@ namespace OpenRA.Server
 						if (!InterpretCommand(o.TargetString, conn))
 						{
 							Log.Write("server", $"Unknown server command: {o.TargetString}");
-							SendFluentMessageTo(conn, UnknownServerCommand, ["command", o.TargetString]);
+							SendFluentMessageTo(conn, UnknownServerCommand, new object[] { "command", o.TargetString });
 						}
 
 						break;
@@ -1027,7 +1021,7 @@ namespace OpenRA.Server
 					{
 						if (GameSave != null)
 						{
-							var data = MiniYaml.FromString(o.TargetString, o.OrderString).First();
+							var data = MiniYaml.FromString(o.TargetString, o.OrderString)[0];
 							GameSave.AddTraitData(OpenRA.Exts.ParseInt32Invariant(data.Key), data.Value);
 						}
 
@@ -1126,31 +1120,6 @@ namespace OpenRA.Server
 
 						SyncLobbyInfo();
 						SyncLobbyClients();
-
-						break;
-					}
-
-					case "GenerateMap":
-					{
-						if (!GetClient(conn).IsAdmin || State >= ServerState.GameStarted)
-							break;
-
-						try
-						{
-							var yaml = new MiniYaml(o.OrderString, MiniYaml.FromString(o.TargetString, o.OrderString));
-							var args = FieldLoader.Load<MapGenerationArgs>(yaml);
-							var preview = ModData.MapCache[args.Uid];
-							if (preview.Status != MapStatus.Available)
-								ModData.MapCache.GenerateMap(ModData, args);
-
-							GeneratedMapData = o.TargetString;
-							DispatchServerOrdersToClients(Order.FromTargetString("GenerateMap", o.TargetString, true));
-						}
-						catch (Exception e)
-						{
-							Console.WriteLine(e);
-							throw;
-						}
 
 						break;
 					}
@@ -1368,9 +1337,6 @@ namespace OpenRA.Server
 					StartTimeUtc = DateTime.UtcNow,
 				};
 
-				if (Map.Class == MapClassification.Generated)
-					gameInfo.MapData = Map.ToBase64String();
-
 				// Replay metadata should only include the playable players
 				foreach (var p in worldPlayers)
 					if (p != null)
@@ -1381,7 +1347,7 @@ namespace OpenRA.Server
 
 				SyncLobbyInfo();
 
-				var gameSpeeds = Game.ModData.GetOrCreate<GameSpeeds>();
+				var gameSpeeds = Game.ModData.Manifest.Get<GameSpeeds>();
 				var gameSpeedName = LobbyInfo.GlobalSettings.OptionOrDefault("gamespeed", gameSpeeds.DefaultSpeed);
 
 				var gameSpeed = gameSpeeds.Speeds[gameSpeedName];
@@ -1440,12 +1406,12 @@ namespace OpenRA.Server
 					for (var i = 0; i < OrderLatency; i++)
 					{
 						from.LastOrdersFrame = firstFrame + i;
-						var frameData = CreateFrame(from.PlayerIndex, from.LastOrdersFrame, []);
+						var frameData = CreateFrame(from.PlayerIndex, from.LastOrdersFrame, Array.Empty<byte>());
 						foreach (var to in conns)
 							DispatchFrameToClient(to, from.PlayerIndex, frameData);
 
-						RecordOrder(from.LastOrdersFrame, [], from.PlayerIndex);
-						GameSave?.DispatchOrders(from, from.LastOrdersFrame, []);
+						RecordOrder(from.LastOrdersFrame, Array.Empty<byte>(), from.PlayerIndex);
+						GameSave?.DispatchOrders(from, from.LastOrdersFrame, Array.Empty<byte>());
 					}
 				}
 			}

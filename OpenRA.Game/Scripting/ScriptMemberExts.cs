@@ -10,7 +10,6 @@
 #endregion
 
 using System;
-using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -19,13 +18,13 @@ namespace OpenRA.Scripting
 {
 	public static class ScriptMemberExts
 	{
-		static readonly FrozenDictionary<string, string> LuaTypeNameReplacements = new Dictionary<string, string>
+		static readonly Dictionary<string, string> LuaTypeNameReplacements = new()
 		{
 			{ "Void", "void" },
 			{ "Int32", "int" },
 			{ "String", "string" },
 			{ "Boolean", "bool" }
-		}.ToFrozenDictionary();
+		};
 
 		public static string LuaDocString(this Type t)
 		{

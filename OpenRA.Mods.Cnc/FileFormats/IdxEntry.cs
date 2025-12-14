@@ -29,7 +29,7 @@ namespace OpenRA.Mods.Cnc.FileFormats
 			if (pos != 0)
 				name = name[..pos];
 
-			Filename = $"{name}.wav";
+			Filename = string.Concat(name, ".wav");
 			Offset = s.ReadUInt32();
 			Length = s.ReadUInt32();
 			SampleRate = s.ReadUInt32();

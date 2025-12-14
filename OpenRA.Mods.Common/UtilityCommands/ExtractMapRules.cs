@@ -11,7 +11,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using OpenRA.FileSystem;
 
 namespace OpenRA.Mods.Common.UtilityCommands
@@ -30,7 +29,7 @@ namespace OpenRA.Mods.Common.UtilityCommands
 				// The order of the included files matter, so we can defer to system files
 				// only as long as they are included first.
 				var include = false;
-				var files = FieldLoader.GetValue<ImmutableArray<string>>("value", value.Value);
+				var files = FieldLoader.GetValue<string[]>("value", value.Value);
 				foreach (var f in files)
 				{
 					include |= map.Package.Contains(f);
@@ -57,7 +56,7 @@ namespace OpenRA.Mods.Common.UtilityCommands
 				// The order of the included files matter, so we can defer to system files
 				// only as long as they are included first.
 				var include = false;
-				var files = FieldLoader.GetValue<ImmutableArray<string>>("value", value.Value);
+				var files = FieldLoader.GetValue<string[]>("value", value.Value);
 				foreach (var f in files)
 				{
 					include |= map.Package.Contains(f);

@@ -29,7 +29,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 
 		readonly World world;
 		readonly ModData modData;
-		readonly Dictionary<ActorInfo, EncyclopediaInfo> info = [];
+		readonly Dictionary<ActorInfo, EncyclopediaInfo> info = new();
 
 		readonly ScrollPanelWidget descriptionPanel;
 		readonly LabelWidget titleLabel;
@@ -50,7 +50,6 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 		readonly LabelWidget productionTime;
 		readonly Widget productionPowerIcon;
 		readonly LabelWidget productionPower;
-		readonly List<Sheet> sheets = [];
 
 		ActorInfo selectedActor;
 		ScrollItemWidget firstItem;
@@ -82,7 +81,6 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 				defaultPortrait = new Png(modData.DefaultFileSystem.Open("encyclopedia/default.png"));
 				var spriteBounds = new Rectangle(0, 0, defaultPortrait.Width, defaultPortrait.Height);
 				var sheet = new Sheet(SheetType.BGRA, spriteBounds.Size.NextPowerOf2());
-				sheets.Add(sheet);
 				sheet.CreateBuffer();
 				sheet.GetTexture().ScaleFilter = TextureScaleFilter.Linear;
 				portraitSprite = new Sprite(sheet, spriteBounds, TextureChannel.RGBA);
@@ -179,7 +177,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 					typeDictionary.Add(inits);
 
 			previewWidget.SetPreview(actor, typeDictionary);
-			previewWidget.Scale = selectedInfo.Scale;
+			previewWidget.GetScale = () => selectedInfo.Scale;
 
 			if (portraitWidget != null)
 			{
@@ -305,14 +303,6 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 
 			time = time * bi.BuildDurationModifier * pbi / 10000;
 			return time;
-		}
-
-		protected override void Dispose(bool disposing)
-		{
-			foreach (var sheet in sheets)
-				sheet.Dispose();
-
-			base.Dispose(disposing);
 		}
 	}
 }

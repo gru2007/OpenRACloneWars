@@ -9,7 +9,7 @@
  */
 #endregion
 
-using System.Collections.Frozen;
+using System.Collections.Generic;
 using OpenRA.Traits;
 
 namespace OpenRA.Mods.Common.Traits
@@ -18,7 +18,7 @@ namespace OpenRA.Mods.Common.Traits
 	public class AcceptsDeliveredExperienceInfo : TraitInfo, Requires<GainsExperienceInfo>
 	{
 		[Desc("Accepted `DeliversExperience` types. Leave empty to accept all types.")]
-		public readonly FrozenSet<string> ValidTypes = FrozenSet<string>.Empty;
+		public readonly HashSet<string> ValidTypes = new();
 
 		[Desc("Player relationships the owner of the delivering actor needs.")]
 		public readonly PlayerRelationship ValidRelationships = PlayerRelationship.Ally;

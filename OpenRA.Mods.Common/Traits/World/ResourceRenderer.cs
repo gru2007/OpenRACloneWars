@@ -10,9 +10,7 @@
 #endregion
 
 using System;
-using System.Collections.Frozen;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using OpenRA.Graphics;
@@ -33,7 +31,7 @@ namespace OpenRA.Mods.Common.Traits
 			[FieldLoader.Require]
 			[SequenceReference(nameof(Image))]
 			[Desc("Randomly chosen image sequences.")]
-			public readonly ImmutableArray<string> Sequences = [];
+			public readonly string[] Sequences = Array.Empty<string>();
 
 			[PaletteReference]
 			[Desc("Palette used for rendering the resource sprites.")]
@@ -50,9 +48,8 @@ namespace OpenRA.Mods.Common.Traits
 			}
 		}
 
-		[IncludeFluentReferences(LintDictionaryReference.Values)]
 		[FieldLoader.LoadUsing(nameof(LoadResourceTypes))]
-		public readonly FrozenDictionary<string, ResourceTypeInfo> ResourceTypes = null;
+		public readonly Dictionary<string, ResourceTypeInfo> ResourceTypes = null;
 
 		// Copied from ResourceLayerInfo
 		protected static object LoadResourceTypes(MiniYaml yaml)
@@ -63,7 +60,7 @@ namespace OpenRA.Mods.Common.Traits
 				foreach (var r in resources.Value.Nodes)
 					ret[r.Key] = new ResourceTypeInfo(r.Value);
 
-			return ret.ToFrozenDictionary();
+			return ret;
 		}
 
 		void IMapPreviewSignatureInfo.PopulateMapPreviewSignatureCells(Map map, ActorInfo ai, ActorReference s, List<(MPos Uv, Color Color)> destinationBuffer)
@@ -83,9 +80,9 @@ namespace OpenRA.Mods.Common.Traits
 				colors.Add(resourceIndex, info.Color);
 			}
 
-			for (var i = 0; i < map.MapSize.Width; i++)
+			for (var i = 0; i < map.MapSize.X; i++)
 			{
-				for (var j = 0; j < map.MapSize.Height; j++)
+				for (var j = 0; j < map.MapSize.Y; j++)
 				{
 					var cell = new MPos(i, j);
 					if (colors.TryGetValue(map.Resources[cell].Type, out var color))
@@ -102,11 +99,11 @@ namespace OpenRA.Mods.Common.Traits
 		protected readonly ResourceRendererInfo Info;
 		protected readonly IResourceLayer ResourceLayer;
 		protected readonly CellLayer<RendererCellContents> RenderContents;
-		protected readonly Dictionary<string, Dictionary<string, ISpriteSequence>> Variants = [];
+		protected readonly Dictionary<string, Dictionary<string, ISpriteSequence>> Variants = new();
 		protected readonly World World;
 
-		readonly HashSet<CPos> dirty = [];
-		readonly Queue<CPos> cleanDirty = [];
+		readonly HashSet<CPos> dirty = new();
+		readonly Queue<CPos> cleanDirty = new();
 		TerrainSpriteLayer shadowLayer;
 		TerrainSpriteLayer spriteLayer;
 		bool disposed;
@@ -118,15 +115,6 @@ namespace OpenRA.Mods.Common.Traits
 			ResourceLayer = self.Trait<IResourceLayer>();
 			ResourceLayer.CellChanged += AddDirtyCell;
 			RenderContents = new CellLayer<RendererCellContents>(self.World.Map);
-
-			var sequences = self.World.Map.Sequences;
-			foreach (var kv in Info.ResourceTypes)
-			{
-				var resourceInfo = kv.Value;
-				var resourceVariants = resourceInfo.Sequences
-					.ToDictionary(v => v, v => sequences.GetSequence(resourceInfo.Image, v));
-				Variants.Add(kv.Key, resourceVariants);
-			}
 		}
 
 		void AddDirtyCell(CPos cell, string resourceType)
@@ -137,9 +125,14 @@ namespace OpenRA.Mods.Common.Traits
 
 		protected virtual void WorldLoaded(World w, WorldRenderer wr)
 		{
-			foreach (var kv in Variants)
+			var sequences = w.Map.Sequences;
+			foreach (var kv in Info.ResourceTypes)
 			{
-				var resourceVariants = kv.Value;
+				var resourceInfo = kv.Value;
+				var resourceVariants = resourceInfo.Sequences
+					.ToDictionary(v => v, v => sequences.GetSequence(resourceInfo.Image, v));
+				Variants.Add(kv.Key, resourceVariants);
+
 				if (spriteLayer == null)
 				{
 					var first = resourceVariants.First().Value.GetSprite(0);
@@ -359,12 +352,11 @@ namespace OpenRA.Mods.Common.Traits
 			public readonly ResourceRendererInfo.ResourceTypeInfo Info;
 			public readonly ISpriteSequence Sequence;
 			public readonly PaletteReference Palette;
-			public readonly byte Density;
+			public readonly int Density;
 
 			public static readonly RendererCellContents Empty = default;
 
-			public RendererCellContents(string resourceType, byte density, ResourceRendererInfo.ResourceTypeInfo info,
-				ISpriteSequence sequence, PaletteReference palette)
+			public RendererCellContents(string resourceType, int density, ResourceRendererInfo.ResourceTypeInfo info, ISpriteSequence sequence, PaletteReference palette)
 			{
 				Type = resourceType;
 				Density = density;
@@ -373,7 +365,7 @@ namespace OpenRA.Mods.Common.Traits
 				Palette = palette;
 			}
 
-			public RendererCellContents(RendererCellContents contents, byte density)
+			public RendererCellContents(RendererCellContents contents, int density)
 			{
 				Type = contents.Type;
 				Density = density;

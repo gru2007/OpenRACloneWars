@@ -9,7 +9,6 @@
  */
 #endregion
 
-using System.Collections.Frozen;
 using System.Collections.Generic;
 
 namespace OpenRA
@@ -24,15 +23,15 @@ namespace OpenRA
 	public class Fonts : IGlobalModData
 	{
 		[FieldLoader.LoadUsing(nameof(LoadFonts))]
-		public readonly FrozenDictionary<string, FontData> FontList;
+		public readonly Dictionary<string, FontData> FontList;
 
 		static object LoadFonts(MiniYaml y)
 		{
-			var ret = new Dictionary<string, FontData>(y.Nodes.Length);
+			var ret = new Dictionary<string, FontData>();
 			foreach (var node in y.Nodes)
 				ret.Add(node.Key, FieldLoader.Load<FontData>(node.Value));
 
-			return ret.ToFrozenDictionary();
+			return ret;
 		}
 	}
 }

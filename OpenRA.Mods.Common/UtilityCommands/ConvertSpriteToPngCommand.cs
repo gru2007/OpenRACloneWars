@@ -10,7 +10,6 @@
 #endregion
 
 using System;
-using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using OpenRA.FileFormats;
@@ -45,7 +44,7 @@ namespace OpenRA.Mods.Common.UtilityCommands
 				shadowIndex[^3] = 4;
 			}
 
-			var palette = new ImmutablePalette(args[2], [0], shadowIndex.ToImmutableArray());
+			var palette = new ImmutablePalette(args[2], new[] { 0 }, shadowIndex);
 			var palColors = new Color[Palette.Size];
 			for (var i = 0; i < Palette.Size; i++)
 				palColors[i] = palette.GetColor(i);

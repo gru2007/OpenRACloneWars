@@ -43,7 +43,6 @@ Speech:
 		StartGame:
 		GameLoaded:
 		GameSaved:
-		StructureSold:
 		Training: bldging1
 		UnitDestroyed: dead1
 		UnitLost: unitlost

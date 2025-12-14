@@ -18,7 +18,7 @@ namespace OpenRA.Traits
 	public enum TargetType : byte { Invalid, Actor, Terrain, FrozenActor }
 	public readonly struct Target : IEquatable<Target>
 	{
-		public static readonly Target[] None = [];
+		public static readonly Target[] None = Array.Empty<Target>();
 		public static readonly Target Invalid = default;
 		public Actor Actor { get; }
 		public FrozenActor FrozenActor { get; }
@@ -34,7 +34,7 @@ namespace OpenRA.Traits
 		{
 			type = TargetType.Terrain;
 			this.terrainCenterPosition = terrainCenterPosition;
-			this.terrainPositions = terrainPositions ?? [terrainCenterPosition];
+			this.terrainPositions = terrainPositions ?? new[] { terrainCenterPosition };
 
 			Actor = null;
 			FrozenActor = null;
@@ -47,7 +47,7 @@ namespace OpenRA.Traits
 		{
 			type = TargetType.Terrain;
 			terrainCenterPosition = w.Map.CenterOfSubCell(c, subCell);
-			terrainPositions = [terrainCenterPosition];
+			terrainPositions = new[] { terrainCenterPosition };
 			cell = c;
 			this.subCell = subCell;
 
@@ -172,7 +172,7 @@ namespace OpenRA.Traits
 		}
 
 		// Positions available to target for range checks
-		static readonly WPos[] NoPositions = [];
+		static readonly WPos[] NoPositions = Array.Empty<WPos>();
 		public IEnumerable<WPos> Positions
 		{
 			get

@@ -27,7 +27,6 @@ namespace OpenRA.Mods.Common.Activities
 		readonly Mobile mobile;
 		readonly bool assignTargetOnFirstRun;
 		readonly WDist unloadRange;
-		int delayBetweenUnloads = 0;
 
 		Target destination;
 		bool takeOffAfterUnload;
@@ -97,13 +96,6 @@ namespace OpenRA.Mods.Common.Activities
 
 			if (cargo.CanUnload())
 			{
-				if (delayBetweenUnloads > 0)
-				{
-					delayBetweenUnloads--;
-					return false;
-				}
-
-				delayBetweenUnloads = cargo.Info.BetweenUnloadDelay;
 				foreach (var inu in notifiers)
 					inu.Unloading(self);
 

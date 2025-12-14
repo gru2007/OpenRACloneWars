@@ -19,7 +19,7 @@ namespace OpenRA.Mods.Cnc.Graphics
 {
 	public class ChronoVortexRenderable : IRenderable, IFinalizedRenderable
 	{
-		public static readonly IEnumerable<IRenderable> None = [];
+		public static readonly IEnumerable<IRenderable> None = Array.Empty<IRenderable>();
 		readonly ChronoVortexRenderer renderer;
 		public WPos Pos { get; }
 		readonly int frame;

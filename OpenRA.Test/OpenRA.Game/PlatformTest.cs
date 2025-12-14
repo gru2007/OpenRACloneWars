@@ -15,7 +15,7 @@ using NUnit.Framework;
 namespace OpenRA.Test
 {
 	[TestFixture]
-	sealed class PlatformTest
+	public class PlatformTest
 	{
 		string supportDir;
 		string engineDir;

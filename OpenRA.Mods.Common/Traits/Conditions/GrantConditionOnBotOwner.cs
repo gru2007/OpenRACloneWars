@@ -9,7 +9,8 @@
  */
 #endregion
 
-using System.Collections.Immutable;
+using System;
+using System.Linq;
 using OpenRA.Traits;
 
 namespace OpenRA.Mods.Common.Traits
@@ -24,7 +25,7 @@ namespace OpenRA.Mods.Common.Traits
 
 		[FieldLoader.Require]
 		[Desc("Bot types that trigger the condition.")]
-		public readonly ImmutableArray<string> Bots = [];
+		public readonly string[] Bots = Array.Empty<string>();
 
 		public override object Create(ActorInitializer init) { return new GrantConditionOnBotOwner(this); }
 	}

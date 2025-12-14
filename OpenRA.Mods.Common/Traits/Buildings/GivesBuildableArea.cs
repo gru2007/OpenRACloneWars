@@ -9,7 +9,7 @@
  */
 #endregion
 
-using System.Collections.Frozen;
+using System.Collections.Generic;
 
 namespace OpenRA.Mods.Common.Traits
 {
@@ -18,7 +18,7 @@ namespace OpenRA.Mods.Common.Traits
 	{
 		[FieldLoader.Require]
 		[Desc("Types of buildable area this actor gives.")]
-		public readonly FrozenSet<string> AreaTypes = FrozenSet<string>.Empty;
+		public readonly HashSet<string> AreaTypes = new();
 
 		public override object Create(ActorInitializer init) { return new GivesBuildableArea(this); }
 	}
@@ -28,6 +28,8 @@ namespace OpenRA.Mods.Common.Traits
 		public GivesBuildableArea(GivesBuildableAreaInfo info)
 			: base(info) { }
 
-		public FrozenSet<string> AreaTypes => !IsTraitDisabled ? Info.AreaTypes : FrozenSet<string>.Empty;
+		readonly HashSet<string> noAreaTypes = new();
+
+		public HashSet<string> AreaTypes => !IsTraitDisabled ? Info.AreaTypes : noAreaTypes;
 	}
 }

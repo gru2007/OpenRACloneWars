@@ -17,13 +17,12 @@ using OpenRA.Traits;
 namespace OpenRA.Mods.Common.Traits
 {
 	[TraitLocation(SystemActors.EditorWorld)]
-	[IncludeStaticFluentReferences(typeof(OpenMapAction))]
 	public class EditorActionManagerInfo : TraitInfo<EditorActionManager> { }
 
 	public class EditorActionManager : IWorldLoaded
 	{
-		readonly Stack<EditorActionContainer> undoStack = [];
-		readonly Stack<EditorActionContainer> redoStack = [];
+		readonly Stack<EditorActionContainer> undoStack = new();
+		readonly Stack<EditorActionContainer> redoStack = new();
 
 		public event Action<EditorActionContainer> ItemAdded;
 		public event Action<EditorActionContainer> ItemRemoved;

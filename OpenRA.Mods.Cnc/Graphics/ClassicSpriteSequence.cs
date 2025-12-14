@@ -17,6 +17,9 @@ namespace OpenRA.Mods.Cnc.Graphics
 {
 	public class ClassicSpriteSequenceLoader : DefaultSpriteSequenceLoader
 	{
+		public ClassicSpriteSequenceLoader(ModData modData)
+			: base(modData) { }
+
 		public override ClassicSpriteSequence CreateSequence(
 			ModData modData, string tileset, SpriteCache cache, string image, string sequence, MiniYaml data, MiniYaml defaults)
 		{

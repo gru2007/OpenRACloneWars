@@ -21,19 +21,18 @@ namespace OpenRA.Mods.Cnc.Graphics
 {
 	public sealed class VoxelLoader : IDisposable
 	{
-		static readonly float[] ChannelSelect = [0.75f, 0.25f, -0.25f, -0.75f];
+		static readonly float[] ChannelSelect = { 0.75f, 0.25f, -0.25f, -0.75f };
 
-		readonly List<ModelVertex[]> vertices = [];
+		readonly List<ModelVertex[]> vertices = new();
 		readonly Cache<(string, string), Voxel> voxels;
 		readonly IReadOnlyFileSystem fileSystem;
-		readonly int sheetSize;
 		IVertexBuffer<ModelVertex> vertexBuffer;
 		int totalVertexCount;
 		int cachedVertexCount;
 
 		SheetBuilder sheetBuilder;
 
-		SheetBuilder CreateSheetBuilder()
+		static SheetBuilder CreateSheetBuilder()
 		{
 			var allocated = false;
 			Sheet Allocate()
@@ -41,18 +40,17 @@ namespace OpenRA.Mods.Cnc.Graphics
 				if (allocated)
 					throw new SheetOverflowException("");
 				allocated = true;
-				return SheetBuilder.AllocateSheet(SheetType.Indexed, sheetSize);
+				return SheetBuilder.AllocateSheet(SheetType.Indexed, Game.Settings.Graphics.SheetSize);
 			}
 
 			return new SheetBuilder(SheetType.Indexed, Allocate);
 		}
 
-		public VoxelLoader(IReadOnlyFileSystem fileSystem, int sheetSize)
+		public VoxelLoader(IReadOnlyFileSystem fileSystem)
 		{
 			this.fileSystem = fileSystem;
-			this.sheetSize = sheetSize;
 			voxels = new Cache<(string, string), Voxel>(LoadFile);
-			vertices = [];
+			vertices = new List<ModelVertex[]>();
 			totalVertexCount = 0;
 			cachedVertexCount = 0;
 
@@ -88,15 +86,15 @@ namespace OpenRA.Mods.Cnc.Graphics
 
 			var channelP = ChannelSelect[(int)s.Channel];
 			var channelC = ChannelSelect[(int)t.Channel];
-			return
-			[
+			return new ModelVertex[6]
+			{
 				new(coord(0, 0), s.Left, s.Top, t.Left, t.Top, channelP, channelC),
 				new(coord(su, 0), s.Right, s.Top, t.Right, t.Top, channelP, channelC),
 				new(coord(su, sv), s.Right, s.Bottom, t.Right, t.Bottom, channelP, channelC),
 				new(coord(su, sv), s.Right, s.Bottom, t.Right, t.Bottom, channelP, channelC),
 				new(coord(0, sv), s.Left, s.Bottom, t.Left, t.Bottom, channelP, channelC),
 				new(coord(0, 0), s.Left, s.Top, t.Left, t.Top, channelP, channelC)
-			];
+			};
 		}
 
 		IEnumerable<ModelVertex[]> GenerateSlicePlanes(VxlLimb l)
@@ -197,7 +195,8 @@ namespace OpenRA.Mods.Cnc.Graphics
 		public void RefreshBuffer()
 		{
 			vertexBuffer?.Dispose();
-			vertexBuffer = Game.Renderer.CreateVertexBuffer(vertices.SelectMany(v => v).ToArray(), false);
+			vertexBuffer = Game.Renderer.CreateVertexBuffer<ModelVertex>(totalVertexCount);
+			vertexBuffer.SetData(vertices.SelectMany(v => v).ToArray(), totalVertexCount);
 			cachedVertexCount = totalVertexCount;
 		}
 
@@ -230,7 +229,7 @@ namespace OpenRA.Mods.Cnc.Graphics
 
 		public void Finish()
 		{
-			sheetBuilder.Current?.ReleaseBuffer();
+			sheetBuilder.Current.ReleaseBuffer();
 		}
 
 		public void Dispose()

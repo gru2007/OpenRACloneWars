@@ -179,11 +179,5 @@ namespace OpenRA.Mods.Common.Widgets
 				OnChange();
 			}
 		}
-
-		public override void Removed()
-		{
-			mixerSheet?.Dispose();
-			base.Removed();
-		}
 	}
 }

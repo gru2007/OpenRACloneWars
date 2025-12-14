@@ -373,9 +373,12 @@ namespace OpenRA.Mods.Common.Traits
 					if (source == AttackSource.AttackMove)
 						return true;
 
-					Activity rearmActivity = null;
+					// AbortOnResupply cancels the current activity (after resupplying) plus any queued activities
+					if (attack.Info.AbortOnResupply)
+						NextActivity?.Cancel(self);
+
 					if (isAircraft)
-						rearmActivity = new ReturnToBase(self);
+						QueueChild(new ReturnToBase(self));
 					else
 					{
 						var target = self.World.ActorsHavingTrait<Reservable>()
@@ -387,20 +390,8 @@ namespace OpenRA.Mods.Common.Traits
 							.FirstOrDefault();
 
 						if (target != null)
-							rearmActivity = new Resupply(self, target, new WDist(512));
+							QueueChild(new Resupply(self, target, new WDist(512)));
 					}
-
-					if (rearmActivity == null)
-						return true;
-
-					if (attack.Info.AbortOnResupply)
-					{
-						// AbortOnResupply cancels the current activity (after resupplying) plus any queued activities
-						NextActivity?.Cancel(self);
-						Queue(rearmActivity);
-					}
-					else
-						QueueChild(rearmActivity);
 
 					returnToBase = true;
 					return attack.Info.AbortOnResupply;

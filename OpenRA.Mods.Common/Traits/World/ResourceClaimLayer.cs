@@ -45,7 +45,7 @@ namespace OpenRA.Mods.Common.Traits
 				lastClaimers.Remove(claimer);
 
 			if (claimers == null)
-				claimByCell.Add(cell, claimers = []);
+				claimByCell.Add(cell, claimers = new List<Actor>());
 			claimByActor[claimer] = cell;
 			return true;
 		}

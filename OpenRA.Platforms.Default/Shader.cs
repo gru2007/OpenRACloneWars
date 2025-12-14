@@ -19,10 +19,10 @@ namespace OpenRA.Platforms.Default
 {
 	sealed class Shader : ThreadAffine, IShader
 	{
-		readonly Dictionary<string, int> samplers = [];
-		readonly Dictionary<string, int> uniformCache = [];
-		readonly Dictionary<int, ITexture> textures = [];
-		readonly Queue<int> unbindTextures = [];
+		readonly Dictionary<string, int> samplers = new();
+		readonly Dictionary<string, int> uniformCache = new();
+		readonly Dictionary<int, ITexture> textures = new();
+		readonly Queue<int> unbindTextures = new();
 		readonly IShaderBindings bindings;
 		readonly uint program;
 
@@ -37,7 +37,7 @@ namespace OpenRA.Platforms.Default
 			unsafe
 			{
 				var length = code.Length;
-				OpenGL.glShaderSource(shader, 1, [code], new IntPtr(&length));
+				OpenGL.glShaderSource(shader, 1, new string[] { code }, new IntPtr(&length));
 			}
 
 			OpenGL.CheckGLError();
@@ -217,13 +217,13 @@ namespace OpenRA.Platforms.Default
 			OpenGL.CheckGLError();
 		}
 
-		public void SetVec(string name, ReadOnlyMemory<float> vec, int length)
+		public void SetVec(string name, float[] vec, int length)
 		{
 			VerifyThreadAffinity();
 			var param = uniformCache[name];
 			unsafe
 			{
-				fixed (float* pVec = vec.Span)
+				fixed (float* pVec = vec)
 				{
 					var ptr = new IntPtr(pVec);
 					switch (length)

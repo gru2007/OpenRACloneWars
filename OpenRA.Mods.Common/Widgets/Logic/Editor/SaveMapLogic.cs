@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Newtonsoft.Json;
 using OpenRA.FileSystem;
 using OpenRA.Mods.Common.Traits;
 using OpenRA.Widgets;
@@ -29,7 +30,19 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 			public string UiLabel;
 		}
 
-		sealed record SaveDirectory(Folder Folder, string DisplayName, MapClassification Classification);
+		sealed class SaveDirectory
+		{
+			public readonly Folder Folder;
+			public readonly string DisplayName;
+			public readonly MapClassification Classification;
+
+			public SaveDirectory(Folder folder, string displayName, MapClassification classification)
+			{
+				Folder = folder;
+				DisplayName = displayName;
+				Classification = classification;
+			}
+		}
 
 		[FluentReference]
 		const string SaveMapFailedTitle = "dialog-save-map-failed.title";
@@ -74,18 +87,18 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 			var author = widget.Get<TextFieldWidget>("AUTHOR");
 			author.Text = map.Author;
 
-			var visibilityPanel = Ui.LoadWidget("MAP_SAVE_VISIBILITY_PANEL", null, []);
+			var visibilityPanel = Ui.LoadWidget("MAP_SAVE_VISIBILITY_PANEL", null, new WidgetArgs());
 			var visOptionTemplate = visibilityPanel.Get<CheckboxWidget>("VISIBILITY_TEMPLATE");
 			visibilityPanel.RemoveChildren();
 
-			foreach (var visibilityOption in Enum.GetValues<MapVisibility>())
+			foreach (MapVisibility visibilityOption in Enum.GetValues(typeof(MapVisibility)))
 			{
 				// To prevent users from breaking the game only show the 'Shellmap' option when it is already set.
 				if (visibilityOption == MapVisibility.Shellmap && !map.Visibility.HasFlag(visibilityOption))
 					continue;
 
 				var checkbox = visOptionTemplate.Clone();
-				checkbox.GetText = visibilityOption.ToString;
+				checkbox.GetText = () => visibilityOption.ToString();
 				checkbox.IsChecked = () => map.Visibility.HasFlag(visibilityOption);
 				checkbox.OnClick = () => map.Visibility ^= visibilityOption;
 				visibilityPanel.AddChild(checkbox);
@@ -132,7 +145,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 					}
 				}
 
-				if (!string.IsNullOrEmpty(map.Package?.Name))
+				if (map.Package != null)
 				{
 					selectedDirectory = writableDirectories.FirstOrDefault(k => k.Folder.Contains(map.Package.Name));
 					selectedDirectory ??= writableDirectories.FirstOrDefault(k => Directory.GetDirectories(k.Folder.Name).Any(f => f.Contains(map.Package.Name)));
@@ -234,7 +247,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 			if (map.Package?.Name != combinedPath)
 			{
 				// When creating a new map or when file paths don't match
-				if (modData.MapCache.Any(m => m.Status == MapStatus.Available && m.Path == combinedPath))
+				if (modData.MapCache.Any(m => m.Status == MapStatus.Available && m.PackageName == combinedPath))
 				{
 					ConfirmationDialogs.ButtonPrompt(modData,
 						title: OverwriteMapFailedTitle,
@@ -298,7 +311,8 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 
 			try
 			{
-				ArgumentNullException.ThrowIfNull(package);
+				if (package == null)
+					throw new ArgumentNullException(nameof(package));
 
 				map.Save(package);
 
@@ -346,9 +360,14 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 				var directory = Path.Combine(Platform.SupportDir, "Editor", modData.Manifest.Id, mod.Version, "MarkerTiles");
 				Directory.CreateDirectory(directory);
 
-				var markerTileFilename = $"{Path.GetFileNameWithoutExtension(map.Package.Name)}.yaml";
-				var markerLayer = new MarkerLayerOverlay.MarkerLayer(markerLayerOverlay);
-				markerLayer.Serialize().WriteToFile(Path.Combine(directory, markerTileFilename));
+				var markerTilesFile = markerLayerOverlay.ToFile();
+				var markerTilesContent = JsonConvert.SerializeObject(markerTilesFile);
+
+				var markerTileFilename = $"{Path.GetFileNameWithoutExtension(map.Package.Name)}.json";
+				using (var streamWriter = new StreamWriter(Path.Combine(directory, markerTileFilename), false))
+				{
+					streamWriter.Write(markerTilesContent);
+				}
 			}
 			catch (Exception e)
 			{

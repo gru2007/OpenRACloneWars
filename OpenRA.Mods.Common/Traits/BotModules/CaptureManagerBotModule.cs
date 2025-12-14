@@ -10,7 +10,6 @@
 #endregion
 
 using System;
-using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Linq;
 using OpenRA.Traits;
@@ -23,11 +22,11 @@ namespace OpenRA.Mods.Common.Traits
 	{
 		[Desc("Actor types that can capture other actors (via `Captures`).",
 			"Leave this empty to disable capturing.")]
-		public readonly FrozenSet<string> CapturingActorTypes = FrozenSet<string>.Empty;
+		public readonly HashSet<string> CapturingActorTypes = new();
 
 		[Desc("Actor types that can be targeted for capturing.",
 			"Leave this empty to include all actors.")]
-		public readonly FrozenSet<string> CapturableActorTypes = FrozenSet<string>.Empty;
+		public readonly HashSet<string> CapturableActorTypes = new();
 
 		[Desc("Minimum delay (in ticks) between trying to capture with CapturingActorTypes.")]
 		public readonly int MinimumCaptureDelay = 375;
@@ -54,7 +53,7 @@ namespace OpenRA.Mods.Common.Traits
 		int minCaptureDelayTicks;
 
 		// Units that the bot already knows about and has given a capture order. Any unit not on this list needs to be given a new order.
-		readonly List<Actor> activeCapturers = [];
+		readonly List<Actor> activeCapturers = new();
 
 		readonly ActorIndex.OwnerAndNamesAndTrait<CapturesInfo> capturingActors;
 

@@ -31,32 +31,32 @@ namespace OpenRA.Graphics
 
 		public event Action PaletteInvalidated = null;
 
-		readonly HashSet<Actor> onScreenActors = [];
+		readonly HashSet<Actor> onScreenActors = new();
 		readonly HardwarePalette palette = new();
-		readonly Dictionary<string, PaletteReference> palettes = [];
+		readonly Dictionary<string, PaletteReference> palettes = new();
 		readonly IRenderTerrain terrainRenderer;
 		readonly Lazy<DebugVisualizations> debugVis;
 		readonly Func<string, PaletteReference> createPaletteReference;
 		readonly bool enableDepthBuffer;
 
-		readonly List<IFinalizedRenderable> preparedRenderables = [];
-		readonly List<IFinalizedRenderable> preparedOverlayRenderables = [];
-		readonly List<IFinalizedRenderable> preparedAnnotationRenderables = [];
+		readonly List<IFinalizedRenderable> preparedRenderables = new();
+		readonly List<IFinalizedRenderable> preparedOverlayRenderables = new();
+		readonly List<IFinalizedRenderable> preparedAnnotationRenderables = new();
 
-		readonly List<IRenderable> renderablesBuffer = [];
+		readonly List<IRenderable> renderablesBuffer = new();
 		readonly IRenderer[] renderers;
 		readonly IRenderPostProcessPass[] postProcessPasses;
 
 		internal WorldRenderer(ModData modData, World world)
 		{
 			World = world;
-			TileSize = World.Map.Rules.TerrainInfo.TileSize;
+			TileSize = World.Map.Grid.TileSize;
 			TileScale = World.Map.Grid.TileScale;
 			Viewport = new Viewport(this, world.Map);
 
 			createPaletteReference = CreatePaletteReference;
 
-			var mapGrid = modData.GetOrCreate<MapGrid>();
+			var mapGrid = modData.Manifest.Get<MapGrid>();
 			enableDepthBuffer = mapGrid.EnableDepthBuffer;
 
 			foreach (var pal in world.TraitDict.ActorsWithTrait<ILoadsPalettes>())
@@ -70,7 +70,7 @@ namespace OpenRA.Graphics
 			renderers = world.WorldActor.TraitsImplementing<IRenderer>().ToArray();
 			terrainRenderer = world.WorldActor.TraitOrDefault<IRenderTerrain>();
 
-			debugVis = Exts.Lazy(world.WorldActor.TraitOrDefault<DebugVisualizations>);
+			debugVis = Exts.Lazy(() => world.WorldActor.TraitOrDefault<DebugVisualizations>());
 
 			postProcessPasses = world.WorldActor.TraitsImplementing<IRenderPostProcessPass>().ToArray();
 		}
@@ -384,20 +384,10 @@ namespace OpenRA.Graphics
 			Game.Renderer.SetPalette(palette);
 		}
 
-		/// <summary>
-		/// Converts a world position to a screen position.
-		/// </summary>
+		// Conversion between world and screen coordinates
 		public float2 ScreenPosition(WPos pos)
 		{
 			return new float2((float)TileSize.Width * pos.X / TileScale, (float)TileSize.Height * (pos.Y - pos.Z) / TileScale);
-		}
-
-		/// <summary>
-		/// Converts a world position to a screen position.
-		/// </summary>
-		public float2 ScreenPosition(float2 pos)
-		{
-			return new float2(TileSize.Width * pos.X / TileScale, TileSize.Height * pos.Y / TileScale);
 		}
 
 		public float3 Screen3DPosition(WPos pos)
@@ -439,7 +429,7 @@ namespace OpenRA.Graphics
 		public float[] ScreenVector(in WVec vec)
 		{
 			var xyz = ScreenVectorComponents(vec);
-			return [xyz.X, xyz.Y, xyz.Z, 1f];
+			return new[] { xyz.X, xyz.Y, xyz.Z, 1f };
 		}
 
 		public int2 ScreenPxOffset(in WVec vec)

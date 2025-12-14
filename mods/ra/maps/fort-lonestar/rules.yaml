@@ -114,7 +114,7 @@ Player:
 	-ModularBot@NavalAI:
 	-ModularBot@TurtleAI:
 	DummyBot@LonestarAI:
-		Name: bot-lonestarai-name
+		Name: Lonestar AI
 		Type: lonestar
 	LobbyPrerequisiteCheckbox@GLOBALFACTUNDEPLOY:
 		Visible: False

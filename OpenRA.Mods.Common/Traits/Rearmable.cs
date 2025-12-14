@@ -9,7 +9,6 @@
  */
 #endregion
 
-using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Linq;
 using OpenRA.Traits;
@@ -21,10 +20,10 @@ namespace OpenRA.Mods.Common.Traits
 		[ActorReference]
 		[FieldLoader.Require]
 		[Desc("Actors that this actor can dock to and get rearmed by.")]
-		public readonly FrozenSet<string> RearmActors = FrozenSet<string>.Empty;
+		public readonly HashSet<string> RearmActors = new();
 
 		[Desc("Name(s) of AmmoPool(s) that use this trait to rearm.")]
-		public readonly FrozenSet<string> AmmoPools = new HashSet<string> { "primary" }.ToFrozenSet();
+		public readonly HashSet<string> AmmoPools = new() { "primary" };
 
 		public override object Create(ActorInitializer init) { return new Rearmable(this); }
 	}

@@ -11,7 +11,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 using OpenRA.Network;
 using OpenRA.Primitives;
@@ -40,7 +39,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 		const string CreatedBy = "label-created-by";
 
 		readonly int blinkTickLength = 10;
-		readonly Dictionary<PreviewStatus, Widget[]> previewWidgets = [];
+		readonly Dictionary<PreviewStatus, Widget[]> previewWidgets = new();
 		readonly Func<(MapPreview Map, Session.MapStatus Status)> getMap;
 
 		enum PreviewStatus
@@ -49,7 +48,6 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 			Playable,
 			Incompatible,
 			Validating,
-			Generating,
 			DownloadAvailable,
 			Searching,
 			Downloading,
@@ -66,9 +64,9 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 		bool mapUpdateAvailable = false;
 
 		[ObjectCreator.UseCtor]
-		internal MapPreviewLogic(Widget widget, ModData modData, Func<(MapPreview Map, Session.MapStatus Status)> getMap,
+		internal MapPreviewLogic(Widget widget, ModData modData, OrderManager orderManager, Func<(MapPreview Map, Session.MapStatus Status)> getMap,
 			Action<MapPreviewWidget, MapPreview, MouseInput> onMouseDown, Func<Dictionary<int, SpawnOccupant>> getSpawnOccupants,
-			bool mapUpdatesEnabled, Action<string> onMapUpdate, Func<IReadOnlySet<int>> getDisabledSpawnPoints, bool showUnoccupiedSpawnpoints)
+			bool mapUpdatesEnabled, Action<string> onMapUpdate, Func<HashSet<int>> getDisabledSpawnPoints, bool showUnoccupiedSpawnpoints)
 		{
 			this.getMap = getMap;
 
@@ -113,27 +111,36 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 			Widget SetupAuthorAndMapType(Widget parent)
 			{
 				var typeLabel = parent.Get<LabelWidget>("MAP_TYPE");
-				var typeCache = new CachedTransform<ImmutableArray<string>, string>(c => c.FirstOrDefault() ?? "");
+				var typeCache = new CachedTransform<MapPreview, string>(
+					m => m.Categories.FirstOrDefault() ?? "");
 
-				typeLabel.GetText = () => typeCache.Update(getMap().Map.Categories);
+				typeLabel.GetText = () => typeCache.Update(getMap().Map);
 
 				var authorLabel = parent.Get<LabelWidget>("MAP_AUTHOR");
 				var font = Game.Renderer.Fonts[authorLabel.Font];
-				var truncateCache = new CachedTransform<string, string>(author =>
-					WidgetUtils.TruncateText(authorCache.Update(author), authorLabel.Bounds.Width, font));
+				var truncateCache = new CachedTransform<MapPreview, string>(
+					m => WidgetUtils.TruncateText(authorCache.Update(m.Author), authorLabel.Bounds.Width, font));
 
-				authorLabel.GetText = () => truncateCache.Update(getMap().Map.Author);
+				authorLabel.GetText = () => truncateCache.Update(getMap().Map);
 
 				return parent;
 			}
 
-			var mapRepository = modData.GetOrCreate<WebServices>().MapRepository;
+			var mapRepository = modData.Manifest.Get<WebServices>().MapRepository;
 
 			Widget SetUpInstallButton(Widget parent)
 			{
 				var button = parent.Get<ButtonWidget>("MAP_INSTALL");
 				button.IsHighlighted = () => blink;
-				button.OnClick = () => getMap().Map.Install(mapRepository);
+				button.OnClick = () =>
+				{
+					getMap().Map.Install(mapRepository, () =>
+					{
+						if (orderManager != null)
+							Game.RunAfterTick(() => orderManager.IssueOrder(Order.Command($"state {Session.ClientState.NotReady}")));
+					});
+				};
+
 				return parent;
 			}
 
@@ -180,9 +187,15 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 				mapUpdateAvailable = mapUpdatesEnabled && uid != null && map.Uid != uid;
 
 				if (map.Status == MapStatus.DownloadError)
-					map.Install(mapRepository);
+				{
+					map.Install(mapRepository, () =>
+					{
+						if (orderManager != null)
+							Game.RunAfterTick(() => orderManager.IssueOrder(Order.Command($"state {Session.ClientState.NotReady}")));
+					});
+				}
 				else if (map.Status == MapStatus.Unavailable)
-					modData.MapCache.QueryRemoteMapDetails(mapRepository, [map.Uid]);
+					modData.MapCache.QueryRemoteMapDetails(mapRepository, new[] { map.Uid });
 			};
 
 			var retryInstall = FluentProvider.GetMessage(RetryInstall);
@@ -194,29 +207,27 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 
 			// Widgets to be made visible.
 			previewWidgets[PreviewStatus.Unknown] =
-				[previewLarge];
+				new Widget[] { previewLarge };
 			previewWidgets[PreviewStatus.Playable] =
-				[previewLarge, SetupAuthorAndMapType(widget.Get("MAP_AVAILABLE"))];
+				new Widget[] { previewLarge, SetupAuthorAndMapType(widget.Get("MAP_AVAILABLE")) };
 			previewWidgets[PreviewStatus.Incompatible] =
-				[previewLarge, widget.Get("MAP_INCOMPATIBLE")];
+				new Widget[] { previewLarge, widget.Get("MAP_INCOMPATIBLE") };
 			previewWidgets[PreviewStatus.Validating] =
-				[previewSmall, widget.Get("MAP_VALIDATING")];
-			previewWidgets[PreviewStatus.Generating] =
-				[previewSmall, widget.Get("MAP_GENERATING")];
+				new Widget[] { previewSmall, widget.Get("MAP_VALIDATING") };
 			previewWidgets[PreviewStatus.UpdateAvailable] =
-				[previewSmall, widget.Get("MAP_UPDATE_AVAILABLE"), updateButton];
+				new Widget[] { previewSmall, widget.Get("MAP_UPDATE_AVAILABLE"), updateButton };
 			previewWidgets[PreviewStatus.DownloadAvailable] =
-				[previewSmall, SetUpInstallButton(SetupAuthorAndMapType(widget.Get("MAP_DOWNLOAD_AVAILABLE")))];
+				new Widget[] { previewSmall, SetUpInstallButton(SetupAuthorAndMapType(widget.Get("MAP_DOWNLOAD_AVAILABLE"))) };
 			previewWidgets[PreviewStatus.UpdateDownloadAvailable] =
-				[previewSmall, SetUpInstallButton(widget.Get("MAP_UPDATE_DOWNLOAD_AVAILABLE")), updateButton];
+				new Widget[] { previewSmall, SetUpInstallButton(widget.Get("MAP_UPDATE_DOWNLOAD_AVAILABLE")), updateButton };
 			previewWidgets[PreviewStatus.Searching] =
-				[previewSmall, widget.Get("MAP_SEARCHING")];
+				new Widget[] { previewSmall, widget.Get("MAP_SEARCHING") };
 			previewWidgets[PreviewStatus.Downloading] =
-				[previewSmall, SetUpDownloadProgress(widget.Get("MAP_DOWNLOADING"))];
+				new Widget[] { previewSmall, SetUpDownloadProgress(widget.Get("MAP_DOWNLOADING")) };
 			previewWidgets[PreviewStatus.Unavailable] =
-				[previewSmall, widget.Get("MAP_UNAVAILABLE"), retryButton];
+				new Widget[] { previewSmall, widget.Get("MAP_UNAVAILABLE"), retryButton };
 			previewWidgets[PreviewStatus.DownloadError] =
-				[previewSmall, widget.Get("MAP_ERROR"), retryButton];
+				new Widget[] { previewSmall, widget.Get("MAP_ERROR"), retryButton };
 
 			// Hide all widgets.
 			foreach (var preview in previewWidgets)
@@ -224,7 +235,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 					p.IsVisible = () => false;
 		}
 
-		Widget[] visibleWidgets = [];
+		Widget[] visibleWidgets = Array.Empty<Widget>();
 
 		void UpdateVisibility()
 		{
@@ -274,9 +285,6 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 						break;
 					case MapStatus.Searching:
 						status = PreviewStatus.Searching;
-						break;
-					case MapStatus.Generating:
-						status = PreviewStatus.Generating;
 						break;
 					case MapStatus.Unavailable:
 						if (mapUpdateAvailable)

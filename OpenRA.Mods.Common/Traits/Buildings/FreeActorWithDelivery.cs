@@ -10,6 +10,7 @@
 #endregion
 
 using OpenRA.Mods.Common.Activities;
+using OpenRA.Primitives;
 using OpenRA.Traits;
 
 namespace OpenRA.Mods.Common.Traits
@@ -90,19 +91,19 @@ namespace OpenRA.Mods.Common.Traits
 				spawn += new WVec(0, 0, aircraftInfo.CruiseAltitude.Length);
 
 			// Create delivery actor
-			carrier = self.World.CreateActor(false, deliveringActorName,
-			[
+			carrier = self.World.CreateActor(false, deliveringActorName, new TypeDictionary
+			{
 				new LocationInit(location),
 				new CenterPositionInit(spawn),
 				new OwnerInit(self.Owner),
 				new FacingInit(initialFacing)
-			]);
+			});
 
 			// Create delivered actor
-			cargo = self.World.CreateActor(false, actorName,
-			[
+			cargo = self.World.CreateActor(false, actorName, new TypeDictionary
+			{
 				new OwnerInit(self.Owner),
-			]);
+			});
 		}
 	}
 }

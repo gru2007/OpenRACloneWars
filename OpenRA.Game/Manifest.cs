@@ -9,27 +9,51 @@
  */
 #endregion
 
-using System.Collections.Frozen;
+using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using OpenRA.FileSystem;
+using OpenRA.Primitives;
 
 namespace OpenRA
 {
+	public interface IGlobalModData { }
+
+	public sealed class TerrainFormat : IGlobalModData
+	{
+		public readonly string Type;
+		public readonly IReadOnlyDictionary<string, MiniYaml> Metadata;
+		public TerrainFormat(MiniYaml yaml)
+		{
+			Type = yaml.Value;
+			Metadata = new ReadOnlyDictionary<string, MiniYaml>(yaml.ToDictionary());
+		}
+	}
+
+	public sealed class SpriteSequenceFormat : IGlobalModData
+	{
+		public readonly string Type;
+		public readonly IReadOnlyDictionary<string, MiniYaml> Metadata;
+		public SpriteSequenceFormat(MiniYaml yaml)
+		{
+			Type = yaml.Value;
+			Metadata = new ReadOnlyDictionary<string, MiniYaml>(yaml.ToDictionary());
+		}
+	}
+
 	public class ModMetadata
 	{
 		// FieldLoader used here, must matching naming in YAML.
 #pragma warning disable IDE1006 // Naming Styles
 		[FluentReference]
-		public readonly string Title;
+		readonly string Title;
 		public readonly string Version;
 		public readonly string Website;
 		public readonly string WebIcon32;
-
-		[FluentReference(optional: true)]
-		public readonly string WindowTitle;
+		[FluentReference]
+		readonly string WindowTitle;
 		public readonly bool Hidden;
 #pragma warning restore IDE1006 // Naming Styles
 
@@ -37,56 +61,48 @@ namespace OpenRA
 		public string WindowTitleTranslated => WindowTitle != null ? FluentProvider.GetMessage(WindowTitle) : null;
 	}
 
-	public class RendererConstants
-	{
-		public readonly int FontSheetSize = 512;
-		public readonly int CursorSheetSize = 512;
-		public readonly int MapPreviewSheetSize = 2048;
-		public readonly int SequenceBgraSheetSize = 2048;
-		public readonly int SequenceIndexedSheetSize = 2048;
-		public readonly int VertexBatchSize = 8192;
-	}
-
 	/// <summary>Describes what is to be loaded in order to run a mod.</summary>
-	public sealed class Manifest
+	public sealed class Manifest : IDisposable
 	{
 		public readonly string Id;
 		public readonly IReadOnlyPackage Package;
 		public readonly ModMetadata Metadata;
-		public readonly ImmutableArray<string>
+		public readonly string[]
 			Rules, ServerTraits,
 			Sequences, ModelSequences, Cursors, Chrome, ChromeLayout,
 			Weapons, Voices, Notifications, Music, FluentMessages, TileSets,
 			ChromeMetrics, MapCompatibility, Missions, Hotkeys;
 
-		public readonly FrozenDictionary<string, string> MapFolders;
+		public readonly IReadOnlyDictionary<string, string> MapFolders;
 		public readonly MiniYaml FileSystem;
 		public readonly MiniYaml LoadScreen;
 		public readonly string DefaultOrderGenerator;
-		public readonly RendererConstants RendererConstants;
 
-		public readonly ImmutableArray<string> Assemblies = [];
-		public readonly ImmutableArray<string> SoundFormats = [];
-		public readonly ImmutableArray<string> SpriteFormats = [];
-		public readonly ImmutableArray<string> PackageFormats = [];
-		public readonly ImmutableArray<string> VideoFormats = [];
-		public readonly string SpriteSequenceFormat;
-		public readonly string TerrainFormat;
+		public readonly string[] Assemblies = Array.Empty<string>();
+		public readonly string[] SoundFormats = Array.Empty<string>();
+		public readonly string[] SpriteFormats = Array.Empty<string>();
+		public readonly string[] PackageFormats = Array.Empty<string>();
+		public readonly string[] VideoFormats = Array.Empty<string>();
+		public readonly int FontSheetSize = 512;
+		public readonly int CursorSheetSize = 512;
 
 		// TODO: This should be controlled by a user-selected translation bundle!
 		public readonly string FluentCulture = "en";
 		public readonly bool AllowUnusedFluentMessagesInExternalPackages = true;
 
-		static readonly FrozenSet<string> ReservedModuleNames = new HashSet<string>
+		readonly string[] reservedModuleNames =
 		{
 			"Include", "Metadata", "FileSystem", "MapFolders", "Rules",
 			"Sequences", "ModelSequences", "Cursors", "Chrome", "Assemblies", "ChromeLayout", "Weapons",
 			"Voices", "Notifications", "Music", "FluentMessages", "TileSets", "ChromeMetrics", "Missions", "Hotkeys",
 			"ServerTraits", "LoadScreen", "DefaultOrderGenerator", "SupportsMapsFrom", "SoundFormats", "SpriteFormats", "VideoFormats",
-			"SpriteSequenceFormat", "TerrainFormat", "RequiresMods", "PackageFormats", "AllowUnusedFluentMessagesInExternalPackages", "RendererConstants"
-		}.ToFrozenSet();
+			"RequiresMods", "PackageFormats", "AllowUnusedFluentMessagesInExternalPackages", "FontSheetSize", "CursorSheetSize"
+		};
 
-		public readonly FrozenDictionary<string, MiniYaml> GlobalModData;
+		readonly TypeDictionary modules = new();
+		readonly Dictionary<string, MiniYaml> yaml;
+
+		bool customDataLoaded;
 
 		public Manifest(string modId, IReadOnlyPackage package)
 		{
@@ -94,7 +110,7 @@ namespace OpenRA
 			Package = package;
 
 			var stringPool = new HashSet<string>(); // Reuse common strings in YAML
-			var nodes = MiniYaml.FromStream(package.GetStream("mod.yaml"), $"{package.Name}:mod.yaml", stringPool: stringPool).ToList();
+			var nodes = MiniYaml.FromStream(package.GetStream("mod.yaml"), $"{package.Name}:mod.yaml", stringPool: stringPool);
 			for (var i = nodes.Count - 1; i >= 0; i--)
 			{
 				if (nodes[i].Key != "Include")
@@ -111,7 +127,7 @@ namespace OpenRA
 			}
 
 			// Merge inherited overrides
-			var yaml = new MiniYaml(null, MiniYaml.Merge([nodes])).ToDictionary();
+			yaml = new MiniYaml(null, MiniYaml.Merge(new[] { nodes })).ToDictionary();
 
 			Metadata = FieldLoader.Load<ModMetadata>(yaml["Metadata"]);
 
@@ -148,59 +164,144 @@ namespace OpenRA
 			if (yaml.TryGetValue("SupportsMapsFrom", out var entry))
 				compat.AddRange(entry.Value.Split(',').Select(c => c.Trim()));
 
-			MapCompatibility = compat.ToImmutableArray();
+			MapCompatibility = compat.ToArray();
 
 			if (yaml.TryGetValue("DefaultOrderGenerator", out entry))
 				DefaultOrderGenerator = entry.Value;
 
 			if (yaml.TryGetValue("Assemblies", out entry))
-				Assemblies = FieldLoader.GetValue<ImmutableArray<string>>("Assemblies", entry.Value);
+				Assemblies = FieldLoader.GetValue<string[]>("Assemblies", entry.Value);
 
 			if (yaml.TryGetValue("PackageFormats", out entry))
-				PackageFormats = FieldLoader.GetValue<ImmutableArray<string>>("PackageFormats", entry.Value);
+				PackageFormats = FieldLoader.GetValue<string[]>("PackageFormats", entry.Value);
 
 			if (yaml.TryGetValue("SoundFormats", out entry))
-				SoundFormats = FieldLoader.GetValue<ImmutableArray<string>>("SoundFormats", entry.Value);
+				SoundFormats = FieldLoader.GetValue<string[]>("SoundFormats", entry.Value);
 
 			if (yaml.TryGetValue("SpriteFormats", out entry))
-				SpriteFormats = FieldLoader.GetValue<ImmutableArray<string>>("SpriteFormats", entry.Value);
+				SpriteFormats = FieldLoader.GetValue<string[]>("SpriteFormats", entry.Value);
 
 			if (yaml.TryGetValue("VideoFormats", out entry))
-				VideoFormats = FieldLoader.GetValue<ImmutableArray<string>>("VideoFormats", entry.Value);
-
-			if (yaml.TryGetValue("SpriteSequenceFormat", out entry))
-				SpriteSequenceFormat = entry.Value;
-
-			if (yaml.TryGetValue("TerrainFormat", out entry))
-				TerrainFormat = entry.Value;
+				VideoFormats = FieldLoader.GetValue<string[]>("VideoFormats", entry.Value);
 
 			if (yaml.TryGetValue("AllowUnusedFluentMessagesInExternalPackages", out entry))
 				AllowUnusedFluentMessagesInExternalPackages =
 					FieldLoader.GetValue<bool>("AllowUnusedFluentMessagesInExternalPackages", entry.Value);
 
-			if (yaml.TryGetValue("RendererConstants", out entry))
-				RendererConstants = FieldLoader.Load<RendererConstants>(entry);
+			if (yaml.TryGetValue("FontSheetSize", out entry))
+				FontSheetSize = FieldLoader.GetValue<int>("FontSheetSize", entry.Value);
+
+			if (yaml.TryGetValue("CursorSheetSize", out entry))
+				CursorSheetSize = FieldLoader.GetValue<int>("CursorSheetSize", entry.Value);
+		}
+
+		public void LoadCustomData(ObjectCreator oc)
+		{
+			foreach (var kv in yaml)
+			{
+				if (reservedModuleNames.Contains(kv.Key))
+					continue;
+
+				var t = oc.FindType(kv.Key);
+				if (t == null || !typeof(IGlobalModData).IsAssignableFrom(t))
+					throw new InvalidDataException($"`{kv.Key}` is not a valid mod manifest entry.");
+
+				IGlobalModData module;
+				var ctor = t.GetConstructor(new[] { typeof(MiniYaml) });
+				if (ctor != null)
+				{
+					// Class has opted-in to DIY initialization
+					module = (IGlobalModData)ctor.Invoke(new object[] { kv.Value });
+				}
+				else
+				{
+					// Automatically load the child nodes using FieldLoader
+					module = oc.CreateObject<IGlobalModData>(kv.Key);
+					FieldLoader.Load(module, kv.Value);
+				}
+
+				modules.Add(module);
+			}
+
+			customDataLoaded = true;
+		}
+
+		static string[] YamlList(Dictionary<string, MiniYaml> yaml, string key)
+		{
+			if (!yaml.TryGetValue(key, out var value))
+				return Array.Empty<string>();
+
+			return value.Nodes.Select(n => n.Key).ToArray();
+		}
+
+		static IReadOnlyDictionary<string, string> YamlDictionary(Dictionary<string, MiniYaml> yaml, string key)
+		{
+			if (!yaml.TryGetValue(key, out var value))
+				return new Dictionary<string, string>();
+
+			return value.ToDictionary(my => my.Value);
+		}
+
+		public bool Contains<T>() where T : IGlobalModData
+		{
+			return modules.Contains<T>();
+		}
+
+		/// <summary>Load a cached IGlobalModData instance.</summary>
+		public T Get<T>() where T : IGlobalModData
+		{
+			if (!customDataLoaded)
+				throw new InvalidOperationException("Attempted to call Manifest.Get() before loading custom data!");
+
+			var module = modules.GetOrDefault<T>();
+
+			// Lazily create the default values if not explicitly defined.
+			if (module == null)
+			{
+				module = (T)Game.ModData.ObjectCreator.CreateBasic(typeof(T));
+				modules.Add(module);
+			}
+
+			return module;
+		}
+
+		/// <summary>
+		/// Load an uncached IGlobalModData instance directly from the manifest yaml.
+		/// This should only be used by external mods that want to query data from this mod.
+		/// </summary>
+		public T Get<T>(ObjectCreator oc) where T : IGlobalModData
+		{
+			var t = typeof(T);
+			if (!yaml.TryGetValue(t.Name, out var data))
+			{
+				// Lazily create the default values if not explicitly defined.
+				return (T)oc.CreateBasic(t);
+			}
+
+			IGlobalModData module;
+			var ctor = t.GetConstructor(new[] { typeof(MiniYaml) });
+			if (ctor != null)
+			{
+				// Class has opted-in to DIY initialization
+				module = (IGlobalModData)ctor.Invoke(new object[] { data.Value });
+			}
 			else
-				RendererConstants = new RendererConstants();
+			{
+				// Automatically load the child nodes using FieldLoader
+				module = oc.CreateObject<IGlobalModData>(t.Name);
+				FieldLoader.Load(module, data);
+			}
 
-			GlobalModData = yaml.Where(n => !ReservedModuleNames.Contains(n.Key))
-				.ToFrozenDictionary(n => n.Key, n => n.Value);
+			return (T)module;
 		}
 
-		static ImmutableArray<string> YamlList(Dictionary<string, MiniYaml> yaml, string key)
+		public void Dispose()
 		{
-			if (!yaml.TryGetValue(key, out var value))
-				return [];
-
-			return value.Nodes.Select(n => n.Key).ToImmutableArray();
-		}
-
-		static FrozenDictionary<string, string> YamlDictionary(Dictionary<string, MiniYaml> yaml, string key)
-		{
-			if (!yaml.TryGetValue(key, out var value))
-				return FrozenDictionary<string, string>.Empty;
-
-			return value.ToDictionary(my => my.Value).ToFrozenDictionary();
+			foreach (var module in modules)
+			{
+				var disposableModule = module as IDisposable;
+				disposableModule?.Dispose();
+			}
 		}
 	}
 }

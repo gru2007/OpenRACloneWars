@@ -9,7 +9,6 @@
  */
 #endregion
 
-using System;
 using System.Linq;
 using Eluant;
 using OpenRA.Mods.Common.Activities;
@@ -81,8 +80,7 @@ namespace OpenRA.Mods.Common.Scripting
 			Self.World.Add(new FlashTarget(Self, color, 0.5f, count, interval, delay));
 		}
 
-		[Desc("The effective (displayed) owner of the actor. " +
-			"This may differ from the true owner in some cases, such as disguised actors.")]
+		[Desc("The effective owner of the actor.")]
 		public Player EffectiveOwner
 		{
 			get
@@ -154,7 +152,7 @@ namespace OpenRA.Mods.Common.Scripting
 				if (autotarget == null)
 					return;
 
-				if (!Enum.TryParse<UnitStance>(value, true, out var stance))
+				if (!Enum<UnitStance>.TryParse(value, true, out var stance))
 					throw new LuaException($"Unknown stance type '{value}'");
 
 				autotarget.SetStance(Self, stance);

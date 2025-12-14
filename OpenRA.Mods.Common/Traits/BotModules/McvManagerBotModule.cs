@@ -9,7 +9,6 @@
  */
 #endregion
 
-using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Linq;
 using OpenRA.Traits;
@@ -21,13 +20,13 @@ namespace OpenRA.Mods.Common.Traits
 	public class McvManagerBotModuleInfo : ConditionalTraitInfo
 	{
 		[Desc("Actor types that are considered MCVs (deploy into base builders).")]
-		public readonly FrozenSet<string> McvTypes = FrozenSet<string>.Empty;
+		public readonly HashSet<string> McvTypes = new();
 
 		[Desc("Actor types that are considered construction yards (base builders).")]
-		public readonly FrozenSet<string> ConstructionYardTypes = FrozenSet<string>.Empty;
+		public readonly HashSet<string> ConstructionYardTypes = new();
 
 		[Desc("Actor types that are able to produce MCVs.")]
-		public readonly FrozenSet<string> McvFactoryTypes = FrozenSet<string>.Empty;
+		public readonly HashSet<string> McvFactoryTypes = new();
 
 		[Desc("Try to maintain at least this many ConstructionYardTypes, build an MCV if number is below this.")]
 		public readonly int MinimumConstructionYardCount = 1;
@@ -212,10 +211,10 @@ namespace OpenRA.Mods.Common.Traits
 			if (IsTraitDisabled)
 				return null;
 
-			return
-			[
+			return new List<MiniYamlNode>()
+			{
 				new("InitialBaseCenter", FieldSaver.FormatValue(initialBaseCenter))
-			];
+			};
 		}
 
 		void IGameSaveTraitData.ResolveTraitData(Actor self, MiniYaml data)

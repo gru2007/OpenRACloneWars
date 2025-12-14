@@ -9,7 +9,8 @@
  */
 #endregion
 
-using System.Collections.Immutable;
+using System;
+using System.Linq;
 using OpenRA.Traits;
 
 namespace OpenRA.Mods.Common.Traits
@@ -23,7 +24,7 @@ namespace OpenRA.Mods.Common.Traits
 
 		[FieldLoader.Require]
 		[Desc("Tile set IDs to trigger the condition.")]
-		public readonly ImmutableArray<string> TileSets = [];
+		public readonly string[] TileSets = Array.Empty<string>();
 
 		public override object Create(ActorInitializer init) { return new GrantConditionOnTileSet(this); }
 	}

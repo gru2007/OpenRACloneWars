@@ -10,7 +10,6 @@
 #endregion
 
 using System;
-using System.Collections.Immutable;
 using OpenRA.Server;
 
 namespace OpenRA.Mods.Common.Lint
@@ -27,7 +26,7 @@ namespace OpenRA.Mods.Common.Lint
 			Run(emitError, map.MapFormat, map.Author, map.Title, map.Categories);
 		}
 
-		static void Run(Action<string> emitError, int mapFormat, string author, string title, ImmutableArray<string> categories)
+		static void Run(Action<string> emitError, int mapFormat, string author, string title, string[] categories)
 		{
 			if (mapFormat < Map.SupportedMapFormat)
 				emitError($"Map format `{mapFormat}` does not match the supported version `{Map.CurrentMapFormat}`.");

@@ -11,7 +11,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 using OpenRA.Mods.Common.Traits;
 using OpenRA.Primitives;
@@ -138,7 +137,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 					var colorIndex = j * paletteCols + i;
 
 					var newSwatch = customColorTemplate.Clone();
-					var getColor = new CachedTransform<Color, Color>(c => colorManager.MakeValid(c, world.LocalRandom, [], []));
+					var getColor = new CachedTransform<Color, Color>(c => colorManager.MakeValid(c, world.LocalRandom, Array.Empty<Color>(), Array.Empty<Color>()));
 
 					newSwatch.GetColor = () => getColor.Update(Game.Settings.Player.CustomColors[colorIndex]);
 					newSwatch.IsVisible = () => Game.Settings.Player.CustomColors.Length > colorIndex;
@@ -169,7 +168,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 						.Where(c => c != mixer.Color)
 						.Append(mixer.Color)
 						.Reverse().Take(paletteCustomRows * paletteCols).Reverse()
-						.ToImmutableArray();
+						.ToArray();
 					Game.Settings.Save();
 
 					// Flash the palette tab to show players that something has happened

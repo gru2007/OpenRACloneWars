@@ -25,6 +25,7 @@ ENGIDROP:
 	ParatroopersPower:
 		DisplayBeacon: False
 		DropItems: E6, E6, E6
+	AlwaysVisible:
 
 AFLD:
 	ParatroopersPower@paratroopers:

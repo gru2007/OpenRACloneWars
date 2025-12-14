@@ -16,7 +16,16 @@ using System.IO;
 namespace OpenRA.Mods.Cnc.FileFormats
 {
 	public enum NormalType : byte { TiberianSun = 2, RedAlert2 = 4 }
-	public readonly record struct VxlElement(byte Color, byte Normal);
+	public readonly struct VxlElement
+	{
+		public readonly byte Color;
+		public readonly byte Normal;
+		public VxlElement(byte color, byte normal)
+		{
+			Color = color;
+			Normal = normal;
+		}
+	}
 
 	public class VxlLimb
 	{
