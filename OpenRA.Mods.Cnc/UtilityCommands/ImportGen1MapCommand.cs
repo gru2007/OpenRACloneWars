@@ -10,7 +10,9 @@
 #endregion
 
 using System;
+using System.Collections.Frozen;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -35,7 +37,7 @@ namespace OpenRA.Mods.Cnc.UtilityCommands
 
 		public ModData ModData;
 		public Map Map;
-		public List<string> Players = new();
+		public List<string> Players = [];
 		public MapPlayers MapPlayers;
 		bool singlePlayer;
 		int spawnCount;
@@ -51,6 +53,10 @@ namespace OpenRA.Mods.Cnc.UtilityCommands
 			Game.ModData = ModData = utility.ModData;
 
 			var filename = args[1];
+			var author = args.Length > 2
+				? args[2]
+				: "Westwood Studios";
+
 			using (var stream = File.OpenRead(filename))
 			{
 				var file = new IniFile(stream);
@@ -70,10 +76,10 @@ namespace OpenRA.Mods.Cnc.UtilityCommands
 				if (!ModData.DefaultTerrainInfo.TryGetValue(tileset, out var terrainInfo))
 					throw new InvalidDataException($"Unknown tileset {tileset}");
 
-				Map = new Map(ModData, terrainInfo, MapSize, MapSize)
+				Map = new Map(ModData, terrainInfo, new Size(MapSize, MapSize))
 				{
 					Title = basic.GetValue("Name", Path.GetFileNameWithoutExtension(filename)),
-					Author = "Westwood Studios",
+					Author = author,
 					RequiresMod = ModData.Manifest.Id
 				};
 
@@ -133,7 +139,7 @@ namespace OpenRA.Mods.Cnc.UtilityCommands
 			var worldNode = Map.RuleDefinitions.NodeWithKeyOrDefault("World");
 			var worldNodeBuilder = worldNode != null
 				? new MiniYamlNodeBuilder(worldNode)
-				: new MiniYamlNodeBuilder("World", new MiniYamlBuilder("", new List<MiniYamlNode>()));
+				: new MiniYamlNodeBuilder("World", new MiniYamlBuilder("", []));
 			return worldNodeBuilder;
 		}
 
@@ -169,7 +175,7 @@ namespace OpenRA.Mods.Cnc.UtilityCommands
 			var missionData = worldNodeBuilder.Value.NodeWithKeyOrDefault("MissionData");
 			if (missionData == null)
 			{
-				missionData = new MiniYamlNodeBuilder("MissionData", new MiniYamlBuilder("", new List<MiniYamlNode>()));
+				missionData = new MiniYamlNodeBuilder("MissionData", new MiniYamlBuilder("", []));
 				worldNodeBuilder.Value.Nodes.Add(missionData);
 			}
 
@@ -240,7 +246,7 @@ namespace OpenRA.Mods.Cnc.UtilityCommands
 				var missionData = worldNodeBuilder.Value.NodeWithKeyOrDefault("MissionData");
 				if (missionData == null)
 				{
-					missionData = new MiniYamlNodeBuilder("MissionData", new MiniYamlBuilder("", new List<MiniYamlNode>()));
+					missionData = new MiniYamlNodeBuilder("MissionData", new MiniYamlBuilder("", []));
 					worldNodeBuilder.Value.Nodes.Add(missionData);
 				}
 
@@ -343,14 +349,14 @@ namespace OpenRA.Mods.Cnc.UtilityCommands
 			if (scorches.Count > 0)
 			{
 				var initialScorches = new MiniYamlNode("InitialSmudges", new MiniYaml("", scorches));
-				var smudgeLayer = new MiniYamlNodeBuilder("SmudgeLayer@SCORCH", new MiniYamlBuilder("", new List<MiniYamlNode>() { initialScorches }));
+				var smudgeLayer = new MiniYamlNodeBuilder("SmudgeLayer@SCORCH", new MiniYamlBuilder("", [initialScorches]));
 				worldNodeBuilder.Value.Nodes.Add(smudgeLayer);
 			}
 
 			if (craters.Count > 0)
 			{
 				var initialCraters = new MiniYamlNode("InitialSmudges", new MiniYaml("", craters));
-				var smudgeLayer = new MiniYamlNodeBuilder("SmudgeLayer@CRATER", new MiniYamlBuilder("", new List<MiniYamlNode>() { initialCraters }));
+				var smudgeLayer = new MiniYamlNodeBuilder("SmudgeLayer@CRATER", new MiniYamlBuilder("", [initialCraters]));
 				worldNodeBuilder.Value.Nodes.Add(smudgeLayer);
 			}
 
@@ -359,7 +365,7 @@ namespace OpenRA.Mods.Cnc.UtilityCommands
 		}
 
 		// TODO: fix this -- will have bitrotted pretty badly.
-		static readonly Dictionary<string, Color> NamedColorMapping = new()
+		static readonly FrozenDictionary<string, Color> NamedColorMapping = new Dictionary<string, Color>
 		{
 			{ "gold", Color.FromArgb(246, 214, 121) },
 			{ "blue", Color.FromArgb(226, 230, 246) },
@@ -371,7 +377,7 @@ namespace OpenRA.Mods.Cnc.UtilityCommands
 			{ "green", Color.FromArgb(160, 240, 140) },
 			{ "white", Color.FromArgb(255, 255, 255) },
 			{ "black", Color.FromArgb(80, 80, 80) },
-		};
+		}.ToFrozenDictionary();
 
 		public static void SetMapPlayers(string section, string faction, string color, IniFile file, List<string> players, MapPlayers mapPlayers)
 		{
@@ -390,8 +396,8 @@ namespace OpenRA.Mods.Cnc.UtilityCommands
 				switch (s.Key)
 				{
 					case "Allies":
-						pr.Allies = s.Value.Split(',').Intersect(players).Except(neutral).ToArray();
-						pr.Enemies = s.Value.Split(',').SymmetricDifference(players).Except(neutral).ToArray();
+						pr.Allies = s.Value.Split(',').Intersect(players).Except(neutral).ToImmutableArray();
+						pr.Enemies = s.Value.Split(',').SymmetricDifference(players).Except(neutral).ToImmutableArray();
 						break;
 					default:
 						Console.WriteLine("Ignoring unknown {0}={1} for player {2}", s.Key, s.Value, pr.Name);

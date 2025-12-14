@@ -11,6 +11,7 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -24,6 +25,7 @@ using OpenRA.Widgets;
 
 namespace OpenRA.Mods.Common.Widgets.Logic
 {
+	[IncludeStaticFluentReferences(typeof(ReplayUtils))]
 	public class ReplayBrowserLogic : ChromeLogic
 	{
 		[FluentReference("time")]
@@ -109,8 +111,8 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 		readonly Widget panel;
 		readonly ScrollPanelWidget replayList, playerList;
 		readonly ScrollItemWidget playerTemplate, playerHeader;
-		readonly List<ReplayMetadata> replays = new();
-		readonly Dictionary<ReplayMetadata, ReplayState> replayState = new();
+		readonly List<ReplayMetadata> replays = [];
+		readonly Dictionary<ReplayMetadata, ReplayState> replayState = [];
 		readonly Action onStart;
 		readonly ModData modData;
 		readonly WebServices services;
@@ -126,7 +128,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 			map = MapCache.UnknownMap;
 			panel = widget;
 
-			services = modData.Manifest.Get<WebServices>();
+			services = modData.GetOrCreate<WebServices>();
 			this.modData = modData;
 			this.onStart = onStart;
 			Game.BeforeGameStart += OnGameStart;
@@ -166,8 +168,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 				return occupants;
 			});
 
-			var noSpawns = new HashSet<int>();
-			var disabledSpawnPoints = new CachedTransform<ReplayMetadata, HashSet<int>>(r => r.GameInfo.DisabledSpawnPoints ?? noSpawns);
+			var disabledSpawnPoints = new CachedTransform<ReplayMetadata, FrozenSet<int>>(r => r.GameInfo.DisabledSpawnPoints ?? FrozenSet<int>.Empty);
 
 			Ui.LoadWidget("MAP_PREVIEW", mapPreviewRoot, new WidgetArgs
 			{
@@ -175,7 +176,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 				{ "getMap", (Func<(MapPreview, Session.MapStatus)>)(() => (map, Session.MapStatus.Playable)) },
 				{ "onMouseDown", null },
 				{ "getSpawnOccupants", (Func<Dictionary<int, SpawnOccupant>>)(() => spawnOccupants.Update(selectedReplay)) },
-				{ "getDisabledSpawnPoints", (Func<HashSet<int>>)(() => disabledSpawnPoints.Update(selectedReplay)) },
+				{ "getDisabledSpawnPoints", (Func<FrozenSet<int>>)(() => disabledSpawnPoints.Update(selectedReplay)) },
 				{ "showUnoccupiedSpawnpoints", false },
 				{ "mapUpdatesEnabled", false },
 				{ "onMapUpdate", (Action<string>)(_ => { }) },
@@ -507,7 +508,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 				ConfirmationDialogs.ButtonPrompt(modData,
 					title: DeleteReplayTitle,
 					text: DeleteReplayPrompt,
-					textArguments: new object[] { "replay", Path.GetFileNameWithoutExtension(r.FilePath) },
+					textArguments: ["replay", Path.GetFileNameWithoutExtension(r.FilePath)],
 					onConfirm: () =>
 					{
 						DeleteReplay(r);
@@ -545,7 +546,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 				ConfirmationDialogs.ButtonPrompt(modData,
 					title: DeleteAllReplaysTitle,
 					text: DeleteAllReplaysPrompt,
-					textArguments: new object[] { "count", list.Count },
+					textArguments: ["count", list.Count],
 					onConfirm: () =>
 					{
 						foreach (var replayMetadata in list)
@@ -713,7 +714,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 			try
 			{
 				if (map.Status == MapStatus.Unavailable && Game.Settings.Game.AllowDownloading)
-					modData.MapCache.QueryRemoteMapDetails(services.MapRepository, new[] { map.Uid });
+					modData.MapCache.QueryRemoteMapDetails(services.MapRepository, [map.Uid]);
 
 				var players = replay.GameInfo.Players
 					.GroupBy(p => p.Team)
@@ -793,7 +794,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 			var item = ScrollItemWidget.Setup(template,
 				() => selectedReplay == replay,
 				() => SelectReplay(replay),
-				() => WatchReplay());
+				WatchReplay);
 
 			replayState[replay] = new ReplayState
 			{

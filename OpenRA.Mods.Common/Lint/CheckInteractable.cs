@@ -10,6 +10,8 @@
 #endregion
 
 using System;
+using System.Collections.Immutable;
+using System.Linq;
 using OpenRA.Mods.Common.Traits;
 using OpenRA.Primitives;
 using OpenRA.Server;
@@ -30,8 +32,13 @@ namespace OpenRA.Mods.Common.Lint
 
 		static void Run(Action<string> emitError, Ruleset rules, ModData modData)
 		{
+			var defaultTerrainInfo = modData.DefaultTerrainInfo;
+			if (defaultTerrainInfo == null || defaultTerrainInfo.Count == 0)
+				return;
+
 			// As the map has not been created we need to get MapGrid info directly from manifest.
-			var grid = modData.Manifest.Get<MapGrid>();
+			var tileSize = defaultTerrainInfo.Values.First().TileSize;
+			var tileScale = modData.GetOrCreate<MapGrid>().TileScale;
 			foreach (var actorInfo in rules.Actors)
 			{
 				// Catch TypeDictionary errors.
@@ -41,10 +48,10 @@ namespace OpenRA.Mods.Common.Lint
 					if (interactable == null)
 						continue;
 
-					if (HasInvalidBounds(interactable.Bounds, grid.TileSize, grid.TileScale))
+					if (HasInvalidBounds(interactable.Bounds, tileSize, tileScale))
 						emitError($"{actorInfo.Key}.{interactable.GetType().Name}.{nameof(interactable.Bounds)} are empty or negative.");
 
-					if (HasInvalidBounds(interactable.DecorationBounds, grid.TileSize, grid.TileScale))
+					if (HasInvalidBounds(interactable.DecorationBounds, tileSize, tileScale))
 						emitError($"{actorInfo.Key}.{interactable.GetType().Name}.{nameof(interactable.DecorationBounds)} are empty or negative.");
 				}
 				catch (InvalidOperationException e)
@@ -54,7 +61,7 @@ namespace OpenRA.Mods.Common.Lint
 			}
 		}
 
-		static bool HasInvalidBounds(WDist[] bounds, Size tileSize, int tileScale)
+		static bool HasInvalidBounds(ImmutableArray<WDist> bounds, Size tileSize, int tileScale)
 		{
 			if (bounds == null)
 				return false;

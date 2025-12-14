@@ -9,8 +9,9 @@
  */
 #endregion
 
-using System;
+using System.Collections.Frozen;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using OpenRA.Graphics;
 using OpenRA.Mods.Common.Graphics;
 using OpenRA.Traits;
@@ -32,13 +33,13 @@ namespace OpenRA.Mods.Common.Traits.Render
 		[Desc("Attack sequence to use for each armament.",
 			"A dictionary of [armament name]: [sequence name(s)].",
 			"Multiple sequence names can be defined to specify per-burst animations.")]
-		public readonly Dictionary<string, string[]> AttackSequences = new();
+		public readonly FrozenDictionary<string, ImmutableArray<string>> AttackSequences = FrozenDictionary<string, ImmutableArray<string>>.Empty;
 
 		[SequenceReference]
-		public readonly string[] IdleSequences = Array.Empty<string>();
+		public readonly ImmutableArray<string> IdleSequences = [];
 
 		[SequenceReference]
-		public readonly string[] StandSequences = { "stand" };
+		public readonly ImmutableArray<string> StandSequences = ["stand"];
 
 		[PaletteReference(nameof(IsPlayerPalette))]
 		[Desc("Custom palette name")]

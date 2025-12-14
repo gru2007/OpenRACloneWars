@@ -9,9 +9,8 @@
  */
 #endregion
 
-using System;
-using System.Collections.Generic;
 using System.Linq;
+using OpenRA.FileSystem;
 using OpenRA.Graphics;
 using OpenRA.Mods.Common.Widgets;
 using OpenRA.Primitives;
@@ -31,11 +30,11 @@ namespace OpenRA.Mods.Common.LoadScreens
 		int lastDensity;
 		Size lastResolution;
 
-		string[] messages = Array.Empty<string>();
+		string[] messages = [];
 
-		public override void Init(ModData modData, Dictionary<string, string> info)
+		public override void Init(Manifest manifest, IReadOnlyFileSystem fileSystem)
 		{
-			base.Init(modData, info);
+			base.Init(manifest, fileSystem);
 
 			messages = FluentProvider.GetMessage(Loading).Split(',').Select(x => x.Trim()).ToArray();
 		}

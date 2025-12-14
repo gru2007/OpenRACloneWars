@@ -18,13 +18,9 @@ using OpenRA.Widgets;
 namespace OpenRA.Mods.Common.Lint
 {
 	[AttributeUsage(AttributeTargets.Class)]
-	public sealed class ChromeLogicArgsHotkeys : Attribute
+	public sealed class ChromeLogicArgsHotkeys(params string[] logicArgKeys) : Attribute
 	{
-		public string[] LogicArgKeys;
-		public ChromeLogicArgsHotkeys(params string[] logicArgKeys)
-		{
-			LogicArgKeys = logicArgKeys;
-		}
+		public string[] LogicArgKeys = logicArgKeys;
 	}
 
 	[AttributeUsage(AttributeTargets.Method)]
@@ -48,7 +44,7 @@ namespace OpenRA.Mods.Common.Lint
 
 			foreach (var w in modData.ObjectCreator.GetTypesImplementing<Widget>())
 			{
-				foreach (var m in w.GetMethods().Where(m => Utility.HasAttribute<CustomLintableHotkeyNames>(m)))
+				foreach (var m in w.GetMethods().Where(Utility.HasAttribute<CustomLintableHotkeyNames>))
 				{
 					var p = m.GetParameters();
 					if (p.Length == 3 && p[0].ParameterType == typeof(MiniYamlNode) && p[1].ParameterType == typeof(Action<string>)
@@ -94,7 +90,7 @@ namespace OpenRA.Mods.Common.Lint
 				if (customLintMethods.TryGetValue(widgetType, out var checkMethods))
 				{
 					var type = modData.ObjectCreator.FindType(widgetType + "Widget");
-					var keyNames = checkMethods.SelectMany(m => (IEnumerable<string>)type.GetMethod(m).Invoke(null, new object[] { node, emitError }));
+					var keyNames = checkMethods.SelectMany(m => (IEnumerable<string>)type.GetMethod(m).Invoke(null, [node, emitError]));
 
 					foreach (var name in keyNames)
 						if (!namedKeys.Contains(name) && !Hotkey.TryParse(name, out var unused))
@@ -104,7 +100,7 @@ namespace OpenRA.Mods.Common.Lint
 				// Logic classes can declare the data key names that specify hotkeys.
 				if (node.Key == "Logic" && node.Value.Nodes.Length > 0)
 				{
-					var typeNames = FieldLoader.GetValue<string[]>(node.Key, node.Value.Value);
+					var typeNames = FieldLoader.GetValue<ImmutableArray<string>>(node.Key, node.Value.Value);
 					var checkArgKeys = new List<string>();
 					foreach (var typeName in typeNames)
 					{

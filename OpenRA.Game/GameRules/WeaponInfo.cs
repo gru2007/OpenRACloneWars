@@ -11,6 +11,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using OpenRA.Effects;
 using OpenRA.Primitives;
@@ -36,7 +37,7 @@ namespace OpenRA.GameRules
 	public class WarheadArgs
 	{
 		public WeaponInfo Weapon;
-		public int[] DamageModifiers = Array.Empty<int>();
+		public int[] DamageModifiers = [];
 		public WPos? Source;
 		public WRot ImpactOrientation;
 		public WPos ImpactPosition;
@@ -82,13 +83,13 @@ namespace OpenRA.GameRules
 		public readonly WVec FollowingBurstTargetOffset = WVec.Zero;
 
 		[Desc("The sound played each time the weapon is fired.")]
-		public readonly string[] Report = null;
+		public readonly ImmutableArray<string> Report = default;
 
 		[Desc("Sound played only on first burst in a salvo.")]
-		public readonly string[] StartBurstReport = null;
+		public readonly ImmutableArray<string> StartBurstReport = default;
 
 		[Desc("The sound played when the weapon is reloaded.")]
-		public readonly string[] AfterFireSound = null;
+		public readonly ImmutableArray<string> AfterFireSound = default;
 
 		[Desc("Delay in ticks to play reloading sound.")]
 		public readonly int AfterFireSoundDelay = 0;
@@ -116,7 +117,7 @@ namespace OpenRA.GameRules
 
 		[Desc("Delay in ticks between firing shots from the same ammo magazine. If one entry, it will be used for all bursts.",
 			"If multiple entries, their number needs to match Burst - 1.")]
-		public readonly int[] BurstDelays = { 5 };
+		public readonly ImmutableArray<int> BurstDelays = [5];
 
 		[Desc("The minimum range the weapon can fire.")]
 		public readonly WDist MinRange = WDist.Zero;
@@ -128,7 +129,7 @@ namespace OpenRA.GameRules
 		public readonly IProjectileInfo Projectile;
 
 		[FieldLoader.LoadUsing(nameof(LoadWarheads))]
-		public readonly List<IWarhead> Warheads = new();
+		public readonly ImmutableArray<IWarhead> Warheads = [];
 
 		/// <summary>
 		/// This constructor is used solely for documentation generation.
@@ -139,7 +140,7 @@ namespace OpenRA.GameRules
 		{
 			// Resolve any weapon-level yaml inheritance or removals
 			// HACK: The "Defaults" sequence syntax prevents us from doing this generally during yaml parsing
-			content = content.WithNodes(MiniYaml.Merge(new IReadOnlyCollection<MiniYamlNode>[] { content.Nodes }));
+			content = content.WithNodes(MiniYaml.Merge([content.Nodes]));
 			FieldLoader.Load(this, content);
 		}
 
@@ -170,7 +171,7 @@ namespace OpenRA.GameRules
 				retList.Add(ret);
 			}
 
-			return retList;
+			return retList.ToImmutableArray();
 		}
 
 		public bool IsValidTarget(BitSet<TargetableType> targetTypes)

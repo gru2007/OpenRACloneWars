@@ -20,6 +20,10 @@ using static OpenRA.Mods.Common.Traits.MarkerLayerOverlay;
 
 namespace OpenRA.Mods.Common.Widgets.Logic
 {
+	[IncludeStaticFluentReferences(
+		typeof(PaintMarkerTileEditorAction),
+		typeof(ClearSelectedMarkerTilesEditorAction),
+		typeof(ClearAllMarkerTilesEditorAction))]
 	public class MapMarkerTilesLogic : ChromeLogic
 	{
 		[FluentReference]
@@ -67,7 +71,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 				tileColorPanel.RemoveChildren();
 
 				var colors = markerLayerTrait.Info.Colors;
-				for (var colorIndex = 0; colorIndex < colors.Length; colorIndex++)
+				for (var colorIndex = 0; colorIndex < colors.Count; colorIndex++)
 				{
 					var scrollItem = SetupColorSwatchItem(colorIndex, colorSwatchTemplate);
 					tileColorPanel.AddChild(scrollItem);
@@ -88,8 +92,8 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 							editor.SetBrush(new EditorMarkerLayerBrush(editor, index, worldRenderer));
 						});
 
-					var colorWidget = item.Get<ColorBlockWidget>("TILE_PREVIEW");
-					colorWidget.GetColor = () => colors[index];
+					var color = colors.ElementAt(index).Value;
+					item.Get<ColorBlockWidget>("TILE_PREVIEW").GetColor = () => color;
 
 					return item;
 				}

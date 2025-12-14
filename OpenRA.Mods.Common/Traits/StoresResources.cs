@@ -9,10 +9,9 @@
  */
 #endregion
 
-using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Collections.ObjectModel;
-using System.Linq;
 using OpenRA.Traits;
 
 namespace OpenRA.Mods.Common.Traits
@@ -25,16 +24,16 @@ namespace OpenRA.Mods.Common.Traits
 		public readonly int Capacity = 28;
 
 		[Desc("Which resources can be stored.")]
-		public readonly string[] Resources = Array.Empty<string>();
+		public readonly ImmutableArray<string> Resources = [];
 
-		string[] IStoresResourcesInfo.ResourceTypes => Resources;
+		ImmutableArray<string> IStoresResourcesInfo.ResourceTypes => Resources;
 
 		public override object Create(ActorInitializer init) { return new StoresResources(init.Self, this); }
 	}
 
 	public class StoresResources : IStoresResources, ISync
 	{
-		readonly Dictionary<string, int> contents = new();
+		readonly Dictionary<string, int> contents = [];
 		readonly StoresResourcesInfo info;
 
 		[Sync]

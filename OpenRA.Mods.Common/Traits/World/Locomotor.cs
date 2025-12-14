@@ -10,6 +10,7 @@
 #endregion
 
 using System;
+using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Linq;
 using OpenRA.Graphics;
@@ -80,7 +81,7 @@ namespace OpenRA.Mods.Common.Traits
 
 		[FieldLoader.LoadUsing(nameof(LoadSpeeds), true)]
 		[Desc("Lower the value on rough terrain. Leave out entries for impassable terrain.")]
-		public readonly Dictionary<string, TerrainInfo> TerrainSpeeds;
+		public readonly FrozenDictionary<string, TerrainInfo> TerrainSpeeds;
 
 		protected static object LoadSpeeds(MiniYaml y)
 		{
@@ -99,8 +100,7 @@ namespace OpenRA.Mods.Common.Traits
 				}
 			}
 
-			ret.TrimExcess();
-			return ret;
+			return ret.ToFrozenDictionary();
 		}
 
 		public class TerrainInfo
@@ -130,19 +130,7 @@ namespace OpenRA.Mods.Common.Traits
 
 	public class Locomotor : IWorldLoaded
 	{
-		readonly struct CellCache
-		{
-			public readonly LongBitSet<PlayerBitMask> Immovable;
-			public readonly LongBitSet<PlayerBitMask> Crushable;
-			public readonly CellFlag CellFlag;
-
-			public CellCache(LongBitSet<PlayerBitMask> immovable, CellFlag cellFlag, LongBitSet<PlayerBitMask> crushable)
-			{
-				Immovable = immovable;
-				Crushable = crushable;
-				CellFlag = cellFlag;
-			}
-		}
+		readonly record struct CellCache(LongBitSet<PlayerBitMask> Immovable, CellFlag CellFlag, LongBitSet<PlayerBitMask> Crushable);
 
 		public readonly LocomotorInfo Info;
 
@@ -153,7 +141,7 @@ namespace OpenRA.Mods.Common.Traits
 
 		readonly LocomotorInfo.TerrainInfo[] terrainInfos;
 		readonly World world;
-		readonly HashSet<CPos> dirtyCells = new();
+		readonly HashSet<CPos> dirtyCells = [];
 		readonly bool sharesCell;
 
 		CellLayer<short>[] cellsCost;
@@ -395,8 +383,8 @@ namespace OpenRA.Mods.Common.Traits
 			map.Tiles.CellEntryChanged += UpdateCellCost;
 			actorMap.CellUpdated += CellUpdated;
 
-			cellsCost = new[] { new CellLayer<short>(map) };
-			blockingCache = new[] { new CellLayer<CellCache>(map) };
+			cellsCost = [new CellLayer<short>(map)];
+			blockingCache = [new CellLayer<CellCache>(map)];
 
 			foreach (var cell in map.AllCells)
 			{

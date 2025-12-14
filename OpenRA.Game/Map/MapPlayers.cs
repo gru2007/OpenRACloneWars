@@ -10,6 +10,7 @@
 #endregion
 
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using OpenRA.Traits;
 
@@ -24,7 +25,7 @@ namespace OpenRA
 		public readonly Dictionary<string, PlayerReference> Players;
 
 		public MapPlayers()
-			: this(new List<MiniYamlNode>()) { }
+			: this([]) { }
 
 		public MapPlayers(IEnumerable<MiniYamlNode> playerDefinitions)
 		{
@@ -54,7 +55,7 @@ namespace OpenRA
 						Name = "Creeps",
 						Faction = firstFaction,
 						NonCombatant = true,
-						Enemies = Exts.MakeArray(playerCount, i => $"Multi{i}")
+						Enemies = Exts.MakeArray(playerCount, i => $"Multi{i}").ToImmutableArray()
 					}
 				}
 			};
@@ -66,7 +67,7 @@ namespace OpenRA
 					Name = $"Multi{index}",
 					Faction = "Random",
 					Playable = true,
-					Enemies = new[] { "Creeps" }
+					Enemies = ["Creeps"]
 				};
 				Players.Add(p.Name, p);
 			}

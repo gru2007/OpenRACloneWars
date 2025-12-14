@@ -11,6 +11,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using OpenRA.FileSystem;
 using OpenRA.Mods.Common.UpdateRules;
@@ -47,8 +48,8 @@ namespace OpenRA.Mods.Common.Lint
 			var files = modData.Manifest.Rules.AsEnumerable();
 			if (ruleDefinitions.Value != null)
 			{
-				var mapFiles = FieldLoader.GetValue<string[]>("value", ruleDefinitions.Value);
-				files = files.Append(mapFiles);
+				var mapFiles = FieldLoader.GetValue<ImmutableArray<string>>("value", ruleDefinitions.Value);
+				files = files.Concat(mapFiles);
 			}
 
 			var nodes = new List<MiniYamlNode>();
@@ -65,7 +66,7 @@ namespace OpenRA.Mods.Common.Lint
 			var inheritsMap = new Dictionary<string, List<string>>();
 			foreach (var actorNode in nodes)
 			{
-				var inherits = inheritsMap.GetOrAdd(actorNode.Key, _ => new List<string>());
+				var inherits = inheritsMap.GetOrAdd(actorNode.Key, _ => []);
 				foreach (var inheritsNode in new MiniYamlNodeBuilder(actorNode).ChildrenMatching("Inherits"))
 					inherits.Add(inheritsNode.Value.Value);
 			}

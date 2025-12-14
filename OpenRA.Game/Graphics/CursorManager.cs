@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using OpenRA.Primitives;
+using OpenRA.Traits;
 
 namespace OpenRA.Graphics
 {
@@ -29,8 +30,8 @@ namespace OpenRA.Graphics
 			public IHardwareCursor[] Cursors;
 		}
 
-		readonly Dictionary<string, Cursor> cursors = new();
-		readonly SheetBuilder sheetBuilder;
+		readonly Dictionary<string, Cursor> cursors = [];
+		public readonly SheetBuilder SheetBuilder;
 		readonly GraphicSettings graphicSettings;
 
 		Cursor cursor;
@@ -39,19 +40,35 @@ namespace OpenRA.Graphics
 		readonly bool hardwareCursorsDisabled = false;
 		bool hardwareCursorsDoubled = false;
 
-		public CursorManager(CursorProvider cursorProvider, int cursorSheetSize)
+		public CursorManager(ModData modData)
 		{
-			hardwareCursorsDisabled = Game.Settings.Graphics.DisableHardwareCursors;
-
 			graphicSettings = Game.Settings.Graphics;
-			sheetBuilder = new SheetBuilder(SheetType.BGRA, cursorSheetSize);
+			hardwareCursorsDisabled = graphicSettings.DisableHardwareCursors;
+			SheetBuilder = new SheetBuilder(SheetType.BGRA, modData.Manifest.RendererConstants.CursorSheetSize);
+
+			// Overwrite previous definitions if there are duplicates
+			var pals = new Dictionary<string, IProvidesCursorPaletteInfo>();
+			foreach (var p in modData.DefaultRules.Actors[SystemActors.World].TraitInfos<IProvidesCursorPaletteInfo>())
+				if (p.Palette != null)
+					pals[p.Palette] = p;
+
+			var paletteCache = new Cache<string, ImmutablePalette>(p => pals[p].ReadPalette(modData.DefaultFileSystem));
+			var frameCache = new FrameCache(modData.DefaultFileSystem, modData.SpriteLoaders);
 
 			// Sort the cursors for better packing onto the sheet.
-			foreach (var kv in cursorProvider.Cursors
-				.OrderBy(kvp => kvp.Value.Frames.Max(f => f.Size.Height)))
+			foreach (var kv in modData.Cursors)
 			{
-				var frames = kv.Value.Frames;
-				var palette = !string.IsNullOrEmpty(kv.Value.Palette) ? cursorProvider.Palettes[kv.Value.Palette] : null;
+				var cursorSprites = frameCache[kv.Value.Src];
+				var length = kv.Value.Length ?? cursorSprites.Length - kv.Value.Start;
+
+				if (kv.Value.Start > cursorSprites.Length)
+					throw new YamlException($"Cursor {kv.Value.Name}: {nameof(kv.Value.Start)} is greater than the length of the sprite sequence.");
+
+				if (kv.Value.Length > cursorSprites.Length)
+					throw new YamlException($"Cursor {kv.Value.Name}: {nameof(kv.Value.Length)} is greater than the length of the sprite sequence.");
+
+				var frames = cursorSprites.Skip(kv.Value.Start).Take(length).ToArray();
+				var palette = !string.IsNullOrEmpty(kv.Value.Palette) ? paletteCache[kv.Value.Palette] : null;
 
 				var c = new Cursor
 				{
@@ -82,7 +99,7 @@ namespace OpenRA.Graphics
 						type = SpriteFrameType.Bgra32;
 					}
 
-					c.Sprites[c.Length++] = sheetBuilder.Add(data, type, f.Size, 0, hotspot);
+					c.Sprites[c.Length++] = SheetBuilder.Add(data, type, f.Size, 0, hotspot);
 
 					// Bounds relative to the hotspot
 					c.Bounds = Rectangle.Union(c.Bounds, new Rectangle(hotspot, f.Size));
@@ -94,8 +111,12 @@ namespace OpenRA.Graphics
 				cursors.Add(kv.Key, c);
 			}
 
-			CreateOrUpdateHardwareCursors();
-			Update();
+			// Allow the utility to create a cursor manager.
+			if (Game.Renderer != null)
+			{
+				CreateOrUpdateHardwareCursors();
+				Update();
+			}
 		}
 
 		void CreateOrUpdateHardwareCursors()
@@ -128,7 +149,7 @@ namespace OpenRA.Graphics
 				}
 			}
 
-			sheetBuilder.Current.ReleaseBuffer();
+			SheetBuilder.Current?.ReleaseBuffer();
 
 			hardwareCursorsDoubled = graphicSettings.CursorDouble;
 		}
@@ -233,7 +254,7 @@ namespace OpenRA.Graphics
 			var height = frame.Size.Height;
 
 			if (width == 0 || height == 0)
-				return Array.Empty<byte>();
+				return [];
 
 			var data = new byte[4 * width * height];
 			unsafe
@@ -279,11 +300,8 @@ namespace OpenRA.Graphics
 			{
 				for (var i = 0; i < c.Cursors.Length; i++)
 				{
-					if (c.Cursors[i] != null)
-					{
-						c.Cursors[i].Dispose();
-						c.Cursors[i] = null;
-					}
+					c.Cursors[i]?.Dispose();
+					c.Cursors[i] = null;
 				}
 			}
 		}
@@ -293,7 +311,7 @@ namespace OpenRA.Graphics
 			ClearHardwareCursors();
 
 			cursors.Clear();
-			sheetBuilder.Dispose();
+			SheetBuilder.Dispose();
 		}
 	}
 }

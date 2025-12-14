@@ -12,6 +12,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using OpenRA.FileFormats;
@@ -28,7 +29,7 @@ namespace OpenRA
 		public readonly string Id;
 		public readonly string Version;
 		public readonly string LaunchPath;
-		public readonly string[] LaunchArgs;
+		public readonly ImmutableArray<string> LaunchArgs;
 		public Sprite Icon { get; internal set; }
 		public Sprite Icon2x { get; internal set; }
 		public Sprite Icon3x { get; internal set; }
@@ -40,7 +41,7 @@ namespace OpenRA
 
 	public class ExternalMods : IReadOnlyDictionary<string, ExternalMod>
 	{
-		readonly Dictionary<string, ExternalMod> mods = new();
+		readonly Dictionary<string, ExternalMod> mods = [];
 		readonly SheetBuilder sheetBuilder;
 
 		Sheet CreateSheet()
@@ -122,13 +123,13 @@ namespace OpenRA
 				return;
 
 			var key = ExternalMod.MakeKey(mod);
-			var yaml = new MiniYamlNode("Registration", new MiniYaml("", new[]
-			{
+			var yaml = new MiniYamlNode("Registration", new MiniYaml("",
+			[
 				new MiniYamlNode("Id", mod.Id),
 				new MiniYamlNode("Version", mod.Metadata.Version),
 				new MiniYamlNode("LaunchPath", launchPath),
 				new MiniYamlNode("LaunchArgs", new[] { "Game.Mod=" + mod.Id }.Concat(launchArgs).JoinWith(", "))
-			}));
+			]));
 
 			var iconNodes = new List<MiniYamlNode>();
 

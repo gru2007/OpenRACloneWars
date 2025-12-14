@@ -274,6 +274,7 @@
 	GpsDot:
 		String: Vehicle
 	WithDamageOverlay:
+		StartSequence: start
 	Guard:
 	Guardable:
 	Tooltip:
@@ -479,6 +480,10 @@
 	Wanders:
 		MinMoveDelay: 150
 		MaxMoveDelay: 750
+	WithInfantryBody:
+		IdleSequences: idle1
+		MinIdleDelay: 60
+		MaxIdleDelay: 220
 	MapEditorData:
 		Categories: Civilian infantry
 
@@ -492,6 +497,7 @@
 	AttackFrontal:
 		FacingTolerance: 0
 	WithInfantryBody:
+		IdleSequences: idle1,idle2
 		DefaultAttackSequence: shoot
 
 ^Ship:
@@ -531,6 +537,7 @@
 	GpsDot:
 		String: Ship
 	WithDamageOverlay:
+		StartSequence: start
 	FireWarheadsOnDeath:
 		Weapon: UnitExplodeShip
 		EmptyWeapon: UnitExplodeShip
@@ -570,6 +577,7 @@
 	-MustBeDestroyed:
 	WithDamageOverlay:
 		MinimumDamageState: Critical
+		StartSequence: start
 
 ^NeutralPlane:
 	Inherits@1: ^ExistsInWorld
@@ -979,18 +987,30 @@
 		Palette: effect
 		MinimumDamageState: Light
 		MaximumDamageState: Medium
+		StartSequence: start
+		LoopCount: 1, 5
+		InitialDelay: 0, 25
+		EndSequence: end
 	WithDamageOverlay@MediumBurn:
 		DamageTypes: Incendiary
 		Image: burn-m
 		Palette: effect
 		MinimumDamageState: Medium
 		MaximumDamageState: Heavy
+		StartSequence: start
+		LoopCount: 1, 5
+		InitialDelay: 0, 25
+		EndSequence: end
 	WithDamageOverlay@LargeBurn:
 		DamageTypes: Incendiary
 		Image: burn-l
 		Palette: effect
 		MinimumDamageState: Heavy
 		MaximumDamageState: Dead
+		StartSequence: start
+		LoopCount: 1, 5
+		InitialDelay: 0, 25
+		EndSequence: end
 	HiddenUnderShroud:
 	MapEditorData:
 		ExcludeTilesets: INTERIOR
@@ -1123,7 +1143,6 @@
 
 ^Bridge:
 	Inherits@shape: ^1x1Shape
-	AlwaysVisible:
 	Tooltip:
 		Name: meta-bridge-name
 		ShowOwnerRow: false
@@ -1145,6 +1164,16 @@
 	ShakeOnDeath:
 		Duration: 15
 		Intensity: 6
+
+^ExplosiveBridge:
+	ExplosionOnDamageTransition@DAMAGED:
+		DamageState: Heavy
+		Weapon: BridgeExplode
+	ExplosionOnDamageTransition@COLLAPSED:
+		DamageState: Dead
+		Weapon: BridgeExplode
+	SoundOnDamageTransition:
+		DestroyedSounds: crmble2.aud
 
 ^Rock:
 	Inherits@1: ^SpriteActor
@@ -1225,6 +1254,8 @@
 	Health:
 		HP: 5000
 		NotifyAppliedDamage: false
+	FireWarheadsOnDeath:
+		DamageSource: Parent
 	Armor:
 		Type: Light
 	Cloak:

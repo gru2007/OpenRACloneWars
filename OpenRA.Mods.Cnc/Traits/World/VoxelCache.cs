@@ -22,18 +22,19 @@ namespace OpenRA.Mods.Cnc.Traits
 	[Desc("Loads voxel models.")]
 	public sealed class VoxelCacheInfo : TraitInfo, IModelCacheInfo
 	{
+		public readonly int SheetSize = 2048;
 		public override object Create(ActorInitializer init) { return new VoxelCache(this, init.Self); }
 	}
 
 	public sealed class VoxelCache : IModelCache, INotifyActorDisposing, IDisposable
 	{
 		readonly VoxelLoader loader;
-		readonly Dictionary<string, Dictionary<string, IModel>> models = new();
+		readonly Dictionary<string, Dictionary<string, IModel>> models = [];
 
 		public VoxelCache(VoxelCacheInfo info, Actor self)
 		{
 			var map = self.World.Map;
-			loader = new VoxelLoader(map);
+			loader = new VoxelLoader(map, info.SheetSize);
 			foreach (var kv in map.Rules.ModelSequences)
 			{
 				Game.ModData.LoadScreen.Display();

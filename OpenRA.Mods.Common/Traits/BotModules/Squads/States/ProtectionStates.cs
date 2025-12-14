@@ -44,6 +44,8 @@ namespace OpenRA.Mods.Common.Traits.BotModules.Squads
 				}
 			}
 
+			owner.Bot.QueueOrder(new Order("AttackMove", null, owner.Target, false, groupedActors: owner.Units.ToArray()));
+
 			if (!owner.IsTargetVisible)
 			{
 				if (Backoff < 0)
@@ -56,7 +58,9 @@ namespace OpenRA.Mods.Common.Traits.BotModules.Squads
 				Backoff--;
 			}
 			else
-				owner.Bot.QueueOrder(new Order("AttackMove", null, owner.Target, false, groupedActors: owner.Units.ToArray()));
+			{
+				Backoff = BackoffTicks;
+			}
 		}
 
 		public void Deactivate(Squad owner) { }

@@ -11,6 +11,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using OpenRA.Graphics;
 using OpenRA.Mods.Cnc.Graphics;
@@ -52,8 +53,8 @@ namespace OpenRA.Mods.Cnc.Traits.Render
 
 		public readonly WAngle LightPitch = WAngle.FromDegrees(50);
 		public readonly WAngle LightYaw = WAngle.FromDegrees(240);
-		public readonly float[] LightAmbientColor = { 0.6f, 0.6f, 0.6f };
-		public readonly float[] LightDiffuseColor = { 0.4f, 0.4f, 0.4f };
+		public readonly ImmutableArray<float> LightAmbientColor = [0.6f, 0.6f, 0.6f];
+		public readonly ImmutableArray<float> LightDiffuseColor = [0.4f, 0.4f, 0.4f];
 
 		public override object Create(ActorInitializer init) { return new RenderVoxels(init.Self, this); }
 
@@ -111,8 +112,8 @@ namespace OpenRA.Mods.Cnc.Traits.Render
 		public readonly RenderVoxelsInfo Info;
 		public readonly ModelRenderer Renderer;
 
-		readonly List<ModelAnimation> components = new();
-		readonly Dictionary<ModelAnimation, AnimationWrapper> wrappers = new();
+		readonly List<ModelAnimation> components = [];
+		readonly Dictionary<ModelAnimation, AnimationWrapper> wrappers = [];
 
 		readonly Actor self;
 		readonly BodyOrientation body;
@@ -154,13 +155,13 @@ namespace OpenRA.Mods.Cnc.Traits.Render
 				initializePalettes = false;
 			}
 
-			return new IRenderable[]
-			{
+			return
+			[
 				new ModelRenderable(
 					Renderer, components, self.CenterPosition, 0, camera, Info.Scale,
 					lightSource, Info.LightAmbientColor, Info.LightDiffuseColor,
 					colorPalette, normalsPalette, shadowPalette)
-			};
+			];
 		}
 
 		IEnumerable<Rectangle> IRender.ScreenBounds(Actor self, WorldRenderer wr)

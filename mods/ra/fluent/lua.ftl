@@ -48,10 +48,12 @@ destroy-convoys = Eliminate all passing Soviet convoys.
 ## allies-05a
 extract-transport = Get all your forces aboard the transport.
 
+## allies-05abc, proving-grounds
+battlefield-control = Battlefield Control
+
 # allies-05abc
 spy = Spy
 disguise-spy = Commander! You have to disguise me in order to get through the enemy patrols.
-battlefield-control = Battlefield Control
 skip-heroics = Good work! But next time, skip the heroics!
 rescue-tanya = Rescue Tanya.
 eliminate-soviet-units = Eliminate all Soviet units in this area.
@@ -80,6 +82,14 @@ capture-radar-dome = Capture the Radar Dome.
 ## soviet-04ab, soviet-05
 defeat-allied-forces = Defeat the Allied forces.
 
+## allies-08a
+evacuate-scientists-from-west-island = Evacuate all scientists from the island to
+    the west.
+
+## allies-08b
+evacuate-scientists-from-east-island = Evacuate all scientists from the island to
+    the east.
+
 ## allies-08ab
 experiment-successful = The experiment is a success!
 chronosphere-experiment-completes-in = Chronosphere experiment completes in { $time }
@@ -87,8 +97,6 @@ defend-chronosphere-tech-center = Defend the Chronosphere and Technology Center
     at all costs.
 chronosphere-needs-power = The Chronosphere must have power when the
     timer runs out.
-evacuate-scientists-from-island = Evacuate all scientists from the island to
-    the west.
 
 ## allies09a
 extract-kosygin = Extract Kosygin and
@@ -250,6 +258,24 @@ submarine-construction-complete-in = Submarine construction complete in { $time 
 destroy-soviet-sub-pen = Destroy the Soviet Submarine Pen.
 power-down-tesla-coils = Cut power to the Tesla Coils.
 
+# proving-grounds
+tech-center-survive = The Tech Center must survive.
+regain-control-of-our-naval-base = Regain control of our naval base.
+capture-airfield-before-cruisers = Capture an Airfield before Cruisers arrive.
+wipe-out-intruders-with-new-submarines = Wipe out the Allied intruders with the
+  help of our new submarines.
+naval-base-destroyed = The naval base has been destroyed!
+our-tech-center-destroyed = Our Tech Center has been destroyed!
+our-tech-center-captured = Our Tech Center has been captured!
+cruisers-arrive-in = Cruisers arrive in { $time }
+cruisers-arrived = Cruisers have arrived!
+scouts-mark-the-way-to-bases = Scouts will mark the way to our bases. Find their flares.
+mining-outpost-reached = Mining outpost reached.
+vehicle-depot-reached = Vehicle depot reached. Airfields marked.
+airfields-reached = Airfields reached. Proceed to the final flare.
+unauthorized-naval-units = Unauthorized naval units have entered the area!
+protect-our-tech-center-at-all-costs = Protect our Tech Center at all costs!
+
 ## sarin-gas-1-crackdown, soviet09
 convoy-truck-escaping = Convoy truck attempting to escape!
 
@@ -283,7 +309,7 @@ free-tanya-keep-alive = Free Tanya and keep her alive.
 kill-soviet-officers-scientists = Kill all Soviet officers and scientists.
 steal-soviet-mammoth-tank = Steal a Soviet Mammoth Tank.
 no-casualties = Ensure no soldier or civilian
-   under your command is lost.
+    under your command is lost.
 
 ## sarin-gas-3-controlled-burn
 capture-sarin-plants-intact = Capture all Sarin processing plants intact.
@@ -314,6 +340,9 @@ infiltrate-bio-weapons-lab-scientist = Infiltrate the bio-weapons lab with the s
 destroy-bio-weapons-lab-missile-silos = Destroy the bio-weapons lab and the missile silos.
 destroy-all-sam-sites-strategic-bombers = Destroy all SAM sites on the island.
     Our strategic bombers will finish the rest.
+
+## situation-critical, soviet-10
+run-for-it = RUN FOR IT!
 
 ## situation-critical, soviet-soldier-volkov-n-chitzkoi
 volkov-survive = Volkov must survive.
@@ -363,11 +392,10 @@ truck-stopped-near-allied-base = Commander, the truck has stopped at a nearby Al
     Radio intercepts indicate the truck has orders to flee if any Soviet units approach.
 
 destroy-stolen-convoy-truck = Destroy the stolen convoy truck
-   - don't let it escape.
+    - don't let it escape.
 defend-forward-command-center = Defend our forward Command Center.
 
 ## soviet-10
-run-for-it = RUN FOR IT!
 convoy-commander = Convoy commander
 we-are-surrounded = We are surrounded!
 corridor-closes-in = Corridor closes in { $time }

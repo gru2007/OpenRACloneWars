@@ -37,23 +37,23 @@ namespace OpenRA.Graphics
 
 	public interface ISpriteSequenceLoader
 	{
-		int BgraSheetSize { get; }
-		int IndexedSheetSize { get; }
 		IReadOnlyDictionary<string, ISpriteSequence> ParseSequences(ModData modData, string tileSet, SpriteCache cache, MiniYamlNode node);
 	}
 
 	public sealed class SequenceSet : IDisposable
 	{
+		public readonly string TileSet;
 		readonly ModData modData;
-		readonly string tileSet;
 		readonly IReadOnlyDictionary<string, IReadOnlyDictionary<string, ISpriteSequence>> images;
 		public SpriteCache SpriteCache { get; }
 
 		public SequenceSet(IReadOnlyFileSystem fileSystem, ModData modData, string tileSet, MiniYaml additionalSequences)
 		{
 			this.modData = modData;
-			this.tileSet = tileSet;
-			SpriteCache = new SpriteCache(fileSystem, modData.SpriteLoaders, modData.SpriteSequenceLoader.BgraSheetSize, modData.SpriteSequenceLoader.IndexedSheetSize);
+			TileSet = tileSet;
+
+			var rc = modData.Manifest.RendererConstants;
+			SpriteCache = new SpriteCache(fileSystem, modData.SpriteLoaders, rc.SequenceBgraSheetSize, rc.SequenceIndexedSheetSize);
 			using (new Support.PerfTimer("LoadSequences"))
 				images = Load(fileSystem, additionalSequences);
 		}
@@ -97,7 +97,7 @@ namespace OpenRA.Graphics
 				if (node.Key.StartsWith(ActorInfo.AbstractActorPrefix))
 					continue;
 
-				images[node.Key] = modData.SpriteSequenceLoader.ParseSequences(modData, tileSet, SpriteCache, node);
+				images[node.Key] = modData.SpriteSequenceLoader.ParseSequences(modData, TileSet, SpriteCache, node);
 			}
 
 			return images;

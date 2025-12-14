@@ -9,6 +9,7 @@
  */
 #endregion
 
+using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Linq;
 using OpenRA.Server;
@@ -67,11 +68,11 @@ namespace OpenRA.Network
 					{
 						var message = new FluentMessage(node.Value);
 						if (message.Key == Joined)
-							TextNotificationsManager.AddPlayerJoinedLine(message.Key, message.Arguments);
+							TextNotificationsManager.AddPlayerJoinedLine(message.Key, message.Arguments.ToArray());
 						else if (message.Key == Left)
-							TextNotificationsManager.AddPlayerLeftLine(message.Key, message.Arguments);
+							TextNotificationsManager.AddPlayerLeftLine(message.Key, message.Arguments.ToArray());
 						else
-							TextNotificationsManager.AddSystemLine(message.Key, message.Arguments);
+							TextNotificationsManager.AddSystemLine(message.Key, message.Arguments.ToArray());
 					}
 
 					break;
@@ -183,7 +184,7 @@ namespace OpenRA.Network
 
 					if (!string.IsNullOrEmpty(order.TargetString))
 					{
-						var data = MiniYaml.FromString(order.TargetString, order.OrderString);
+						var data = MiniYaml.FromString(order.TargetString, order.OrderString).ToList();
 						var saveLastOrdersFrame = data.FirstOrDefault(n => n.Key == "SaveLastOrdersFrame");
 						if (saveLastOrdersFrame != null)
 							orderManager.GameSaveLastFrame =
@@ -203,7 +204,7 @@ namespace OpenRA.Network
 
 				case "SaveTraitData":
 				{
-					var data = MiniYaml.FromString(order.TargetString, order.OrderString)[0];
+					var data = MiniYaml.FromString(order.TargetString, order.OrderString).First();
 					var traitIndex = Exts.ParseInt32Invariant(data.Key);
 
 					world?.AddGameSaveTraitData(traitIndex, data.Value);
@@ -385,7 +386,14 @@ namespace OpenRA.Network
 
 				case "SyncMapPool":
 				{
-					orderManager.ServerMapPool = FieldLoader.GetValue<HashSet<string>>("SyncMapPool", order.TargetString);
+					orderManager.ServerMapPool = FieldLoader.GetValue<FrozenSet<string>>("SyncMapPool", order.TargetString);
+					break;
+				}
+
+				case "GenerateMap":
+				{
+					var yaml = new MiniYaml(order.OrderString, MiniYaml.FromString(order.TargetString, order.OrderString));
+					Game.ModData.MapCache.GenerateMap(Game.ModData, FieldLoader.Load<MapGenerationArgs>(yaml));
 					break;
 				}
 

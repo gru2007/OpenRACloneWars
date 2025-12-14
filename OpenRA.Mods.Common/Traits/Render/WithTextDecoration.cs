@@ -10,7 +10,6 @@
 #endregion
 
 using System.Collections.Generic;
-using System.Linq;
 using OpenRA.Graphics;
 using OpenRA.Mods.Common.Graphics;
 using OpenRA.Primitives;
@@ -36,7 +35,7 @@ namespace OpenRA.Mods.Common.Traits.Render
 
 		public override void RulesetLoaded(Ruleset rules, ActorInfo ai)
 		{
-			if (!Game.ModData.Manifest.Get<Fonts>().FontList.ContainsKey(Font))
+			if (!Game.ModData.GetOrCreate<Fonts>().FontList.ContainsKey(Font))
 				throw new YamlException($"Font '{Font}' is not listed in the mod.yaml's Fonts section");
 
 			base.RulesetLoaded(rules, ai);
@@ -58,13 +57,13 @@ namespace OpenRA.Mods.Common.Traits.Render
 		protected override IEnumerable<IRenderable> RenderDecoration(Actor self, WorldRenderer wr, int2 screenPos)
 		{
 			if (IsTraitDisabled || self.IsDead || !self.IsInWorld || !ShouldRender(self))
-				return Enumerable.Empty<IRenderable>();
+				return [];
 
 			var size = font.Measure(Info.Text);
-			return new IRenderable[]
-			{
+			return
+			[
 				new UITextRenderable(font, self.CenterPosition, screenPos - size / 2, 0, color, Info.Text)
-			};
+			];
 		}
 
 		void INotifyOwnerChanged.OnOwnerChanged(Actor self, Player oldOwner, Player newOwner)

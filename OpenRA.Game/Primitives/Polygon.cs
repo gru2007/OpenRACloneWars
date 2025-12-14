@@ -10,6 +10,7 @@
 #endregion
 
 using System;
+using System.Collections.Immutable;
 using System.Linq;
 
 namespace OpenRA.Primitives
@@ -19,17 +20,17 @@ namespace OpenRA.Primitives
 		public static readonly Polygon Empty = new(Rectangle.Empty);
 
 		public readonly Rectangle BoundingRect;
-		public readonly int2[] Vertices;
+		public readonly ImmutableArray<int2> Vertices;
 		readonly bool isRectangle;
 
 		public Polygon(Rectangle bounds)
 		{
 			BoundingRect = bounds;
-			Vertices = new[] { bounds.TopLeft, bounds.BottomLeft, bounds.BottomRight, bounds.TopRight };
+			Vertices = [bounds.TopLeft, bounds.BottomLeft, bounds.BottomRight, bounds.TopRight];
 			isRectangle = true;
 		}
 
-		public Polygon(int2[] vertices)
+		public Polygon(ImmutableArray<int2> vertices)
 		{
 			if (vertices != null && vertices.Length > 0)
 			{
@@ -53,7 +54,7 @@ namespace OpenRA.Primitives
 			{
 				isRectangle = true;
 				BoundingRect = Rectangle.Empty;
-				Vertices = Exts.MakeArray(4, _ => int2.Zero);
+				Vertices = Exts.MakeArray(4, _ => int2.Zero).ToImmutableArray();
 			}
 		}
 
@@ -87,7 +88,7 @@ namespace OpenRA.Primitives
 				return true;
 
 			// Easy case 4: Polygon vertex is inside rect
-			if (Vertices.Any(p => rect.Contains(p)))
+			if (Vertices.Any(rect.Contains))
 				return true;
 
 			// Hard case: check intersection of every line segment pair

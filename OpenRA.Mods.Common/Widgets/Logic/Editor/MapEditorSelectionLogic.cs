@@ -17,6 +17,7 @@ using OpenRA.Widgets;
 
 namespace OpenRA.Mods.Common.Widgets.Logic
 {
+	[IncludeStaticFluentReferences(typeof(CopyPasteEditorAction))]
 	public class MapEditorSelectionLogic : ChromeLogic
 	{
 		[FluentReference]
@@ -84,7 +85,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 					() => selectionFilters));
 			};
 
-			pasteButton.IsDisabled = () => clipboard == null;
+			pasteButton.IsDisabled = () => clipboard == null || (clipboard.Value.Actors.Count == 0 && clipboard.Value.Tiles.Count == 0);
 			pasteButton.IsHighlighted = () => editor.CurrentBrush is EditorCopyPasteBrush;
 
 			var deleteAreaSelectionButton = areaEditPanel.Get<ButtonWidget>("SELECTION_DELETE_BUTTON");
@@ -110,7 +111,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 
 		void CreateCategoryPanel(MapBlitFilters copyFilter, CheckboxWidget checkbox)
 		{
-			checkbox.GetText = () => copyFilter.ToString();
+			checkbox.GetText = copyFilter.ToString;
 			checkbox.IsChecked = () => selectionFilters.HasFlag(copyFilter);
 			checkbox.IsVisible = () => true;
 			checkbox.OnClick = () => selectionFilters ^= copyFilter;

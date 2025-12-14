@@ -11,6 +11,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.Linq;
 using OpenRA.Graphics;
@@ -28,13 +29,19 @@ namespace OpenRA.Widgets
 
 		public static TickTime LastTickTime = new(() => Timestep, Game.RunTime);
 
-		static readonly Stack<Widget> WindowList = new();
+		static readonly Stack<Widget> WindowList = [];
 
 		public static Widget MouseFocusWidget;
 		public static Widget KeyboardFocusWidget;
 		public static Widget MouseOverWidget;
 
 		static readonly Mediator Mediator = new();
+		static ModData modData;
+
+		public static void Initialize(ModData modData)
+		{
+			Ui.modData = modData;
+		}
 
 		public static void CloseWindow()
 		{
@@ -60,11 +67,14 @@ namespace OpenRA.Widgets
 
 		public static Widget OpenWindow(string id)
 		{
-			return OpenWindow(id, new WidgetArgs());
+			return OpenWindow(id, []);
 		}
 
 		public static Widget OpenWindow(string id, WidgetArgs args)
 		{
+			if (!args.ContainsKey("modData"))
+				args = new WidgetArgs(args) { { "modData", modData } };
+
 			var window = Game.ModData.WidgetLoader.LoadWidget(args, Root, id);
 			if (WindowList.Count > 0)
 				Root.HideChild(WindowList.Peek());
@@ -87,6 +97,9 @@ namespace OpenRA.Widgets
 
 		public static Widget LoadWidget(string id, Widget parent, WidgetArgs args)
 		{
+			if (!args.ContainsKey("modData"))
+				args = new WidgetArgs(args) { { "modData", modData } };
+
 			return Game.ModData.WidgetLoader.LoadWidget(args, parent, id);
 		}
 
@@ -182,21 +195,13 @@ namespace OpenRA.Widgets
 		protected virtual void Dispose(bool disposing) { }
 	}
 
-	public struct WidgetBounds
+	public struct WidgetBounds(int x, int y, int width, int height)
 	{
-		public int X, Y, Width, Height;
+		public int X = x, Y = y, Width = width, Height = height;
 		public readonly int Left => X;
 		public readonly int Right => X + Width;
 		public readonly int Top => Y;
 		public readonly int Bottom => Y + Height;
-
-		public WidgetBounds(int x, int y, int width, int height)
-		{
-			X = x;
-			Y = y;
-			Width = width;
-			Height = height;
-		}
 
 		public readonly Rectangle ToRectangle()
 		{
@@ -208,7 +213,7 @@ namespace OpenRA.Widgets
 	{
 		string defaultCursor = null;
 
-		public readonly List<Widget> Children = new();
+		public readonly List<Widget> Children = [];
 
 		// Info defined in YAML
 		public string Id = null;
@@ -216,8 +221,8 @@ namespace OpenRA.Widgets
 		public IntegerExpression Y;
 		public IntegerExpression Width;
 		public IntegerExpression Height;
-		public string[] Logic = Array.Empty<string>();
-		public ChromeLogic[] LogicObjects { get; private set; }
+		public ImmutableArray<string> Logic = [];
+		public ImmutableArray<ChromeLogic> LogicObjects { get; private set; }
 		public bool Visible = true;
 		public bool IgnoreMouseOver;
 		public bool IgnoreChildMouseOver;
@@ -288,7 +293,7 @@ namespace OpenRA.Widgets
 
 			var substitutions = args.TryGetValue("substitutions", out var subs) ?
 				new Dictionary<string, int>((Dictionary<string, int>)subs) :
-				new Dictionary<string, int>();
+				[];
 
 			substitutions.Add("WINDOW_WIDTH", Game.Renderer.Resolution.Width);
 			substitutions.Add("WINDOW_HEIGHT", Game.Renderer.Resolution.Height);
@@ -315,7 +320,7 @@ namespace OpenRA.Widgets
 			args["widget"] = this;
 
 			LogicObjects = Logic.Select(l => Game.ModData.ObjectCreator.CreateObject<ChromeLogic>(l, args))
-				.ToArray();
+				.ToImmutableArray();
 
 			foreach (var logicObject in LogicObjects)
 				Ui.Subscribe(logicObject);
@@ -668,7 +673,7 @@ namespace OpenRA.Widgets
 
 	public sealed class Mediator
 	{
-		readonly TypeDictionary types = new();
+		readonly TypeDictionary types = [];
 
 		public void Subscribe<T>(T instance)
 		{

@@ -9,18 +9,17 @@
  */
 #endregion
 
-using System;
-using System.Collections.Generic;
+using System.Collections.Frozen;
+using System.Collections.Immutable;
 using OpenRA.Mods.Common.MapGenerator;
 
 namespace OpenRA.Mods.Common.Terrain
 {
 	public interface ITemplatedTerrainInfo : ITerrainInfo
 	{
-		string[] EditorTemplateOrder { get; }
-		IReadOnlyDictionary<ushort, TerrainTemplateInfo> Templates { get; }
-		IReadOnlyDictionary<TemplateSegment, TerrainTemplateInfo> SegmentsToTemplates { get; }
-		IReadOnlyDictionary<string, IEnumerable<MultiBrushInfo>> MultiBrushCollections { get; }
+		ImmutableArray<string> EditorTemplateOrder { get; }
+		FrozenDictionary<ushort, TerrainTemplateInfo> Templates { get; }
+		FrozenDictionary<string, ImmutableArray<MultiBrushInfo>> MultiBrushCollections { get; }
 	}
 
 	public interface ITerrainInfoNotifyMapCreated : ITerrainInfo
@@ -33,11 +32,9 @@ namespace OpenRA.Mods.Common.Terrain
 		public readonly ushort Id;
 		public readonly int2 Size;
 		public readonly bool PickAny;
-		public readonly string[] Categories;
+		public readonly ImmutableArray<string> Categories;
 
 		readonly TerrainTileInfo[] tileInfo;
-
-		public readonly TemplateSegment[] Segments;
 
 		public TerrainTemplateInfo(ITerrainInfo terrainInfo, MiniYaml my)
 		{
@@ -77,19 +74,6 @@ namespace OpenRA.Mods.Common.Terrain
 
 					tileInfo[key] = LoadTileInfo(terrainInfo, node.Value);
 				}
-			}
-
-			var segmentsNode = my.NodeWithKeyOrDefault("Segments");
-			if (segmentsNode != null)
-			{
-				Segments = new TemplateSegment[segmentsNode.Value.Nodes.Length];
-				var i = 0;
-				foreach (var segmentNode in segmentsNode.Value.Nodes)
-					Segments[i++] = new TemplateSegment(segmentNode.Value);
-			}
-			else
-			{
-				Segments = Array.Empty<TemplateSegment>();
 			}
 		}
 

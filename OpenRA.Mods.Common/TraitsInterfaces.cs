@@ -10,7 +10,9 @@
 #endregion
 
 using System;
+using System.Collections.Frozen;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using OpenRA.Activities;
 using OpenRA.Graphics;
 using OpenRA.Mods.Common.Activities;
@@ -142,7 +144,7 @@ namespace OpenRA.Mods.Common.Traits
 	public interface INotifyPowerLevelChanged { void PowerLevelChanged(Actor self); }
 	public interface INotifySupportPower { void Charged(Actor self); void Activated(Actor self); }
 
-	public interface INotifyBuildingPlaced { void BuildingPlaced(Actor self); }
+	public interface INotifyBuildingPlaced { void BuildingPlaced(Actor self, Actor building); }
 	public interface INotifyBurstComplete { void FiredBurst(Actor self, in Target target, Armament a); }
 	public interface INotifyChat { bool OnChat(string from, string message); }
 	public interface INotifyProduction { void UnitProduced(Actor self, Actor other, CPos exit); }
@@ -373,7 +375,7 @@ namespace OpenRA.Mods.Common.Traits
 		(float SMin, float SMax) SaturationRange { get; }
 		(float VMin, float VMax) ValueRange { get; }
 		event Action<Color> OnColorPickerColorUpdate;
-		Color[] PresetColors { get; }
+		ImmutableArray<Color> PresetColors { get; }
 		Color RandomPresetColor(MersenneTwister random, IReadOnlyCollection<Color> terrainColors, IReadOnlyCollection<Color> playerColors);
 		Color RandomValidColor(MersenneTwister random, IReadOnlyCollection<Color> terrainColors, IReadOnlyCollection<Color> playerColors);
 		Color MakeValid(
@@ -553,7 +555,7 @@ namespace OpenRA.Mods.Common.Traits
 
 	public interface IOverrideAircraftLanding
 	{
-		HashSet<string> LandableTerrainTypes { get; }
+		FrozenSet<string> LandableTerrainTypes { get; }
 	}
 
 	public interface IRadarSignature
@@ -635,6 +637,18 @@ namespace OpenRA.Mods.Common.Traits
 	}
 
 	[RequireExplicitImplementation]
+	public interface IBotBaseExpansion
+	{
+		void UpdateExpansionParams(IBot bot, bool fallback, bool undeployEvenNoBase, Actor mustUndeploy);
+	}
+
+	[RequireExplicitImplementation]
+	public interface IBotSuggestRefineryProduction
+	{
+		void RequestLocation(CPos refineryLocation, CPos conyardLocation, Actor expandActor);
+	}
+
+	[RequireExplicitImplementation]
 	public interface IEditorActorOptions : ITraitInfoInterface
 	{
 		IEnumerable<EditorActorOption> ActorOptions(ActorInfo ai, World world);
@@ -691,20 +705,35 @@ namespace OpenRA.Mods.Common.Traits
 
 	public class EditorActorDropdown : EditorActorOption
 	{
-		public readonly Func<EditorActorPreview, Dictionary<string, string>> GetLabels;
-		public readonly Func<EditorActorPreview, Dictionary<string, string>, string> GetValue;
+		public readonly Func<EditorActorPreview, IReadOnlyDictionary<string, string>> GetLabels;
+		public readonly Func<EditorActorPreview, IReadOnlyDictionary<string, string>, string> GetValue;
 		public readonly Action<EditorActorPreview, string> OnChange;
 
 		/// <summary>
 		/// Creates dropdown for editing actor's metadata with dynamically created items.
 		/// </summary>
 		public EditorActorDropdown(string name, int displayOrder,
-			Func<EditorActorPreview, Dictionary<string, string>> getLabels,
-			Func<EditorActorPreview, Dictionary<string, string>, string> getValue,
+			Func<EditorActorPreview, IReadOnlyDictionary<string, string>> getLabels,
+			Func<EditorActorPreview, IReadOnlyDictionary<string, string>, string> getValue,
 			Action<EditorActorPreview, string> onChange)
 			: base(name, displayOrder)
 		{
 			GetLabels = getLabels;
+			GetValue = getValue;
+			OnChange = onChange;
+		}
+	}
+
+	public class EditorActorTextField : EditorActorOption
+	{
+		public readonly Func<EditorActorPreview, string> GetValue;
+		public readonly Action<EditorActorPreview, string> OnChange;
+
+		public EditorActorTextField(string name, int displayOrder,
+			Func<EditorActorPreview, string> getValue,
+			Action<EditorActorPreview, string> onChange)
+			: base(name, displayOrder)
+		{
 			GetValue = getValue;
 			OnChange = onChange;
 		}
@@ -779,6 +808,7 @@ namespace OpenRA.Mods.Common.Traits
 		Rectangle TemplateBounds(TerrainTemplateInfo template);
 		IEnumerable<IRenderable> RenderUIPreview(WorldRenderer wr, TerrainTemplateInfo template, int2 origin, float scale);
 		IEnumerable<IRenderable> RenderPreview(WorldRenderer wr, TerrainTemplateInfo template, WPos origin);
+		IEnumerable<IRenderable> RenderPreview(WorldRenderer wr, TerrainTile tile, WPos origin);
 	}
 
 	public interface IResourceLayerInfo : ITraitInfoInterface
@@ -792,10 +822,10 @@ namespace OpenRA.Mods.Common.Traits
 	{
 		event Action<CPos, string> CellChanged;
 		ResourceLayerContents GetResource(CPos cell);
-		int GetMaxDensity(string resourceType);
-		bool CanAddResource(string resourceType, CPos cell, int amount = 1);
-		int AddResource(string resourceType, CPos cell, int amount = 1);
-		int RemoveResource(string resourceType, CPos cell, int amount = 1);
+		byte GetMaxDensity(string resourceType);
+		bool CanAddResource(string resourceType, CPos cell, byte amount = 1);
+		int AddResource(string resourceType, CPos cell, byte amount = 1);
+		int RemoveResource(string resourceType, CPos cell, byte amount = 1);
 		void ClearResources(CPos cell);
 
 		bool IsVisible(CPos cell);
@@ -961,6 +991,14 @@ namespace OpenRA.Mods.Common.Traits
 		bool PathMightExistForLocomotorBlockedByImmovable(Locomotor locomotor, CPos source, CPos target);
 	}
 
+	public interface IEditorTool
+	{
+		string Label { get; }
+		string PanelWidget { get; }
+		bool IsEnabled { get; }
+		TraitInfo TraitInfo { get; }
+	}
+
 	public class MapGenerationException : Exception
 	{
 		public MapGenerationException(string message)
@@ -969,31 +1007,22 @@ namespace OpenRA.Mods.Common.Traits
 			: base(message, inner) { }
 	}
 
-	public interface IMapGeneratorInfo : ITraitInfoInterface
+	public interface IMapGeneratorSettings
 	{
-		string Type { get; }
-		string Name { get; }
+		ImmutableArray<MapGeneratorOption> Options { get; }
+
+		int PlayerCount { get; }
+
+		void Randomize(MersenneTwister random);
+
+		void Initialize(MapGenerationArgs args);
+
+		MapGenerationArgs Compile(ITerrainInfo terrainInfo, Size size);
 	}
 
-	public interface IMapGenerator
+	public interface IEditorMapGeneratorInfo : IMapGeneratorInfo
 	{
-		/// <summary>
-		/// Get the generator settings available for this map.
-		/// Returns null if not compatible with the given map.
-		/// </summary>
-		MapGeneratorSettings GetSettings(Map map);
-
-		/// <summary>
-		/// Generate or manipulate a supplied map in-place.
-		/// </summary>
-		/// <exception cref="YamlException">
-		/// May be thrown if the map settings are invalid. Map should be discarded.
-		/// </exception>
-		/// <exception cref="MapGenerationException">
-		/// Thrown if the map could not be generated with the requested configuration. Map should be discarded.
-		/// </exception>
-		void Generate(Map map, MiniYaml settings);
-
-		IMapGeneratorInfo Info { get; }
+		ImmutableArray<string> Tilesets { get; }
+		IMapGeneratorSettings GetSettings();
 	}
 }

@@ -11,7 +11,6 @@
 
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using OpenRA.Graphics;
 using OpenRA.Mods.Common.Terrain;
 using OpenRA.Mods.Common.Traits;
@@ -34,7 +33,7 @@ namespace OpenRA.Mods.Common.Widgets
 		readonly ITiledTerrainRenderer terrainRenderer;
 
 		CPos cell;
-		readonly List<IRenderable> preview = new();
+		readonly List<IRenderable> preview = [];
 
 		public EditorTileBrush(EditorViewportControllerWidget editorWidget, ushort id, WorldRenderer wr)
 		{
@@ -43,13 +42,13 @@ namespace OpenRA.Mods.Common.Widgets
 			world = wr.World;
 			terrainInfo = world.Map.Rules.TerrainInfo as ITemplatedTerrainInfo;
 			if (terrainInfo == null)
-				throw new InvalidDataException("EditorTileBrush can only be used with template-based tilesets");
+				throw new InvalidDataException($"{nameof(EditorTileBrush)} can only be used with template-based tilesets");
 
 			editorActionManager = world.WorldActor.Trait<EditorActionManager>();
 			terrainRenderer = world.WorldActor.Trait<ITiledTerrainRenderer>();
 
 			Template = id;
-			TerrainTemplate = terrainInfo.Templates.First(t => t.Value.Id == id).Value;
+			TerrainTemplate = terrainInfo.Templates[Template];
 			cell = wr.Viewport.ViewToWorld(wr.Viewport.WorldToViewPx(Viewport.LastMousePos));
 			UpdatePreview();
 		}
@@ -181,7 +180,7 @@ namespace OpenRA.Mods.Common.Widgets
 		readonly Map map;
 		readonly CPos cell;
 
-		readonly Queue<UndoTile> undoTiles = new();
+		readonly Queue<UndoTile> undoTiles = [];
 		readonly TerrainTemplateInfo terrainTemplate;
 
 		public PaintTileEditorAction(ushort template, Map map, CPos cell)
@@ -253,7 +252,7 @@ namespace OpenRA.Mods.Common.Widgets
 		readonly Map map;
 		readonly CPos cell;
 
-		readonly Queue<UndoTile> undoTiles = new();
+		readonly Queue<UndoTile> undoTiles = [];
 		readonly TerrainTemplateInfo terrainTemplate;
 
 		public FloodFillEditorAction(ushort template, Map map, CPos cell)
@@ -380,17 +379,5 @@ namespace OpenRA.Mods.Common.Widgets
 		}
 	}
 
-	sealed class UndoTile
-	{
-		public CPos Cell { get; }
-		public TerrainTile MapTile { get; }
-		public byte Height { get; }
-
-		public UndoTile(CPos cell, TerrainTile mapTile, byte height)
-		{
-			Cell = cell;
-			MapTile = mapTile;
-			Height = height;
-		}
-	}
+	sealed record UndoTile(CPos Cell, TerrainTile MapTile, byte Height);
 }

@@ -58,7 +58,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 		readonly ScrollPanelWidget assetList;
 		readonly ScrollItemWidget template;
 
-		readonly Cache<SheetType, SheetBuilder> sheetBuilders;
+		readonly Dictionary<SheetType, SheetBuilder> sheetBuilders;
 		readonly Cache<string, Sprite[]> spriteCache;
 
 		IReadOnlyPackage assetSource = null;
@@ -86,7 +86,13 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 		[ObjectCreator.UseCtor]
 		public AssetBrowserLogic(Widget widget, Action onExit, ModData modData, WorldRenderer worldRenderer)
 		{
-			sheetBuilders = new Cache<SheetType, SheetBuilder>(t => new SheetBuilder(t));
+			var rc = modData.Manifest.RendererConstants;
+			sheetBuilders = new Dictionary<SheetType, SheetBuilder>
+			{
+				{ SheetType.Indexed, new SheetBuilder(SheetType.Indexed, rc.SequenceIndexedSheetSize) },
+				{ SheetType.BGRA, new SheetBuilder(SheetType.BGRA, rc.SequenceBgraSheetSize) }
+			};
+
 			spriteCache = new Cache<string, Sprite[]>(
 				filename => FrameLoader.GetFrames(modData.DefaultFileSystem, filename, modData.SpriteLoaders, out _)
 						.Select(f => sheetBuilders[SheetBuilder.FrameTypeToSheetType(f.Type)].Add(f))
@@ -191,7 +197,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 			}
 
 			filenameInput = panel.Get<TextFieldWidget>("FILENAME_INPUT");
-			filenameInput.OnTextEdited = () => ApplyFilter();
+			filenameInput.OnTextEdited = ApplyFilter;
 			filenameInput.OnEscKey = _ =>
 			{
 				if (string.IsNullOrEmpty(filenameInput.Text))
@@ -389,7 +395,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 				panel.GetOrNull<LabelWidget>("MODEL_SCALE").IsVisible = () => currentVoxel != null;
 			}
 
-			var assetBrowserModData = modData.Manifest.Get<AssetBrowser>();
+			var assetBrowserModData = modData.GetOrCreate<AssetBrowser>();
 			allowedSpriteExtensions = assetBrowserModData.SpriteExtensions.Select(x => x.ToLowerInvariant()).ToArray();
 			allowedModelExtensions = assetBrowserModData.ModelExtensions.Select(x => x.ToLowerInvariant()).ToArray();
 			allowedAudioExtensions = assetBrowserModData.AudioExtensions.Select(x => x.ToLowerInvariant()).ToArray();
@@ -431,7 +437,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 				currentFrame = currentSprites.Length - 1;
 		}
 
-		readonly Dictionary<string, bool> assetVisByName = new();
+		readonly Dictionary<string, bool> assetVisByName = [];
 
 		bool FilterAsset(string filename)
 		{
@@ -621,7 +627,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 
 			if (assetSource != null)
 				foreach (var content in assetSource.Contents)
-					files.Add(content, new List<IReadOnlyPackage> { assetSource });
+					files.Add(content, [assetSource]);
 			else
 			{
 				foreach (var mountedPackage in modData.ModFiles.MountedPackages)
@@ -629,7 +635,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 					foreach (var content in mountedPackage.Contents)
 					{
 						if (!files.TryGetValue(content, out var list))
-							files.Add(content, new List<IReadOnlyPackage> { mountedPackage });
+							files.Add(content, [mountedPackage]);
 						else
 							list.Add(mountedPackage);
 					}
@@ -738,7 +744,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 
 		Widget CreateAssetTypesPanel()
 		{
-			var assetTypesPanel = Ui.LoadWidget("ASSET_TYPES_PANEL", null, new WidgetArgs());
+			var assetTypesPanel = Ui.LoadWidget("ASSET_TYPES_PANEL", null, []);
 			var assetTypeTemplate = assetTypesPanel.Get<CheckboxWidget>("ASSET_TYPE_TEMPLATE");
 
 			var allAssetTypes = new[] { AssetType.Sprite, AssetType.Model, AssetType.Audio, AssetType.Video, AssetType.Unknown };

@@ -27,7 +27,7 @@ namespace OpenRA
 		public SpriteRenderer WorldSpriteRenderer { get; }
 		public RgbaSpriteRenderer WorldRgbaSpriteRenderer { get; }
 		public RgbaColorRenderer WorldRgbaColorRenderer { get; }
-		public IRenderer[] WorldRenderers = Array.Empty<IRenderer>();
+		public IRenderer[] WorldRenderers = [];
 		public RgbaColorRenderer RgbaColorRenderer { get; }
 		public SpriteRenderer SpriteRenderer { get; }
 		public RgbaSpriteRenderer RgbaSpriteRenderer { get; }
@@ -40,13 +40,12 @@ namespace OpenRA
 		internal IPlatformWindow Window { get; }
 		internal IGraphicsContext Context { get; }
 
-		internal int SheetSize { get; }
 		internal int TempVertexBufferSize { get; }
 		internal int TempIndexBufferSize { get; }
 
 		readonly IVertexBuffer<Vertex> tempVertexBuffer;
 		readonly IIndexBuffer quadIndexBuffer;
-		readonly Stack<Rectangle> scissorState = new();
+		readonly Stack<Rectangle> scissorState = [];
 		readonly ITexture worldBufferSnapshot;
 
 		IFrameBuffer screenBuffer;
@@ -77,18 +76,19 @@ namespace OpenRA
 
 		Size lastBufferSize = new(-1, -1);
 
-		Rectangle lastWorldViewport = Rectangle.Empty;
+		Rectangle lastWorldViewport;
+		float2 lastViewportLocation;
 		ITexture currentPaletteTexture;
 		int currentPaletteHeight = 0;
 		IBatchRenderer currentBatchRenderer;
 		RenderType renderType = RenderType.None;
 
-		public Renderer(IPlatform platform, GraphicSettings graphicSettings)
+		public Renderer(IPlatform platform, GraphicSettings graphicSettings, int vertexBatchSize)
 		{
 			this.platform = platform;
 			var resolution = GetResolution(graphicSettings);
 
-			TempVertexBufferSize = graphicSettings.BatchSize - graphicSettings.BatchSize % 4;
+			TempVertexBufferSize = vertexBatchSize - vertexBatchSize % 4;
 			TempIndexBufferSize = TempVertexBufferSize / 4 * 6;
 
 			Window = platform.CreateWindow(new Size(resolution.Width, resolution.Height),
@@ -96,8 +96,6 @@ namespace OpenRA
 				graphicSettings.VideoDisplay, graphicSettings.GLProfile);
 
 			Context = Window.Context;
-
-			SheetSize = graphicSettings.SheetSize;
 
 			var combinedBindings = new CombinedShaderBindings();
 			WorldSpriteRenderer = new SpriteRenderer(this, Context.CreateShader(combinedBindings));
@@ -107,7 +105,7 @@ namespace OpenRA
 			RgbaSpriteRenderer = new RgbaSpriteRenderer(SpriteRenderer);
 			RgbaColorRenderer = new RgbaColorRenderer(SpriteRenderer);
 
-			tempVertexBuffer = Context.CreateVertexBuffer<Vertex>(TempVertexBufferSize);
+			tempVertexBuffer = Context.CreateEmptyVertexBuffer<Vertex>(TempVertexBufferSize);
 			quadIndexBuffer = Context.CreateIndexBuffer(Util.CreateQuadIndices(TempIndexBufferSize / 6));
 			worldBufferSnapshot = Context.CreateTexture();
 		}
@@ -133,8 +131,8 @@ namespace OpenRA
 			using (new PerfTimer("SpriteFonts"))
 			{
 				fontSheetBuilder?.Dispose();
-				fontSheetBuilder = new SheetBuilder(SheetType.BGRA, modData.Manifest.FontSheetSize);
-				Fonts = modData.Manifest.Get<Fonts>().FontList.ToDictionary(x => x.Key,
+				fontSheetBuilder = new SheetBuilder(SheetType.BGRA, modData.Manifest.RendererConstants.FontSheetSize);
+				Fonts = modData.GetOrCreate<Fonts>().FontList.ToDictionary(x => x.Key,
 					x => new SpriteFont(
 						platform, x.Value.Font, modData.DefaultFileSystem.Open(x.Value.Font).ReadAllBytes(),
 						x.Value.Size, x.Value.Ascender, Window.EffectiveWindowScale, fontSheetBuilder));
@@ -155,16 +153,9 @@ namespace OpenRA
 			};
 		}
 
-		public void InitializeDepthBuffer(MapGrid mapGrid)
+		public void SetDepthMargin(float depthMargin)
 		{
-			// The depth buffer needs to be initialized with enough range to cover:
-			//  - the height of the screen
-			//  - the z-offset of tiles from MaxTerrainHeight below the bottom of the screen (pushed into view)
-			//  - additional z-offset from actors on top of MaxTerrainHeight terrain
-			//  - a small margin so that tiles rendered partially above the top edge of the screen aren't pushed behind the clip plane
-			// We need an offset of mapGrid.MaximumTerrainHeight * mapGrid.TileSize.Height / 2 to cover the terrain height
-			// and choose to use mapGrid.MaximumTerrainHeight * mapGrid.TileSize.Height / 4 for each of the actor and top-edge cases
-			depthMargin = mapGrid == null || !mapGrid.EnableDepthBuffer ? 0 : mapGrid.TileSize.Height * mapGrid.MaximumTerrainHeight;
+			this.depthMargin = depthMargin;
 		}
 
 		void BeginFrame()
@@ -240,7 +231,7 @@ namespace OpenRA
 			lastMaximumViewportSize = size;
 		}
 
-		public void BeginWorld(Rectangle worldViewport)
+		public void BeginWorld(float2 viewportLocation, Size viewportSize)
 		{
 			if (renderType != RenderType.None)
 				throw new InvalidOperationException($"BeginWorld called with renderType = {renderType}, expected RenderType.None.");
@@ -250,28 +241,34 @@ namespace OpenRA
 			if (worldSheet == null)
 				throw new InvalidOperationException("BeginWorld called before SetMaximumViewportSize has been set.");
 
-			if (worldSprite == null || worldViewport.Size != lastWorldViewportSize)
+			var centerLocation = viewportLocation.ToInt2();
+			if (worldSprite == null || viewportSize != lastWorldViewportSize || viewportLocation != lastViewportLocation)
 			{
+				lastViewportLocation = viewportLocation;
+				lastWorldViewportSize = viewportSize;
+
 				// Downscale world rendering if needed to fit within the framebuffer
-				var vw = worldViewport.Size.Width;
-				var vh = worldViewport.Size.Height;
+				var vw = viewportSize.Width;
+				var vh = viewportSize.Height;
 				var bw = worldSheet.Size.Width;
 				var bh = worldSheet.Size.Height;
 				WorldDownscaleFactor = 1;
 				while (vw / WorldDownscaleFactor > bw || vh / WorldDownscaleFactor > bh)
 					WorldDownscaleFactor++;
 
-				var s = new Size(vw / WorldDownscaleFactor, vh / WorldDownscaleFactor);
-				worldSprite = new Sprite(worldSheet, new Rectangle(int2.Zero, s), TextureChannel.RGBA);
-				lastWorldViewportSize = worldViewport.Size;
+				// We need to add 1 to scroll in order to handle interpixel 0-0.99 fractionalOffset.
+				var s = new Size(vw / WorldDownscaleFactor + 1, vh / WorldDownscaleFactor + 1);
+				var fractionalOffset = centerLocation - viewportLocation;
+				worldSprite = new Sprite(worldSheet, new Rectangle(int2.Zero, s), 0, fractionalOffset, TextureChannel.RGBA);
 			}
 
 			worldBuffer.Bind();
-
-			if (lastWorldViewport != worldViewport)
+			var rect = new Rectangle(centerLocation, viewportSize);
+			if (lastWorldViewport != rect)
 			{
-				WorldSpriteRenderer.SetViewportParams(worldSheet.Size, WorldDownscaleFactor, depthMargin, worldViewport.Location);
-				lastWorldViewport = worldViewport;
+				var topLeft = centerLocation - viewportSize.ToInt2() / 2;
+				WorldSpriteRenderer.SetViewportParams(worldSheet.Size, WorldDownscaleFactor, depthMargin, topLeft);
+				lastWorldViewport = rect;
 			}
 
 			renderType = RenderType.World;
@@ -289,9 +286,11 @@ namespace OpenRA
 				screenBuffer.Bind();
 
 				var scale = Window.EffectiveWindowScale;
+
+				// We added 1 to worldSprite now we need to subtract.
 				var bufferScale = new float3(
-					(int)(screenSprite.Bounds.Width / scale) / worldSprite.Size.X,
-					(int)(-screenSprite.Bounds.Height / scale) / worldSprite.Size.Y,
+					(int)(screenSprite.Bounds.Width / scale) / (worldSprite.Size.X - 1),
+					(int)(-screenSprite.Bounds.Height / scale) / (worldSprite.Size.Y - 1),
 					1f);
 
 				SpriteRenderer.EnablePixelArtScaling(true);
@@ -413,9 +412,9 @@ namespace OpenRA
 			return Context.CreateShader(bindings);
 		}
 
-		public IVertexBuffer<T> CreateVertexBuffer<T>(int length) where T : struct
+		public IVertexBuffer<T> CreateVertexBuffer<T>(T[] data, bool dynamic) where T : struct
 		{
-			return Context.CreateVertexBuffer<T>(length);
+			return Context.CreateVertexBuffer(data, dynamic);
 		}
 
 		public void EnableScissor(Rectangle rect)

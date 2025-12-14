@@ -9,6 +9,7 @@
  */
 #endregion
 
+using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Linq;
 using OpenRA.Graphics;
@@ -69,7 +70,7 @@ namespace OpenRA.Mods.Common.Traits
 		[ActorReference(dictionaryReference: LintDictionaryReference.Keys)]
 		[Desc("Conditions to grant when a specified actor is being carried.",
 			"A dictionary of [actor name]: [condition].")]
-		public readonly Dictionary<string, string> CarryableConditions = new();
+		public readonly FrozenDictionary<string, string> CarryableConditions = FrozenDictionary<string, string>.Empty;
 
 		[VoiceReference]
 		public readonly string Voice = "Action";
@@ -107,7 +108,7 @@ namespace OpenRA.Mods.Common.Traits
 
 		WAngle cachedFacing;
 		IActorPreview[] carryablePreview;
-		HashSet<string> landableTerrainTypes;
+		FrozenSet<string> landableTerrainTypes;
 		int carryConditionToken = Actor.InvalidConditionToken;
 		int carryableConditionToken = Actor.InvalidConditionToken;
 
@@ -128,11 +129,11 @@ namespace OpenRA.Mods.Common.Traits
 
 			if (!string.IsNullOrEmpty(info.InitialActor))
 			{
-				var cargo = self.World.CreateActor(false, info.InitialActor.ToLowerInvariant(), new TypeDictionary
-				{
+				var cargo = self.World.CreateActor(false, info.InitialActor.ToLowerInvariant(),
+				[
 					new ParentActorInit(self),
 					new OwnerInit(self.Owner)
-				});
+				]);
 
 				cargo.Trait<Carryable>().Attached(cargo, self);
 				AttachCarryable(self, cargo);
@@ -197,7 +198,7 @@ namespace OpenRA.Mods.Common.Traits
 			}
 		}
 
-		HashSet<string> IOverrideAircraftLanding.LandableTerrainTypes => landableTerrainTypes ?? aircraft.Info.LandableTerrainTypes;
+		FrozenSet<string> IOverrideAircraftLanding.LandableTerrainTypes => landableTerrainTypes ?? aircraft.Info.LandableTerrainTypes;
 
 		public virtual bool AttachCarryable(Actor self, Actor carryable)
 		{
@@ -214,7 +215,7 @@ namespace OpenRA.Mods.Common.Traits
 				carryableConditionToken = self.GrantCondition(carryableCondition);
 
 			CarryableOffset = OffsetForCarryable(self, carryable);
-			landableTerrainTypes = Carryable.Trait<Mobile>().Info.LocomotorInfo.TerrainSpeeds.Keys.ToHashSet();
+			landableTerrainTypes = Carryable.Trait<Mobile>().Info.LocomotorInfo.TerrainSpeeds.Keys.ToFrozenSet();
 
 			return true;
 		}

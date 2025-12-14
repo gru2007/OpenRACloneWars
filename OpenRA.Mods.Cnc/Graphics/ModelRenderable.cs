@@ -11,6 +11,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using OpenRA.Graphics;
 using OpenRA.Mods.Cnc.Traits;
@@ -24,15 +25,15 @@ namespace OpenRA.Mods.Cnc.Graphics
 		readonly IEnumerable<ModelAnimation> models;
 		readonly WRot camera;
 		readonly WRot lightSource;
-		readonly float[] lightAmbientColor;
-		readonly float[] lightDiffuseColor;
+		readonly ImmutableArray<float> lightAmbientColor;
+		readonly ImmutableArray<float> lightDiffuseColor;
 		readonly PaletteReference normalsPalette;
 		readonly PaletteReference shadowPalette;
 		readonly float scale;
 
 		public ModelRenderable(
 			ModelRenderer renderer, IEnumerable<ModelAnimation> models, WPos pos, int zOffset, in WRot camera, float scale,
-			in WRot lightSource, float[] lightAmbientColor, float[] lightDiffuseColor,
+			in WRot lightSource, ImmutableArray<float> lightAmbientColor, ImmutableArray<float> lightDiffuseColor,
 			PaletteReference color, PaletteReference normals, PaletteReference shadow)
 			: this(renderer, models, pos, zOffset, camera, scale,
 				lightSource, lightAmbientColor, lightDiffuseColor,
@@ -42,7 +43,7 @@ namespace OpenRA.Mods.Cnc.Graphics
 
 		public ModelRenderable(
 			ModelRenderer renderer, IEnumerable<ModelAnimation> models, WPos pos, int zOffset, in WRot camera, float scale,
-			in WRot lightSource, float[] lightAmbientColor, float[] lightDiffuseColor,
+			in WRot lightSource, ImmutableArray<float> lightAmbientColor, ImmutableArray<float> lightDiffuseColor,
 			PaletteReference color, PaletteReference normals, PaletteReference shadow,
 			float alpha, in float3 tint, TintModifiers tintModifiers)
 		{
@@ -141,7 +142,7 @@ namespace OpenRA.Mods.Cnc.Graphics
 			{
 				var map = wr.World.Map;
 				var groundPos = model.Pos - new WVec(0, 0, map.DistanceAboveTerrain(model.Pos).Length);
-				var groundZ = (float)map.Grid.TileSize.Height * (groundPos.Z - model.Pos.Z) / map.Grid.TileScale;
+				var groundZ = (float)map.Rules.TerrainInfo.TileSize.Height * (groundPos.Z - model.Pos.Z) / map.Grid.TileScale;
 				var pxOrigin = wr.Screen3DPosition(model.Pos);
 
 				// HACK: We don't have enough texture channels to pass the depth data to the shader
@@ -152,7 +153,7 @@ namespace OpenRA.Mods.Cnc.Graphics
 				// sloped towards the camera. Offset it by another half cell to avoid clipping.
 				var cell = map.CellContaining(model.Pos);
 				if (map.Ramp.Contains(cell) && map.Ramp[cell] == 7)
-					pxOrigin += new float3(0, 0, 0.5f * map.Grid.TileSize.Height);
+					pxOrigin += new float3(0, 0, 0.5f * map.Rules.TerrainInfo.TileSize.Height);
 
 				var shadowOrigin = pxOrigin - groundZ * new float2(renderProxy.ShadowDirection, 1);
 
@@ -179,7 +180,7 @@ namespace OpenRA.Mods.Cnc.Graphics
 			public void RenderDebugGeometry(WorldRenderer wr)
 			{
 				var groundPos = model.Pos - new WVec(0, 0, wr.World.Map.DistanceAboveTerrain(model.Pos).Length);
-				var groundZ = wr.World.Map.Grid.TileSize.Height * (groundPos.Z - model.Pos.Z) / 1024f;
+				var groundZ = wr.World.Map.Rules.TerrainInfo.TileSize.Height * (groundPos.Z - model.Pos.Z) / 1024f;
 				var pxOrigin = wr.Screen3DPosition(model.Pos);
 				var shadowOrigin = pxOrigin - groundZ * new float2(renderProxy.ShadowDirection, 1);
 
@@ -218,9 +219,9 @@ namespace OpenRA.Mods.Cnc.Graphics
 				}
 			}
 
-			static readonly uint[] CornerXIndex = new uint[] { 0, 0, 0, 0, 3, 3, 3, 3 };
-			static readonly uint[] CornerYIndex = new uint[] { 1, 1, 4, 4, 1, 1, 4, 4 };
-			static readonly uint[] CornerZIndex = new uint[] { 2, 5, 2, 5, 2, 5, 2, 5 };
+			static readonly uint[] CornerXIndex = [0, 0, 0, 0, 3, 3, 3, 3];
+			static readonly uint[] CornerYIndex = [1, 1, 4, 4, 1, 1, 4, 4];
+			static readonly uint[] CornerZIndex = [2, 5, 2, 5, 2, 5, 2, 5];
 			static void DrawBoundsBox(WorldRenderer wr, in float3 pxPos, float[] transform, float[] bounds, float width, Color c)
 			{
 				var cr = Game.Renderer.RgbaColorRenderer;

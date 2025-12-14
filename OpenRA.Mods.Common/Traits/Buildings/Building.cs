@@ -10,7 +10,9 @@
 #endregion
 
 using System;
+using System.Collections.Frozen;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using OpenRA.Graphics;
 using OpenRA.Traits;
@@ -29,12 +31,12 @@ namespace OpenRA.Mods.Common.Traits
 	public class BuildingInfo : TraitInfo, IOccupySpaceInfo, IPlaceBuildingDecorationInfo
 	{
 		[Desc("Where you are allowed to place the building (Water, Clear, ...)")]
-		public readonly HashSet<string> TerrainTypes = new();
+		public readonly FrozenSet<string> TerrainTypes = FrozenSet<string>.Empty;
 
 		[Desc("x means cell is blocked, capital X means blocked but not counting as targetable, ",
 			"= means part of the footprint but passable, _ means completely empty.")]
 		[FieldLoader.LoadUsing(nameof(LoadFootprint))]
-		public readonly Dictionary<CVec, FootprintCellType> Footprint;
+		public readonly FrozenDictionary<CVec, FootprintCellType> Footprint;
 
 		public readonly CVec Dimensions = new(1, 1);
 
@@ -45,8 +47,6 @@ namespace OpenRA.Mods.Common.Traits
 
 		public readonly bool AllowInvalidPlacement = false;
 
-		public readonly bool AllowPlacementOnResources = false;
-
 		[Desc("Clear smudges from underneath the building footprint.")]
 		public readonly bool RemoveSmudgesOnBuild = true;
 
@@ -56,16 +56,16 @@ namespace OpenRA.Mods.Common.Traits
 		[Desc("Clear smudges from underneath the building footprint on transform.")]
 		public readonly bool RemoveSmudgesOnTransform = true;
 
-		public readonly string[] BuildSounds = Array.Empty<string>();
+		public readonly ImmutableArray<string> BuildSounds = [];
 
-		public readonly string[] UndeploySounds = Array.Empty<string>();
+		public readonly ImmutableArray<string> UndeploySounds = [];
 
 		public override object Create(ActorInitializer init) { return new Building(init, this); }
 
 		protected static object LoadFootprint(MiniYaml yaml)
 		{
 			var footprintYaml = yaml.NodeWithKeyOrDefault("Footprint");
-			var footprintChars = footprintYaml?.Value.Value.Where(x => !char.IsWhiteSpace(x)).ToArray() ?? new[] { 'x' };
+			var footprintChars = footprintYaml?.Value.Value.Where(x => !char.IsWhiteSpace(x)).ToArray() ?? ['x'];
 
 			var dimensionsYaml = yaml.NodeWithKeyOrDefault("Dimensions");
 			var dim = dimensionsYaml != null ? FieldLoader.GetValue<CVec>("Dimensions", dimensionsYaml.Value.Value) : new CVec(1, 1);
@@ -78,7 +78,7 @@ namespace OpenRA.Mods.Common.Traits
 			}
 
 			var index = 0;
-			var ret = new Dictionary<CVec, FootprintCellType>();
+			var ret = new Dictionary<CVec, FootprintCellType>(dim.X * dim.Y);
 			for (var y = 0; y < dim.Y; y++)
 			{
 				for (var x = 0; x < dim.X; x++)
@@ -91,7 +91,7 @@ namespace OpenRA.Mods.Common.Traits
 				}
 			}
 
-			return ret;
+			return ret.ToFrozenDictionary();
 		}
 
 		public IEnumerable<CPos> FootprintTiles(CPos location, FootprintCellType type)

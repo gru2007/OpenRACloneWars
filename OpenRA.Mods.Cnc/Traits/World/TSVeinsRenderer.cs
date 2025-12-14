@@ -10,6 +10,7 @@
 #endregion
 
 using System;
+using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Linq;
 using OpenRA.Graphics;
@@ -45,7 +46,7 @@ namespace OpenRA.Mods.Cnc.Traits
 
 		[ActorReference]
 		[Desc("Actor types that should be treated as veins for adjacency.")]
-		public readonly HashSet<string> VeinholeActors = new();
+		public readonly FrozenSet<string> VeinholeActors = FrozenSet<string>.Empty;
 
 		void IMapPreviewSignatureInfo.PopulateMapPreviewSignatureCells(Map map, ActorInfo ai, ActorReference s, List<(MPos Uv, Color Color)> destinationBuffer)
 		{
@@ -74,9 +75,9 @@ namespace OpenRA.Mods.Cnc.Traits
 			var terrainInfo = map.Rules.TerrainInfo;
 			var info = terrainInfo.TerrainTypes[terrainInfo.GetTerrainIndex(terrainType)];
 
-			for (var i = 0; i < map.MapSize.X; i++)
+			for (var i = 0; i < map.MapSize.Width; i++)
 			{
-				for (var j = 0; j < map.MapSize.Y; j++)
+				for (var j = 0; j < map.MapSize.Height; j++)
 				{
 					var uv = new MPos(i, j);
 
@@ -121,7 +122,7 @@ namespace OpenRA.Mods.Cnc.Traits
 			PlusY = 0x8,
 		}
 
-		static readonly Dictionary<Adjacency, int[]> BorderIndices = new()
+		static readonly FrozenDictionary<Adjacency, int[]> BorderIndices = new Dictionary<Adjacency, int[]>
 		{
 			{ Adjacency.MinusY, new[] { 3, 4, 5 } },
 			{ Adjacency.PlusX, new[] { 6, 7, 8 } },
@@ -138,27 +139,27 @@ namespace OpenRA.Mods.Cnc.Traits
 			{ Adjacency.MinusX | Adjacency.MinusY | Adjacency.PlusY, new[] { 39, 40, 41 } },
 			{ Adjacency.MinusX | Adjacency.PlusX | Adjacency.PlusY, new[] { 42, 43, 44 } },
 			{ Adjacency.MinusX | Adjacency.PlusX | Adjacency.MinusY | Adjacency.PlusY, new[] { 45, 46, 47 } },
-		};
+		}.ToFrozenDictionary();
 
-		static readonly int[] HeavyIndices = { 48, 49, 50, 51 };
-		static readonly int[] LightIndices = { 52 };
-		static readonly int[] Ramp1Indices = { 53, 54 };
-		static readonly int[] Ramp2Indices = { 55, 56 };
-		static readonly int[] Ramp3Indices = { 57, 58 };
-		static readonly int[] Ramp4Indices = { 59, 60 };
+		static readonly int[] HeavyIndices = [48, 49, 50, 51];
+		static readonly int[] LightIndices = [52];
+		static readonly int[] Ramp1Indices = [53, 54];
+		static readonly int[] Ramp2Indices = [55, 56];
+		static readonly int[] Ramp3Indices = [57, 58];
+		static readonly int[] Ramp4Indices = [59, 60];
 
 		readonly TSVeinsRendererInfo info;
 		readonly World world;
 		readonly IResourceLayer resourceLayer;
 		readonly CellLayer<int[]> renderIndices;
 		readonly CellLayer<Adjacency> borders;
-		readonly HashSet<CPos> dirty = new();
-		readonly Queue<CPos> cleanDirty = new();
-		readonly HashSet<CPos> veinholeCells = new();
-		readonly int maxDensity;
+		readonly HashSet<CPos> dirty = [];
+		readonly Queue<CPos> cleanDirty = [];
+		readonly HashSet<CPos> veinholeCells = [];
+		readonly byte maxDensity;
 		readonly Color veinRadarColor;
 
-		ISpriteSequence veinSequence;
+		readonly ISpriteSequence veinSequence;
 		PaletteReference veinPalette;
 		TerrainSpriteLayer spriteLayer;
 
@@ -177,6 +178,8 @@ namespace OpenRA.Mods.Cnc.Traits
 
 			renderIndices = new CellLayer<int[]>(world.Map);
 			borders = new CellLayer<Adjacency>(world.Map);
+
+			veinSequence = self.World.Map.Sequences.GetSequence(info.Image, info.Sequence);
 		}
 
 		void AddDirtyCell(CPos cell, string resourceType)
@@ -194,9 +197,7 @@ namespace OpenRA.Mods.Cnc.Traits
 			foreach (var a in w.Actors)
 				ActorAddedToWorld(a);
 
-			veinSequence = w.Map.Sequences.GetSequence(info.Image, info.Sequence);
 			veinPalette = wr.Palette(info.Palette);
-
 			var first = veinSequence.GetSprite(0);
 			var emptySprite = new Sprite(first.Sheet, Rectangle.Empty, TextureChannel.Alpha);
 			spriteLayer = new TerrainSpriteLayer(w, wr, emptySprite, first.BlendMode, wr.World.Type != WorldType.Editor);

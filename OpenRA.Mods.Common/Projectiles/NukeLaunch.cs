@@ -10,7 +10,7 @@
 #endregion
 
 using System.Collections.Generic;
-using System.Linq;
+using System.Collections.Immutable;
 using OpenRA.Effects;
 using OpenRA.GameRules;
 using OpenRA.Graphics;
@@ -36,7 +36,7 @@ namespace OpenRA.Mods.Common.Effects
 		readonly int impactDelay;
 		readonly int turn;
 		readonly string trailImage;
-		readonly string[] trailSequences;
+		readonly ImmutableArray<string> trailSequences;
 		readonly string trailPalette;
 		readonly int trailInterval;
 		readonly int trailDelay;
@@ -50,7 +50,7 @@ namespace OpenRA.Mods.Common.Effects
 		public NukeLaunch(Player firedBy, string image, WeaponInfo weapon, string weaponPalette, string upSequence, string downSequence,
 			WPos launchPos, WPos targetPos, WDist detonationAltitude, bool removeOnDetonation, WDist velocity, int launchDelay, int impactDelay,
 			bool skipAscent,
-			string trailImage, string[] trailSequences, string trailPalette, bool trailUsePlayerPalette, int trailDelay, int trailInterval)
+			string trailImage, ImmutableArray<string> trailSequences, string trailPalette, bool trailUsePlayerPalette, int trailDelay, int trailInterval)
 		{
 			this.firedBy = firedBy;
 			this.weapon = weapon;
@@ -163,7 +163,7 @@ namespace OpenRA.Mods.Common.Effects
 		public IEnumerable<IRenderable> Render(WorldRenderer wr)
 		{
 			if (!isLaunched || anim == null)
-				return Enumerable.Empty<IRenderable>();
+				return [];
 
 			return anim.Render(pos, wr.Palette(weaponPalette));
 		}

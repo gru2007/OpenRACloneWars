@@ -47,10 +47,7 @@ namespace OpenRA.Mods.Common
 				if (!Game.Settings.Game.EnableDiscordService)
 					return null;
 
-				if (!Game.ModData.Manifest.Contains<DiscordService>())
-					return null;
-
-				instance = Game.ModData.Manifest.Get<DiscordService>();
+				instance = Game.ModData.GetOrNull<DiscordService>();
 				return instance;
 			}
 		}
@@ -161,14 +158,14 @@ namespace OpenRA.Mods.Common
 
 			if (party == null)
 			{
-				buttons = new[]
-				{
+				buttons =
+				[
 					new Button
 					{
 						Label = "Веб-сайт",
 						Url = Game.ModData.Manifest.Metadata.Website
 					}
-				};
+				];
 			}
 
 			var richPresence = new RichPresence

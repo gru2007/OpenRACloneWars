@@ -10,12 +10,11 @@
 #endregion
 
 using System.Collections.Generic;
-using System.Linq;
+using System.Collections.Immutable;
 using OpenRA.Graphics;
 using OpenRA.Mods.Common.Activities;
 using OpenRA.Mods.Common.Effects;
 using OpenRA.Mods.Common.Orders;
-using OpenRA.Primitives;
 using OpenRA.Traits;
 
 namespace OpenRA.Mods.Common.Traits
@@ -32,7 +31,7 @@ namespace OpenRA.Mods.Common.Traits
 		public readonly int LifeTime = 250;
 
 		[Desc("Only allow this to be spawned on this terrain.")]
-		public readonly string[] Terrain = null;
+		public readonly ImmutableArray<string> Terrain = default;
 
 		public readonly bool AllowUnderShroud = true;
 
@@ -81,11 +80,11 @@ namespace OpenRA.Mods.Common.Traits
 					w.Add(new SpriteEffect(position, w, info.EffectImage, info.EffectSequence, palette));
 				}
 
-				var actor = w.CreateActor(info.Actor, new TypeDictionary
-				{
+				var actor = w.CreateActor(info.Actor,
+				[
 					new LocationInit(cell),
 					new OwnerInit(self.Owner),
-				});
+				]);
 
 				if (info.LifeTime > -1)
 				{

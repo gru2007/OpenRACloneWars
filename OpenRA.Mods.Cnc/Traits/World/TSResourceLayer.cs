@@ -10,6 +10,7 @@
 #endregion
 
 using System;
+using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Linq;
 using OpenRA.Graphics;
@@ -25,7 +26,7 @@ namespace OpenRA.Mods.Cnc.Traits
 
 		[ActorReference]
 		[Desc("Actor types that should be treated as veins for adjacency.")]
-		public readonly HashSet<string> VeinholeActors = new();
+		public readonly FrozenSet<string> VeinholeActors = FrozenSet<string>.Empty;
 
 		public override object Create(ActorInitializer init) { return new TSResourceLayer(init.Self, this); }
 	}
@@ -33,7 +34,7 @@ namespace OpenRA.Mods.Cnc.Traits
 	sealed class TSResourceLayer : ResourceLayer, INotifyActorDisposing
 	{
 		readonly TSResourceLayerInfo info;
-		readonly HashSet<CPos> veinholeCells = new();
+		readonly HashSet<CPos> veinholeCells = [];
 
 		public TSResourceLayer(Actor self, TSResourceLayerInfo info)
 			: base(self, info)

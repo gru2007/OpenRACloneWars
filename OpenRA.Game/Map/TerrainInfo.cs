@@ -10,6 +10,7 @@
 #endregion
 
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using OpenRA.FileSystem;
 using OpenRA.Primitives;
 using OpenRA.Support;
@@ -25,14 +26,16 @@ namespace OpenRA
 	public interface ITerrainInfo
 	{
 		string Id { get; }
-		TerrainTypeInfo[] TerrainTypes { get; }
+		string Name { get; }
+		Size TileSize { get; }
+		ImmutableArray<TerrainTypeInfo> TerrainTypes { get; }
 		TerrainTileInfo GetTerrainInfo(TerrainTile r);
 		bool TryGetTerrainInfo(TerrainTile r, out TerrainTileInfo info);
 		byte GetTerrainIndex(string type);
 		byte GetTerrainIndex(TerrainTile r);
 		TerrainTile DefaultTerrainTile { get; }
 
-		Color[] HeightDebugColors { get; }
+		ImmutableArray<Color> HeightDebugColors { get; }
 		IEnumerable<Color> RestrictedPlayerColors { get; }
 		float MinHeightColorBrightness { get; }
 		float MaxHeightColorBrightness { get; }
@@ -60,7 +63,7 @@ namespace OpenRA
 	{
 		public readonly string Type;
 		public readonly BitSet<TargetableType> TargetTypes;
-		public readonly HashSet<string> AcceptsSmudgeType = new();
+		public readonly ImmutableArray<string> AcceptsSmudgeType = [];
 		public readonly Color Color;
 		public readonly bool RestrictPlayerColor = false;
 

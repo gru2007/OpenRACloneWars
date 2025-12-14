@@ -10,14 +10,15 @@
 #endregion
 
 using System;
+using System.Collections.Frozen;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using OpenRA.GameRules;
 using OpenRA.Mods.Cnc.Effects;
 using OpenRA.Mods.Common;
 using OpenRA.Mods.Common.Activities;
 using OpenRA.Mods.Common.Traits;
-using OpenRA.Primitives;
 using OpenRA.Traits;
 
 namespace OpenRA.Mods.Cnc.Traits
@@ -26,8 +27,8 @@ namespace OpenRA.Mods.Cnc.Traits
 	{
 		[FieldLoader.Require]
 		[Desc("Drop pod unit")]
-		[ActorReference(new[] { typeof(AircraftInfo), typeof(FallsToEarthInfo) })]
-		public readonly string[] UnitTypes = null;
+		[ActorReference([typeof(AircraftInfo), typeof(FallsToEarthInfo)])]
+		public readonly ImmutableArray<string> UnitTypes = default;
 
 		[Desc("Number of drop pods spawned.")]
 		public readonly int2 Drops = new(5, 8);
@@ -82,8 +83,8 @@ namespace OpenRA.Mods.Cnc.Traits
 	{
 		readonly DropPodsPowerInfo info;
 		readonly string[] unitTypes;
-		readonly Dictionary<string, Func<CPos, WPos>> getLaunchLocation = new();
-		readonly Dictionary<string, HashSet<string>> landableTerrainTypes = new();
+		readonly Dictionary<string, Func<CPos, WPos>> getLaunchLocation = [];
+		readonly Dictionary<string, FrozenSet<string>> landableTerrainTypes = [];
 
 		public DropPodsPower(Actor self, DropPodsPowerInfo info)
 			: base(self, info)
@@ -134,11 +135,11 @@ namespace OpenRA.Mods.Cnc.Traits
 
 				if (info.CameraActor != null)
 				{
-					var camera = world.CreateActor(info.CameraActor, new TypeDictionary
-					{
+					var camera = world.CreateActor(info.CameraActor,
+					[
 						new LocationInit(targetCell),
 						new OwnerInit(self.Owner),
-					});
+					]);
 
 					camera.QueueActivity(new Wait(info.CameraRemoveDelay));
 					camera.QueueActivity(new RemoveSelf());
@@ -166,12 +167,12 @@ namespace OpenRA.Mods.Cnc.Traits
 					var dropLocation = validDropLocations.Random(world.SharedRandom);
 					var launchLocation = getLaunchLocation[unitType](dropLocation);
 
-					var pod = world.CreateActor(false, unitType, new TypeDictionary
-					{
+					var pod = world.CreateActor(false, unitType,
+					[
 						new CenterPositionInit(launchLocation),
 						new OwnerInit(self.Owner),
 						new FacingInit(info.PodFacing)
-					});
+					]);
 
 					var aircraft = pod.Trait<Aircraft>();
 					if (!aircraft.CanLand(dropLocation))

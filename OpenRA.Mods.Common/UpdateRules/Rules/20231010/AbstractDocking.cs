@@ -16,9 +16,9 @@ namespace OpenRA.Mods.Common.UpdateRules.Rules
 {
 	public class AbstractDocking : UpdateRule, IBeforeUpdateActors
 	{
-		readonly string[] moveRefineyValues = { "DockAngle", "IsDragRequired", "DragOffset", "DragLength" };
-		readonly string[] moveHarvesterValues = { "EnterCursor", "EnterBlockedCursor" };
-		readonly string[] buildings = { "Building", "D2kBuilding" };
+		readonly string[] moveRefineyValues = ["DockAngle", "IsDragRequired", "DragOffset", "DragLength"];
+		readonly string[] moveHarvesterValues = ["EnterCursor", "EnterBlockedCursor"];
+		readonly string[] buildings = ["Building", "D2kBuilding"];
 		readonly string[,] moveAndRenameHarvesterValues = new string[4, 2]
 		{
 			{ "DeliverVoice", "Voice" },
@@ -27,7 +27,7 @@ namespace OpenRA.Mods.Common.UpdateRules.Rules
 			{ "SearchForDeliveryBuildingDelay", "SearchForDockDelay" }
 		};
 
-		readonly Dictionary<string, List<MiniYamlNodeBuilder>> refineryNodes = new();
+		readonly Dictionary<string, List<MiniYamlNodeBuilder>> refineryNodes = [];
 		public override string Name => "Docking was abstracted from Refinery & Harvester.";
 
 		public override string Description =>
@@ -35,7 +35,7 @@ namespace OpenRA.Mods.Common.UpdateRules.Rules
 
 		public IEnumerable<string> BeforeUpdateActors(ModData modData, List<MiniYamlNodeBuilder> resolvedActors)
 		{
-			grid = modData.Manifest.Get<MapGrid>();
+			grid = modData.GetOrCreate<MapGrid>();
 			var harvesters = new Dictionary<string, HashSet<string>>();
 			var refineries = new List<string>();
 			foreach (var actorNode in resolvedActors)
@@ -43,9 +43,9 @@ namespace OpenRA.Mods.Common.UpdateRules.Rules
 				var harvesterNode = actorNode.ChildrenMatching("Harvester", includeRemovals: false).FirstOrDefault();
 				if (harvesterNode != null)
 					harvesters[actorNode.Key] = harvesterNode.ChildrenMatching("DeliveryBuildings", includeRemovals: false)
-						.FirstOrDefault()?.NodeValue<HashSet<string>>() ?? new HashSet<string>();
+						.FirstOrDefault()?.NodeValue<HashSet<string>>() ?? [];
 
-				if (actorNode.ChildrenMatching("Refinery", includeRemovals: false).Any())
+				if (actorNode.HasChild("Refinery"))
 					refineries.Add(actorNode.Key.ToLowerInvariant());
 			}
 
@@ -59,7 +59,7 @@ namespace OpenRA.Mods.Common.UpdateRules.Rules
 						if (refinery == deliveryBuilding)
 						{
 							if (!refineryNodes.ContainsKey(refinery))
-								refineryNodes[refinery] = new List<MiniYamlNodeBuilder>();
+								refineryNodes[refinery] = [];
 
 							var node = new MiniYamlNodeBuilder("Type", deliveryBuilding.ToString());
 							if (!refineryNodes[refinery].Any(n => n.Key == node.Key))

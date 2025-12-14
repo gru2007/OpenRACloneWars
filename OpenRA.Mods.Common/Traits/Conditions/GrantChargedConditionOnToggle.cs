@@ -10,6 +10,7 @@
 #endregion
 
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using OpenRA.Activities;
 using OpenRA.Mods.Common.Orders;
 using OpenRA.Primitives;
@@ -37,7 +38,7 @@ namespace OpenRA.Mods.Common.Traits
 
 		[Desc("The amount of charge that needs to be present to turn on the condition. " +
 			"If set to -1, threshold is set to full charge. " +
-			"If activated without full charge " + nameof(ConditionDuration) + " is percentally smaller.")]
+			"If activated without full charge " + nameof(ConditionDuration) + " is proportionally smaller.")]
 		public readonly int ChargeThreshhold = -1;
 
 		[Desc("How long (in ticks) should the condition stay active?")]
@@ -58,10 +59,10 @@ namespace OpenRA.Mods.Common.Traits
 		public readonly string BlockedCursor = "deploy-blocked";
 
 		[Desc("Play a randomly selected sound from this list when turning on.")]
-		public readonly string[] ActivationSounds = null;
+		public readonly ImmutableArray<string> ActivationSounds = default;
 
 		[Desc("Play a randomly selected sound from this list when turning off.")]
-		public readonly string[] DeactivattionSounds = null;
+		public readonly ImmutableArray<string> DeactivattionSounds = default;
 
 		[VoiceReference]
 		public readonly string Voice = "Action";

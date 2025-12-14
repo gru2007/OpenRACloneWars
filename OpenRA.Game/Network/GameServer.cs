@@ -10,7 +10,9 @@
 #endregion
 
 using System;
+using System.Collections.Frozen;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Text.RegularExpressions;
 using OpenRA.Primitives;
@@ -47,8 +49,9 @@ namespace OpenRA.Network
 
 	public class GameServer
 	{
-		static readonly string[] SerializeFields =
-		{
+		static readonly ImmutableArray<string> SerializeFields =
+		[
+
 			// Server information
 			"Name", "Address",
 
@@ -57,7 +60,7 @@ namespace OpenRA.Network
 
 			// Current server state
 			"Map", "State", "MaxPlayers", "Protected", "Authentication", "DisabledSpawnPoints"
-		};
+		];
 
 		public const int ProtocolVersion = 2;
 
@@ -130,10 +133,10 @@ namespace OpenRA.Network
 		public readonly bool IsJoinable = false;
 
 		[FieldLoader.LoadUsing(nameof(LoadClients))]
-		public readonly GameClient[] Clients;
+		public readonly ImmutableArray<GameClient> Clients;
 
 		/// <summary>The list of spawnpoints that are disabled for this game.</summary>
-		public readonly int[] DisabledSpawnPoints = Array.Empty<int>();
+		public readonly FrozenSet<int> DisabledSpawnPoints = FrozenSet<int>.Empty;
 
 		public string ModLabel => $"{ModTitle} ({Version})";
 
@@ -149,7 +152,7 @@ namespace OpenRA.Network
 						clients.Add(FieldLoader.Load<GameClient>(client.Value));
 			}
 
-			return clients.ToArray();
+			return clients.ToImmutableArray();
 		}
 
 		public GameServer(MiniYaml yaml)
@@ -226,9 +229,9 @@ namespace OpenRA.Network
 			ModWebsite = manifest.Metadata.Website;
 			ModIcon32 = manifest.Metadata.WebIcon32;
 			Protected = !string.IsNullOrEmpty(server.Settings.Password);
-			Authentication = server.Settings.RequireAuthentication || server.Settings.ProfileIDWhitelist.Length > 0;
-			Clients = server.LobbyInfo.Clients.Select(c => new GameClient(c)).ToArray();
-			DisabledSpawnPoints = server.LobbyInfo.DisabledSpawnPoints?.ToArray() ?? Array.Empty<int>();
+			Authentication = server.Settings.RequireAuthentication || server.Settings.ProfileIDWhitelist.Count > 0;
+			Clients = server.LobbyInfo.Clients.Select(c => new GameClient(c)).ToImmutableArray();
+			DisabledSpawnPoints = server.LobbyInfo.DisabledSpawnPoints?.ToFrozenSet() ?? FrozenSet<int>.Empty;
 		}
 
 		public string ToPOSTData(bool lanGame)

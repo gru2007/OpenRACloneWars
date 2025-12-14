@@ -10,6 +10,7 @@
 #endregion
 
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using OpenRA.Graphics;
 using OpenRA.Mods.Common.Graphics;
 using OpenRA.Primitives;
@@ -28,33 +29,25 @@ namespace OpenRA.Mods.Common.Traits
 
 	public class WarheadDebugOverlay : IRenderAnnotations
 	{
-		sealed class WHImpact
+		sealed class WHImpact(WPos pos, ImmutableArray<WDist> range, int time, Color color)
 		{
-			public readonly WPos CenterPosition;
-			public readonly WDist[] Range;
-			public readonly Color Color;
-			public int Time;
+			public readonly WPos CenterPosition = pos;
+			public readonly ImmutableArray<WDist> Range = range;
+			public readonly Color Color = color;
+			public int Time = time;
 
 			public WDist OuterRange => Range[^1];
-
-			public WHImpact(WPos pos, WDist[] range, int time, Color color)
-			{
-				CenterPosition = pos;
-				Range = range;
-				Color = color;
-				Time = time;
-			}
 		}
 
 		readonly WarheadDebugOverlayInfo info;
-		readonly List<WHImpact> impacts = new();
+		readonly List<WHImpact> impacts = [];
 
 		public WarheadDebugOverlay(WarheadDebugOverlayInfo info)
 		{
 			this.info = info;
 		}
 
-		public void AddImpact(WPos pos, WDist[] range, Color color)
+		public void AddImpact(WPos pos, ImmutableArray<WDist> range, Color color)
 		{
 			impacts.Add(new WHImpact(pos, range, info.DisplayDuration, color));
 		}
