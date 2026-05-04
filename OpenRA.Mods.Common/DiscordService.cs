@@ -32,7 +32,7 @@ namespace OpenRA.Mods.Common
 	public sealed class DiscordService : IGlobalModData, IDisposable
 	{
 		public readonly string ApplicationId = null;
-		public readonly string Tooltip = "Стратегия по Звёздым Войнам созданная на открытом движке OpenRA.";
+		public readonly string Tooltip = "Стратегия по Звёздным Войнам, созданная на открытом движке OpenRA.";
 		readonly DiscordRpcClient client;
 		DiscordState currentState;
 
