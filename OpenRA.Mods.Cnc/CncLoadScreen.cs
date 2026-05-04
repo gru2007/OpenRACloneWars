@@ -9,7 +9,7 @@
  */
 #endregion
 
-using System.Collections.Generic;
+using OpenRA.FileSystem;
 using OpenRA.Graphics;
 using OpenRA.Mods.Common.LoadScreens;
 using OpenRA.Mods.Common.Widgets;
@@ -19,6 +19,9 @@ namespace OpenRA.Mods.Cnc
 {
 	public sealed class CncLoadScreen : SheetLoadScreen
 	{
+		[FluentReference]
+		const string Loading = "loadscreen-loading";
+
 		int loadTick;
 
 		Sprite nodLogo, evaLogo, brightBlock, dimBlock;
@@ -33,11 +36,11 @@ namespace OpenRA.Mods.Cnc
 
 		string message = "";
 
-		public override void Init(ModData modData, Dictionary<string, string> info)
+		public override void Init(Manifest manifest, IReadOnlyFileSystem fileSystem)
 		{
-			base.Init(modData, info);
+			base.Init(manifest, fileSystem);
 
-			versionText = modData.Manifest.Metadata.Version;
+			versionText = manifest.Metadata.Version;
 
 			message = "Загрузка";
 		}
@@ -49,8 +52,8 @@ namespace OpenRA.Mods.Cnc
 				lastSheet = s;
 				lastDensity = density;
 
-				border = new[]
-				{
+				border =
+				[
 					CreateSprite(s, density, new Rectangle(129, 129, 32, 32)),
 					CreateSprite(s, density, new Rectangle(161, 129, 62, 32)),
 					CreateSprite(s, density, new Rectangle(223, 129, 32, 32)),
@@ -60,7 +63,7 @@ namespace OpenRA.Mods.Cnc
 					CreateSprite(s, density, new Rectangle(129, 223, 32, 32)),
 					CreateSprite(s, density, new Rectangle(161, 223, 62, 32)),
 					CreateSprite(s, density, new Rectangle(223, 223, 32, 32))
-				};
+				];
 
 				nodLogo = CreateSprite(s, density, new Rectangle(120, 256, 256, 256));
 				evaLogo = CreateSprite(s, density, new Rectangle(769, 320, 128, 64));
