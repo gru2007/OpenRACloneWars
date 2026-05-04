@@ -7,7 +7,6 @@ button-quit = Quit
 
 ## Server Orders
 notification-custom-rules = This map contains custom rules. Game experience may change.
-notification-map-bots-disabled = Bots have been disabled on this map.
 notification-two-humans-required = This server requires at least two human players to start a match.
 notification-unknown-server-command = Unknown server command: { $command }.
 notification-admin-start-game = Only the host can start the game.
@@ -29,7 +28,6 @@ notification-unknown-map = Map was not found on server.
 notification-searching-map = Searching for map on the Resource Center...
 notification-admin-change-configuration = Only the host can change the configuration.
 notification-changed-map = { $player } changed the map to { $map }.
-notification-option-changed = { $player } changed { $name } to { $value }.
 notification-you-were-kicked = You have been kicked from the server.
 notification-admin-kicked = { $admin } kicked { $player } from the server.
 notification-kicked = { $player } was kicked from the server.
@@ -57,7 +55,6 @@ notification-you-were-banned = You have been banned from the server.
 notification-you-were-temp-banned = You have been temporarily banned from the server.
 notification-game-full = The game is full.
 notification-new-admin = { $player } is now the admin.
-notification-option-locked = { $option } cannot be changed.
 notification-invalid-configuration-command = Invalid configuration command.
 notification-admin-option = Only the host can set that option.
 notification-error-number-teams = Could not parse the number of teams: { $raw }.
@@ -83,16 +80,12 @@ notification-requires-authentication = Server requires players to have an OpenRA
 notification-no-permission-to-join = You do not have permission to join this server.
 notification-slot-closed = Your slot was closed by the host.
 
-## LobbySettingsNotification
-notification-lobby-option = { $name }: { $value }.
-
 ## ServerOrders, UnitOrders
 notification-joined = { $player } has joined the game.
 notification-lobby-disconnected = { $player } has left.
 
 ## UnitOrders
 notification-game-has-started = The game has started.
-notification-game-saved = Game saved.
 notification-game-paused = The game has been paused by { $player }.
 notification-game-unpaused = The game has been un-paused by { $player }.
 
@@ -206,6 +199,11 @@ label-chat-availability =
 
 ## LobbyLogic, ServerListLogic
 label-bot-player = AI Player
+
+## LobbyLogic
+notification-lobby-option = { $name }: { $value }.
+notification-lobby-option-changed = { $name } changed to { $value }.
+notification-map-bots-disabled = Bots have been disabled on this map.
 
 ## IngameMenuLogic
 menu-ingame =
@@ -402,6 +400,7 @@ options-mouse-scroll-type =
 options-control-scheme =
     .classic = Classic
     .modern = Modern
+    .otherrts = Other RTS
 
 ## SettingsLogic
 dialog-settings-save =
@@ -518,8 +517,9 @@ button-mapchooser-generated-maps-tab = Generate Map
 ## MissionBrowserLogic
 dialog-no-video =
     .title = Video not installed
-    .prompt = The game videos can be installed from the
-    "Manage Content" menu in the mod chooser.
+    .prompt =
+        The game videos can be installed from the
+        "Manage Content" menu.
     .cancel = Back
 
 dialog-cant-play-video =
@@ -552,6 +552,10 @@ options-replay-type =
 options-winstate =
     .victory = Victory
     .defeat = Defeat
+
+options-save-type =
+    .autosave = Autosave
+    .manual = Manual save
 
 options-replay-date =
     .today = Today
@@ -1119,9 +1123,12 @@ keycode =
     .mouse5 = Mouse 5
 
 ## MapGeneratorToolLogic
-label-map-generator-failed-cancel = Dismiss
 notification-map-generator-generated = Generated using { $name }
-notification-map-generator-failed = Map generation failed
+
+dialog-notification-map-generator-failed =
+    .title = Map generation failed
+    .prompt = See debug.log for details.
+    .cancel = Dismiss
 
 ## EditorTilingPathBrush
 notification-tiling-path-started = Started tiling path

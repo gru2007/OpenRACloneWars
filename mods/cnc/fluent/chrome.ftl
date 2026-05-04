@@ -82,6 +82,7 @@ label-tiling-path-type-start = Start type
 label-tiling-path-type-inner = Inner type
 label-tiling-path-type-end = End type
 label-tiling-path-deviation = Deviation limit
+checkbox-tiling-path-allow-end-deviation = Allow end point deviation
 checkbox-tiling-path-closed-loops = Loops use only inner types
 button-tiling-path-reverse = Reverse path
 button-tiling-path-reset = Discard path
@@ -103,21 +104,13 @@ button-delete-actor =
     .label = Delete
     .tooltip = Remove the selected actor
 
-button-editor-world-root-copy =
-    .label = Copy
-    .tooltip = Copy the selected area
+button-editor-world-root-copy-tooltip = Copy the selected area
 
-button-editor-world-root-paste =
-    .label = Paste
-    .tooltip = Paste the saved area
+button-editor-world-root-paste-tooltip = Paste the saved area
 
-button-editor-world-root-undo =
-    .label = Undo
-    .tooltip = Undo last step
+button-editor-world-root-undo-tooltip = Undo last step
 
-button-editor-world-root-redo =
-    .label = Redo
-    .tooltip = Redo last step
+button-editor-world-root-redo-tooltip = Redo last step
 
 dropdownbutton-editor-world-root-overlay-button = Overlays
 button-select-categories-buttons-all = All
@@ -129,10 +122,23 @@ label-tool-tiling-path = Path Tiler
 ## encyclopedia.yaml, mainmenu.yaml
 label-encyclopedia-title = EVA Database
 
+## load-game-browser.yaml
+label-load-game-browser-panel-title = Load Game
+label-load-game-browser-panel-choose-save = Choose Save
+label-load-game-browser-panel-incompatible-title = Incompatible Savegame
+label-load-game-browser-panel-incompatible-a = This savegame is not compatible
+label-load-game-browser-panel-incompatible-b = with this version of OpenRA
+label-load-game-browser-panel-human-player = Player
+button-load-game-browser-panel-load = Load
+tooltip-savegame-date-created = Date Created
+tooltip-savegame-map = Map
+tooltip-savegame-duration = Duration
+tooltip-savegame-players = Number of players
+
 ## gamesave-browser.yaml
 label-gamesave-browser-panel-load-title = Load game
-label-gamesave-browser-panel-save-title = Save game
-label-bg-title = [CREATE NEW FILE]
+label-gamesave-browser-panel-save-title = Save Game
+label-gamesave-browser-panel-no-save-selected = Select a savegame to overwrite it or type a new savegame name
 button-bg-delete-all = Delete All
 button-bg-delete = Delete
 button-bg-rename = Rename
@@ -466,7 +472,7 @@ label-bg-prompt-text-a = We would like to collect some details that will help us
 label-bg-prompt-text-b = With your permission, the following anonymous system data will be sent:
 checkbox-bg-sysinfo = Send System Information
 
-## mainmenu-prompts.yaml, settings-display.yaml
+## mainmenu-prompts.yaml, settings-display.yaml, settings-gameplay.yaml
 label-profile-section-header = Profile
 label-player-container = Player Name:
 label-playercolor-container-color = Preferred Color:
@@ -480,6 +486,7 @@ label-input-section-header = Input
 label-mouse-control-container = Control Scheme:
 label-mouse-control-desc-classic-selection = - Select units using the <Left> mouse button
 label-mouse-control-desc-classic-commands = - Command units using the <Left> mouse button
+label-mouse-control-desc-classic-orders = - Confirm orders using the <Left> mouse button
 label-mouse-control-desc-classic-buildings = - Place structures using the <Left> mouse button
 label-mouse-control-desc-classic-support = - Target support powers using the <Left> mouse button
 label-mouse-control-desc-classic-zoom = - Zoom the battlefield using the <Scroll Wheel>
@@ -487,8 +494,19 @@ label-mouse-control-desc-classic-zoom-modifier = - Zoom the battlefield using <M
 label-mouse-control-desc-classic-scroll-right = - Pan the battlefield using the <Right> mouse button
 label-mouse-control-desc-classic-scroll-middle = - Pan the battlefield using the <Middle> mouse button
 label-mouse-control-desc-classic-edgescroll = or by moving the cursor to the edge of the screen
+label-mouse-control-desc-otherrts-selection = - Select units using the <Left> mouse button
+label-mouse-control-desc-otherrts-commands = - Command units using the <Right> mouse button
+label-mouse-control-desc-otherrts-orders = - Confirm orders using the <Left> mouse button
+label-mouse-control-desc-otherrts-buildings = - Place structures using the <Left> mouse button
+label-mouse-control-desc-otherrts-support = - Target support powers using the <Left> mouse button
+label-mouse-control-desc-otherrts-zoom = - Zoom the battlefield using the <Scroll Wheel>
+label-mouse-control-desc-otherrts-zoom-modifier = - Zoom the battlefield using <MODIFIER + Scroll Wheel>
+label-mouse-control-desc-otherrts-scroll-right = - Pan the battlefield using the <Right> mouse button
+label-mouse-control-desc-otherrts-scroll-middle = - Pan the battlefield using the <Middle> mouse button
+label-mouse-control-desc-otherrts-edgescroll = or by moving the cursor to the edge of the screen
 label-mouse-control-desc-modern-selection = - Select units using the <Left> mouse button
 label-mouse-control-desc-modern-commands = - Command units using the <Right> mouse button
+label-mouse-control-desc-modern-orders = - Confirm orders using the <Right> mouse button
 label-mouse-control-desc-modern-buildings = - Place structures using the <Left> mouse button
 label-mouse-control-desc-modern-support = - Target support powers using the <Left> mouse button
 label-mouse-control-desc-modern-zoom = - Zoom the battlefield using the <Scroll Wheel>
@@ -631,6 +649,7 @@ label-connection-error-desc-b = Please check your internet connection.
 ## replaybrowser.yaml
 label-replaybrowser-panel-title = Replay Viewer
 label-filters-title = Filter
+label-filters-flt-name-desc = Name:
 label-filters-flt-gametype-desc = Type:
 dropdownbutton-filters-any = Any
 label-filters-flt-date-desc = Date:
@@ -645,6 +664,7 @@ label-management-manage-title = Manage
 button-management-mng-rensel = Rename
 button-management-mng-delsel = Delete
 button-management-mng-delall = Delete All
+checkbox-load-game-filters = Filters
 label-replay-list-container-replaybrowser-title = Choose Replay
 button-replaybrowser-panel-watch = Watch
 
@@ -684,9 +704,10 @@ label-video-volume-container = Video Volume:
 label-restart-required-container-audio-desc = Device changes will be applied after the game is restarted
 
 ## settings-gameplay.yaml
-label-game-play-section-header = Auto-save
-auto-save-interval-label = Auto-save frequency:
-auto-save-max-file-number-label = Auto-save limit:
+label-gameplay-section-header = Gameplay
+label-auto-save-interval = Auto-save frequency:
+label-auto-save-max-file-number = Auto-save limit:
+checkbox-hide-replay-chat-container = Hide Chat in Replays
 
 ## settings-display.yaml
 label-target-lines-dropdown-container = Target Lines:
@@ -704,12 +725,13 @@ checkbox-transients-container =
     .label = Show Game Event Notifications
     .tooltip = Show transient text notifications for game events
 
-checkbox-hide-replay-chat-container = Hide Chat in Replays
 label-video-section-header = Video
 label-video-mode-dropdown-container = Video Mode:
 dropdownbutton-video-mode-dropdown-container = Windowed
 label-window-resolution-container-size = Window Size:
 label-window-resolution-container-x = x
+label-resolution-preset = Presets:
+dropdownbutton-resolution-select-preset = Select a preset
 label-display-selection-container = Select Display:
 dropdownbutton-display-selection-container-dropdown = Standard
 checkbox-vsync-container = Enable VSync
@@ -754,6 +776,12 @@ label-ui-scrollspeed-slider-container-scroll-speed = UI Scroll Speed:
 
 ## settings.yaml
 button-settings-panel-reset = Reset
+button-panel-gameplay = Gameplay
+button-panel-input = Input
+button-panel-display = Display
+button-panel-audio = Audio
+button-panel-hotkeys = Hotkeys
+button-panel-advanced = Advanced
 
 ## tooltips.yaml
 label-latency-tooltip-prefix = Latency:

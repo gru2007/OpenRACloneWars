@@ -80,7 +80,7 @@ namespace OpenRA.Mods.Common.Traits
 
 		readonly Actor self;
 
-		[Sync]
+		[VerifySync]
 		CPos minefieldStart;
 
 		public Minelayer(Actor self, MinelayerInfo info)
@@ -218,8 +218,11 @@ namespace OpenRA.Mods.Common.Traits
 			return Info.TerrainTypes.Contains(terrainType);
 		}
 
-		sealed class MinefieldOrderGenerator : OrderGenerator
+		sealed class MinefieldOrderGenerator : UnitOrderGenerator
 		{
+			protected override MouseActionType ActionType => MouseActionType.ConfirmOrder;
+			public override bool ClearSelectionOnLeftClick => false;
+
 			readonly List<Actor> minelayers;
 			readonly Minelayer minelayer;
 			readonly Sprite validTile, unknownTile, blockedTile;
@@ -229,6 +232,7 @@ namespace OpenRA.Mods.Common.Traits
 			readonly string cursor;
 
 			public MinefieldOrderGenerator(Actor a, CPos xy, bool queued)
+				: base(a.World)
 			{
 				minelayers = [a];
 				minefieldStart = xy;
@@ -286,21 +290,13 @@ namespace OpenRA.Mods.Common.Traits
 
 			protected override IEnumerable<Order> OrderInner(World world, CPos cell, int2 worldPixel, MouseInput mi)
 			{
-				if (mi.Button == Game.Settings.Game.MouseButtonPreference.Cancel)
-				{
-					world.CancelInputMode();
-					yield break;
-				}
+				world.CancelInputMode();
 
-				if (mi.Button == Game.Settings.Game.MouseButtonPreference.Action)
-				{
-					minelayers[0].World.CancelInputMode();
-					foreach (var minelayer in minelayers)
-						yield return new Order("PlaceMinefield", minelayer, Target.FromCell(world, cell), queued) { ExtraLocation = minefieldStart };
-				}
+				foreach (var minelayer in minelayers)
+					yield return new Order("PlaceMinefield", minelayer, Target.FromCell(world, cell), queued) { ExtraLocation = minefieldStart };
 			}
 
-			protected override void SelectionChanged(World world, IEnumerable<Actor> selected)
+			public override void SelectionChanged(World world, IEnumerable<Actor> selected)
 			{
 				minelayers.Clear();
 				minelayers.AddRange(selected.Where(s => !s.IsDead && s.Info.HasTraitInfo<MinelayerInfo>()));
@@ -308,8 +304,8 @@ namespace OpenRA.Mods.Common.Traits
 					world.CancelInputMode();
 			}
 
-			protected override IEnumerable<IRenderable> Render(WorldRenderer wr, World world) { yield break; }
-			protected override IEnumerable<IRenderable> RenderAboveShroud(WorldRenderer wr, World world)
+			public override IEnumerable<IRenderable> Render(WorldRenderer wr, World world) { yield break; }
+			public override IEnumerable<IRenderable> RenderAboveShroud(WorldRenderer wr, World world)
 			{
 				var minelayer = minelayers.FirstOrDefault(m => m.IsInWorld && !m.IsDead);
 				if (minelayer == null)
@@ -353,9 +349,9 @@ namespace OpenRA.Mods.Common.Traits
 				}
 			}
 
-			protected override IEnumerable<IRenderable> RenderAnnotations(WorldRenderer wr, World world) { yield break; }
+			public override IEnumerable<IRenderable> RenderAnnotations(WorldRenderer wr, World world) { yield break; }
 
-			protected override string GetCursor(World world, CPos cell, int2 worldPixel, MouseInput mi)
+			public override string GetCursor(World world, CPos cell, int2 worldPixel, MouseInput mi)
 			{
 				return cursor;
 			}

@@ -434,7 +434,7 @@ namespace OpenRA.Mods.Common.MapGenerator
 		/// <summary>Load a named MultiBrush collection from a map's tileset.</summary>
 		public static ImmutableArray<MultiBrush> LoadCollection(Map map, string name)
 		{
-			var templatedTerrainInfo = map.Rules.TerrainInfo as ITemplatedTerrainInfo;
+			var templatedTerrainInfo = (ITemplatedTerrainInfo)map.Rules.TerrainInfo;
 			return templatedTerrainInfo.MultiBrushCollections[name]
 				.Select(info => new MultiBrush(map, info))
 				.ToImmutableArray();
@@ -843,7 +843,7 @@ namespace OpenRA.Mods.Common.MapGenerator
 			var bottomRight = new CPos(
 				Shape.Max(cvec => cvec.X),
 				Shape.Max(cvec => cvec.Y));
-			var cellRegion = new CellRegion(map.Grid.Type, topLeft, bottomRight);
+			var cellRegion = new CellCoordsRegion(topLeft, bottomRight);
 
 			var actorPreviews = new Dictionary<string, EditorActorPreview>();
 			for (var i = 0; i < actorPlans.Count; i++)
@@ -889,6 +889,42 @@ namespace OpenRA.Mods.Common.MapGenerator
 				for (int i = tileRange.MinIndex; i <= tileRange.MaxIndex; i++)
 					possible.Add(new(tileRange.Type, (byte)i));
 			return possible;
+		}
+
+		/// <summary>Pick a random brush from a list, respecting brush weights.</summary>
+		public static MultiBrush PickAny(IReadOnlyList<MultiBrush> brushes, MersenneTwister random)
+		{
+			if (brushes.Count == 0)
+				throw new ArgumentException("brushes was empty");
+
+			if (brushes.Count == 1)
+				return brushes[0];
+
+			var weights = new int[brushes.Count];
+			for (var i = 0; i < weights.Length; i++)
+				weights[i] = brushes[i].Weight;
+
+			return brushes[random.PickWeighted(weights)];
+		}
+
+		/// <summary>
+		/// Get the highest cell height in a MultiBrush collection. Does not consider ramps.
+		/// </summary>
+		public static byte MaxHeightOfBrushes(IEnumerable<MultiBrush> brushes)
+		{
+			return brushes
+				.SelectMany(b => b.GetHeightsAndRamps())
+				.Max(v => (byte)v.Height);
+		}
+
+		/// <summary>
+		/// Get the highest cell height in a MultiBrush collection filtered by segment inner type.
+		/// Does not consider ramps.
+		/// </summary>
+		public static byte MaxHeightOfSegmentType(string type, IEnumerable<MultiBrush> brushes)
+		{
+			return MaxHeightOfBrushes(
+				brushes.Where(b => b.Segment?.HasInnerType(type) ?? false));
 		}
 	}
 }

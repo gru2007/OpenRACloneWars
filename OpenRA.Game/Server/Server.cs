@@ -52,9 +52,6 @@ namespace OpenRA.Server
 		const string CustomRules = "notification-custom-rules";
 
 		[FluentReference]
-		const string BotsDisabled = "notification-map-bots-disabled";
-
-		[FluentReference]
 		const string TwoHumansRequired = "notification-two-humans-required";
 
 		[FluentReference]
@@ -331,6 +328,7 @@ namespace OpenRA.Server
 					RandomSeed = randomSeed,
 					ServerName = settings.Name,
 					EnableSingleplayer = settings.EnableSingleplayer || Type != ServerType.Dedicated,
+					EnableMapGeneration = settings.EnableMapGeneration,
 					EnableSyncReports = settings.EnableSyncReports,
 					GameUid = Guid.NewGuid().ToString(),
 					Dedicated = Type == ServerType.Dedicated
@@ -591,7 +589,8 @@ namespace OpenRA.Server
 
 						Log.Write("server", $"{client.Name} ({newConn.EndPoint}) has joined the game.");
 
-						SendFluentMessage(Joined, "player", client.Name);
+						var otherConns = Conns.Where(c => c != newConn).ToArray();
+						SendFluentMessage(otherConns.AsSpan(), Joined, "player", client.Name);
 
 						if (Type == ServerType.Dedicated)
 						{
@@ -602,15 +601,13 @@ namespace OpenRA.Server
 							var motd = File.ReadAllText(motdFile);
 							if (!string.IsNullOrEmpty(motd))
 								SendOrderTo(newConn, "Message", motd);
+
+							if (!LobbyInfo.GlobalSettings.EnableSingleplayer)
+								SendFluentMessageTo(newConn, TwoHumansRequired);
 						}
 
-						if ((LobbyInfo.GlobalSettings.MapStatus & Session.MapStatus.UnsafeCustomRules) != 0)
+						if (Type != ServerType.Local && (LobbyInfo.GlobalSettings.MapStatus & Session.MapStatus.UnsafeCustomRules) != 0)
 							SendFluentMessageTo(newConn, CustomRules);
-
-						if (!LobbyInfo.GlobalSettings.EnableSingleplayer)
-							SendFluentMessageTo(newConn, TwoHumansRequired);
-						else if (Map.Players.Players.Where(p => p.Value.Playable).All(p => !p.Value.AllowBots))
-							SendFluentMessageTo(newConn, BotsDisabled);
 					}
 				}
 
@@ -897,6 +894,17 @@ namespace OpenRA.Server
 			RecordOrder(frame, data, From);
 		}
 
+		public void DispatchServerOrdersToClients(ReadOnlySpan<Connection> conns, byte[] data, int frame = 0)
+		{
+			const int From = 0;
+			var frameData = CreateFrame(From, frame, data);
+			foreach (var c in conns)
+				if (c.Validated)
+					DispatchFrameToClient(c, From, frameData);
+
+			RecordOrder(frame, data, From);
+		}
+
 		public void ReceiveOrders(Connection conn, int frame, byte[] data)
 		{
 			// Make sure we don't accidentally forward on orders from clients who we have just dropped
@@ -955,18 +963,16 @@ namespace OpenRA.Server
 			DispatchOrdersToClient(conn, 0, 0, Order.FromTargetString(order, data, true).Serialize());
 		}
 
-		public void SendMessage(string text)
-		{
-			DispatchServerOrdersToClients(Order.FromTargetString("Message", text, true));
-
-			if (Type == ServerType.Dedicated)
-				WriteLineWithTimeStamp(text);
-		}
-
 		public void SendFluentMessage(string key, params object[] args)
 		{
+			var conns = Conns.ToArray();
+			SendFluentMessage(conns, key, args);
+		}
+
+		public void SendFluentMessage(ReadOnlySpan<Connection> conns, string key, params object[] args)
+		{
 			var text = FluentMessage.Serialize(key, args);
-			DispatchServerOrdersToClients(Order.FromTargetString("FluentMessage", text, true));
+			DispatchServerOrdersToClients(conns, Order.FromTargetString("FluentMessage", text, true).Serialize());
 
 			if (Type == ServerType.Dedicated)
 				WriteLineWithTimeStamp(FluentProvider.GetMessage(key, args));
@@ -1055,7 +1061,7 @@ namespace OpenRA.Server
 								Directory.CreateDirectory(baseSavePath);
 
 							GameSave.Save(Path.Combine(baseSavePath, filename));
-							DispatchServerOrdersToClients(Order.FromTargetString("GameSaved", filename, true));
+							DispatchServerOrdersToClients(Order.FromTargetString("GameSaved", filename, true, o.ExtraData));
 						}
 
 						break;
@@ -1135,13 +1141,16 @@ namespace OpenRA.Server
 						if (!GetClient(conn).IsAdmin || State >= ServerState.GameStarted)
 							break;
 
+						if (!LobbyInfo.GlobalSettings.EnableMapGeneration)
+							break;
+
 						try
 						{
 							var yaml = new MiniYaml(o.OrderString, MiniYaml.FromString(o.TargetString, o.OrderString));
 							var args = FieldLoader.Load<MapGenerationArgs>(yaml);
 							var preview = ModData.MapCache[args.Uid];
-							if (preview.Status != MapStatus.Available)
-								ModData.MapCache.GenerateMap(ModData, args);
+							if (preview.Status != MapStatus.Available && preview.Class != MapClassification.Generated)
+								preview.UpdateFromGenerationArgs(args);
 
 							GeneratedMapData = o.TargetString;
 							DispatchServerOrdersToClients(Order.FromTargetString("GenerateMap", o.TargetString, true));
@@ -1349,7 +1358,7 @@ namespace OpenRA.Server
 
 				// Enable game saves for singleplayer missions only
 				// TODO: Enable for multiplayer (non-dedicated servers only) once the lobby UI has been created
-				LobbyInfo.GlobalSettings.GameSavesEnabled = Type != ServerType.Dedicated && LobbyInfo.NonBotClients.Count() == 1;
+				LobbyInfo.GlobalSettings.EnableGameSaves = Type != ServerType.Dedicated && LobbyInfo.NonBotClients.Count() == 1;
 
 				// Player list for win/loss tracking
 				// HACK: NonCombatant and non-Playable players are set to null to simplify replay tracking
@@ -1369,7 +1378,7 @@ namespace OpenRA.Server
 				};
 
 				if (Map.Class == MapClassification.Generated)
-					gameInfo.MapData = Map.ToBase64String();
+					gameInfo.MapGenerationArgs = Map.GenerationArgs;
 
 				// Replay metadata should only include the playable players
 				foreach (var p in worldPlayers)
@@ -1394,7 +1403,9 @@ namespace OpenRA.Server
 				if (IsMultiplayer)
 					OrderLatency = gameSpeed.OrderLatency;
 
-				if (GameSave == null && LobbyInfo.GlobalSettings.GameSavesEnabled)
+				LobbyInfo.GlobalSettings.GameTimestep = gameSpeed.Timestep;
+
+				if (GameSave == null && LobbyInfo.GlobalSettings.EnableGameSaves)
 					GameSave = new GameSave();
 
 				var startGameData = "";

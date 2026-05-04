@@ -401,27 +401,25 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 
 		void CreateLoadGameButton()
 		{
-			if (world.Type != WorldType.Regular || !world.LobbyInfo.GlobalSettings.GameSavesEnabled || world.IsReplay)
+			if (world.Type != WorldType.Regular || !world.LobbyInfo.GlobalSettings.EnableGameSaves || world.IsReplay)
 				return;
 
 			var button = AddButton("LOAD_GAME", LoadGameButton);
-			button.IsDisabled = () => leaving || !GameSaveBrowserLogic.IsLoadPanelEnabled(modData.Manifest);
+			button.IsDisabled = () => leaving || !LoadGameBrowserLogic.IsLoadPanelEnabled(modData.Manifest);
 			button.OnClick = () =>
 			{
 				hideMenu = true;
-				Ui.OpenWindow("GAMESAVE_BROWSER_PANEL", new WidgetArgs
+				Ui.OpenWindow("LOAD_GAME_BROWSER_PANEL", new WidgetArgs
 				{
 					{ "onExit", () => hideMenu = false },
 					{ "onStart", CloseMenu },
-					{ "isSavePanel", false },
-					{ "world", null }
 				});
 			};
 		}
 
 		void CreateSaveGameButton()
 		{
-			if (world.Type != WorldType.Regular || !world.LobbyInfo.GlobalSettings.GameSavesEnabled || world.IsReplay)
+			if (world.Type != WorldType.Regular || !world.LobbyInfo.GlobalSettings.EnableGameSaves || world.IsReplay)
 				return;
 
 			var button = AddButton("SAVE_GAME", SaveGameButton);
@@ -433,7 +431,6 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 				{
 					{ "onExit", () => hideMenu = false },
 					{ "onStart", () => { } },
-					{ "isSavePanel", true },
 					{ "world", world }
 				});
 			};

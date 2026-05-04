@@ -351,21 +351,24 @@ namespace OpenRA.Mods.D2k.Traits
 					tilingPaths,
 					plan[0] ? Terraformer.Side.In : Terraformer.Side.Out,
 					null,
-					[new MultiBrush().WithTemplate(map, param.RockTile, CVec.Zero)])
+					[new MultiBrush().WithTemplate(map, param.RockTile, CVec.Zero)],
+					null,
+					0)
 						?? throw new MapGenerationException("Could not fit tiles for rock platforms");
 			}
 
 			// Sand cliff generation
 			if (param.SandCliffs > 0)
 			{
+				var sandMask = CellLayerUtils.Map(rockSmoothSand, s => s == Terraformer.Side.Out);
+				sandMask = terraformer.ImproveSymmetry(sandMask, true, (a, b) => a && b);
 				var inverseElevation = elevation.Map(v => -v);
 				var cliffMask = MatrixUtils.CalibratedBooleanThreshold(
 					roughnessMatrix,
 					param.SandRoughness, FractionMax);
 				var plan = terraformer.SliceElevation(
 					inverseElevation,
-					CellLayerUtils.ToMatrix(rockSmoothSand, Terraformer.Side.Out)
-						.Map(s => s == Terraformer.Side.Out),
+					CellLayerUtils.ToMatrix(sandMask, true),
 					param.SandCliffs,
 					param.SandContourSpacing);
 				plan = MatrixUtils.BooleanBlotch(
@@ -373,7 +376,7 @@ namespace OpenRA.Mods.D2k.Traits
 					param.TerrainSmoothing,
 					param.SmoothingThreshold, /*smoothingThresholdOutOf=*/FractionMax,
 					param.MinimumSandCliffThickness,
-					true);
+					false);
 				var contours = MatrixUtils.BordersToPoints(plan);
 				var partitionMask = cliffMask.Map(masked => masked ? sandSandCliffZone : sandZone);
 				var tilingPaths = terraformer.PartitionPaths(
@@ -459,7 +462,9 @@ namespace OpenRA.Mods.D2k.Traits
 					tilingPaths,
 					plan[0] ? Terraformer.Side.In : Terraformer.Side.Out,
 					null,
-					param.DuneBrushes)
+					param.DuneBrushes,
+					null,
+					0)
 						?? throw new MapGenerationException("Could not fit tiles for rock platforms");
 			}
 
@@ -610,9 +615,30 @@ namespace OpenRA.Mods.D2k.Traits
 				}
 			}
 
+			terraformer.ReorderPlayerSpawns();
 			terraformer.BakeMap();
 
 			return map;
+		}
+
+		public bool TryGenerateMetadata(ModData modData, MapGenerationArgs args, out MapPlayers players, out Dictionary<string, MiniYaml> ruleDefinitions)
+		{
+			try
+			{
+				var playerCount = FieldLoader.GetValue<int>("Players", args.Settings.NodeWithKey("Players").Value.Value);
+
+				// Generated maps use the default ruleset
+				ruleDefinitions = [];
+				players = new MapPlayers(modData.DefaultRules, playerCount);
+
+				return true;
+			}
+			catch
+			{
+				players = null;
+				ruleDefinitions = null;
+				return false;
+			}
 		}
 
 		public override object Create(ActorInitializer init)

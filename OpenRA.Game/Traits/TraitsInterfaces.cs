@@ -373,7 +373,7 @@ namespace OpenRA.Traits
 	public interface IPostWorldLoaded { void PostWorldLoaded(World w, WorldRenderer wr); }
 	public interface INotifyGameLoading { void GameLoading(World w); }
 	public interface INotifyGameLoaded { void GameLoaded(World w); }
-	public interface INotifyGameSaved { void GameSaved(World w); }
+	public interface INotifyGameSaved { void GameSaved(World w, bool isAutoSave); }
 
 	public interface IGameSaveTraitData
 	{
@@ -464,7 +464,7 @@ namespace OpenRA.Traits
 		bool SpatiallyPartitionable { get; }
 	}
 
-	public enum PostProcessPassType { AfterShroud, AfterWorld, AfterActors }
+	public enum PostProcessPassType { AfterShroud, AfterWorld, AfterActors, AfterAnnotations }
 
 	[RequireExplicitImplementation]
 	public interface IRenderPostProcessPass
@@ -659,5 +659,6 @@ namespace OpenRA.Traits
 		string MapTitle { get; }
 
 		Map Generate(ModData modData, MapGenerationArgs args);
+		bool TryGenerateMetadata(ModData modData, MapGenerationArgs args, out MapPlayers players, out Dictionary<string, MiniYaml> rules);
 	}
 }

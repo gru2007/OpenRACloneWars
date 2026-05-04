@@ -22,6 +22,8 @@ notification-cannot-build-here = Cannot build here.
 notification-one-of-our-buildings-has-been-captured = One of our buildings has been captured.
 
 ## world.yaml
+notification-game-saved = Game saved.
+
 dropdown-map-worms =
     .label = Worms
     .description = Worms roam the map, devouring unprepared forces
@@ -104,7 +106,7 @@ faction-smugglers =
 faction-fremen =
     .name = Fremen
 
-map-generator-d2k = D2K RMG
+map-generator-d2k = Map Generator
 map-generator-clear = Clear Terrain
 
 ## defaults.yaml
@@ -337,7 +339,6 @@ actor-upgrade-heavy =
     .name = Heavy Factory Upgrade
     .description =
     Unlocks additional construction options:
-    - Repair Pad
     - IX Research Center
 
     Unlocks additional heavy units:

@@ -36,6 +36,7 @@ namespace OpenRA.Mods.Common.Widgets
 		public Action AfterClose = () => { };
 		public Action<float> Animating = _ => { };
 
+		readonly ModData modData;
 		readonly World world;
 		readonly WorldRenderer worldRenderer;
 		readonly RadarPings radarPings;
@@ -44,12 +45,16 @@ namespace OpenRA.Mods.Common.Widgets
 		readonly int cellWidth;
 		readonly int previewWidth;
 		readonly int previewHeight;
+		readonly string worldSelectCursor = ChromeMetrics.Get<string>("WorldSelectCursor");
 		readonly string worldDefaultCursor = ChromeMetrics.Get<string>("WorldDefaultCursor");
+		readonly GameSettings gameSettings;
 
 		float radarMinimapHeight;
 		int frame;
 		bool hasRadar;
 		bool cachedEnabled;
+		bool isMinimapMoving;
+		MouseButton minimapMoveButton;
 
 		float previewScale = 0;
 		int2 previewOrigin = int2.Zero;
@@ -66,10 +71,12 @@ namespace OpenRA.Mods.Common.Widgets
 		Player currentPlayer;
 
 		[ObjectCreator.UseCtor]
-		public RadarWidget(World world, WorldRenderer worldRenderer)
+		public RadarWidget(ModData modData, World world, WorldRenderer worldRenderer)
 		{
+			this.modData = modData;
 			this.world = world;
 			this.worldRenderer = worldRenderer;
+			gameSettings = Game.Settings.Game;
 
 			radarPings = world.WorldActor.TraitOrDefault<RadarPings>();
 			radarTerrainLayers = world.WorldActor.TraitsImplementing<IRadarTerrainLayer>().ToArray();
@@ -294,15 +301,18 @@ namespace OpenRA.Mods.Common.Widgets
 			var mi = new MouseInput
 			{
 				Location = location,
-				Button = Game.Settings.Game.MouseButtonPreference.Action,
+				Button = world.OrderGenerator.ActionButton,
 				Modifiers = Game.GetModifierKeys()
 			};
 
 			var cursor = world.OrderGenerator.GetCursor(world, cell, worldPixel, mi);
-			if (cursor == null)
-				return worldDefaultCursor;
 
-			return Game.ModData.Cursors.ContainsKey(cursor + "-minimap") ? cursor + "-minimap" : cursor;
+			// We can't select through the minimap in Mouse Control Types other than Classic,
+			// as they move the minimap on left click, so don't show the selection cursor for them
+			if (cursor == null || (gameSettings.MouseControlStyle != MouseControlStyle.Classic && cursor == worldSelectCursor))
+				cursor = worldDefaultCursor;
+
+			return modData.Cursors.ContainsKey(cursor + "-minimap") ? cursor + "-minimap" : cursor;
 		}
 
 		public override bool HandleMouseInput(MouseInput mi)
@@ -314,13 +324,14 @@ namespace OpenRA.Mods.Common.Widgets
 				return true;
 
 			var worldCoords = MinimapPixelToWorldCoords(mi.Location);
-			if ((mi.Event == MouseInputEvent.Down || mi.Event == MouseInputEvent.Move)
-				&& mi.Button == Game.Settings.Game.MouseButtonPreference.Cancel)
+			if ((mi.Event == MouseInputEvent.Down && mi.Button != world.OrderGenerator.ActionButton) ||
+				(mi.Event == MouseInputEvent.Move && isMinimapMoving && mi.Button == minimapMoveButton))
 			{
 				worldRenderer.Viewport.Center(worldCoords);
+				isMinimapMoving = true;
+				minimapMoveButton = mi.Button;
 			}
-
-			if (mi.Event == MouseInputEvent.Down && mi.Button == Game.Settings.Game.MouseButtonPreference.Action && WorldInteractionController != null)
+			else if (mi.Event == MouseInputEvent.Down && WorldInteractionController != null)
 			{
 				var worldPos = worldCoords.ToInt2();
 				var wpos = new WPos(worldPos.X, worldPos.Y, 0);
@@ -330,7 +341,7 @@ namespace OpenRA.Mods.Common.Widgets
 				var fakemi = new MouseInput
 				{
 					Event = MouseInputEvent.Down,
-					Button = Game.Settings.Game.MouseButtonPreference.Action,
+					Button = mi.Button,
 					Modifiers = mi.Modifiers,
 					Location = location,
 				};
@@ -339,6 +350,11 @@ namespace OpenRA.Mods.Common.Widgets
 				controller.HandleMouseInput(fakemi);
 				fakemi.Event = MouseInputEvent.Up;
 				controller.HandleMouseInput(fakemi);
+			}
+			else if (mi.Event == MouseInputEvent.Up && mi.Button == minimapMoveButton)
+			{
+				isMinimapMoving = false;
+				minimapMoveButton = MouseButton.None;
 			}
 
 			return true;

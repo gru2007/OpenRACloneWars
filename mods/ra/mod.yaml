@@ -156,6 +156,7 @@ ChromeLayout:
 	common|chrome/connection.yaml
 	common|chrome/replaybrowser.yaml
 	common|chrome/gamesave-browser.yaml
+	common|chrome/load-game-browser.yaml
 	ra|chrome/gamesave-loading.yaml
 	common|chrome/dropdowns.yaml
 	common|chrome/musicplayer.yaml
@@ -217,7 +218,6 @@ ServerTraits:
 	SkirmishLogic
 	PlayerPinger
 	MasterServerPinger
-	LobbySettingsNotification
 
 ChromeMetrics:
 	common|metrics.yaml
